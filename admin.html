@@ -28,6 +28,8 @@
       <button class="anav-btn" onclick="showTab('security')">Security</button>
       <button class="anav-btn" onclick="showTab('logs')">Logs</button>
       <button class="anav-btn" onclick="showTab('settings')">Settings</button>
+      <button class="anav-btn" onclick="showTab('messages')">Messages <span id="msg-badge" class="badge badge-warning" style="display:none;margin-left:3px">0</span></button>
+    </div>
     </div>
     <div class="flex-gap">
       <button class="theme-toggle" id="theme-btn"></button>
@@ -139,6 +141,36 @@
       <button class="tab" id="et-rejected" onclick="renderEssays('rejected')">Rejected</button>
     </div>
     <div id="essays-list"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+
+  <!-- MESSAGES -->
+  <div class="tab-pane" id="tab-messages" style="display:none">
+    <div class="page-header"><div class="page-title">Messages</div><div class="page-subtitle">Send direct messages to clients and writers</div></div>
+    <div class="grid-2" style="gap:20px">
+      <div class="card">
+        <h3 style="font-family:var(--font-display);margin-bottom:16px">Compose Message</h3>
+        <div class="form-group">
+          <label class="form-label">Recipient *</label>
+          <select class="form-select" id="msg-recipient">
+            <option value="">Select user...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subject *</label>
+          <input type="text" class="form-input" id="msg-subject" placeholder="e.g. Important update about your order">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Message *</label>
+          <textarea class="form-textarea" id="msg-content" style="min-height:120px" placeholder="Type your message here..."></textarea>
+        </div>
+        <div id="msg-err" class="alert alert-danger" style="display:none"></div>
+        <button class="btn btn-primary btn-full" onclick="sendDirectMessage()">Send Message</button>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--font-display);margin-bottom:16px">Sent Messages</h3>
+        <div id="msg-history"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
   </div>
 
   <!-- SECURITY -->
@@ -255,9 +287,7 @@
 </div>
 
 <div class="toast-container" id="toasts"></div>
-<div style="position:fixed;bottom:24px;left:24px;z-index:999" id="reset-btn" style="display:none">
-  <button onclick="confirmReset()" class="btn btn-sm" style="background:rgba(224,85,85,0.85);color:white;font-size:0.75rem">🔄 Reset Demo Data</button>
-</div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase-client.js"></script>
@@ -334,7 +364,7 @@
     document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
     document.querySelectorAll('.anav-btn').forEach(b=>b.classList.remove('active'));
     document.getElementById('tab-'+name).style.display='block';
-    const tabs=['overview','orders','users','essays','security','logs','settings'];
+    const tabs=['overview','orders','users','essays','security','logs','settings','messages'];
     const btns=document.querySelectorAll('.anav-btn');
     const i=tabs.indexOf(name);if(btns[i])btns[i].classList.add('active');
     if(name==='orders')renderOrders();
@@ -343,6 +373,7 @@
     if(name==='security')renderSecurity();
     if(name==='logs')renderLogs();
     if(name==='settings')loadSettings();
+    if(name==='messages')renderMessages();
   }
 
   // ── Overview ───────────────────────────────────────────────
@@ -491,8 +522,17 @@
       <td><div style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-sm ${u.is_active?'btn-outline':'btn-success'}" onclick="toggleUser('${u.id}',${!u.is_active})">${u.is_active?'Suspend':'Activate'}</button>
         ${role==='writer'&&!u.is_writer_approved?`<button class="btn btn-sm btn-gold" onclick="approveWriter('${u.id}')">Approve</button>`:''}
+        <button class="btn btn-sm btn-primary" onclick="quickMessage('${u.id}','${u.full_name}')">✉ Message</button>
       </div></td>
     </tr>`).join('');
+  }
+  function quickMessage(userId, userName) {
+    showTab('messages');
+    setTimeout(() => {
+      document.getElementById('msg-recipient').value = userId;
+      document.getElementById('msg-subject').focus();
+      showGlobalToast(`Composing message to ${userName}`, 'success');
+    }, 300);
   }
   async function toggleUser(id,active){await SC.users[active?'activate':'suspend'](id);renderUsers(curUserTab);showGlobalToast(active?'User activated.':'User suspended.',active?'success':'warning');}
   async function approveWriter(id){await SC.users.update(id,{is_writer_approved:true});renderUsers('writer');updateEssayBadge();showGlobalToast('Writer approved!','success');}
@@ -564,6 +604,69 @@
 
     document.getElementById('withdrawals-list').innerHTML=pend.length?pend.map(w=>{const u=w.profiles||{};return `<div class="flex-between" style="padding:10px 0;border-bottom:1px solid var(--border);font-size:0.875rem"><div><strong>${u.full_name||'Writer'}</strong> · $${w.amount} via ${w.method}<br><span class="text-xs text-muted">${w.account_details}</span></div><div class="flex-gap"><button class="btn btn-sm btn-success" onclick="approveWithdrawal('${w.id}')">✓ Release</button><button class="btn btn-sm btn-ghost" onclick="denyWithdrawal('${w.id}')">✗ Deny</button></div></div>`;}).join(''):'<p class="text-muted text-sm">No pending withdrawals.</p>';
   }
+  // ── Direct Messages ────────────────────────────────────────
+  async function renderMessages() {
+    // Load all users for recipient dropdown
+    const users = await SC.users.getAll();
+    const sel = document.getElementById('msg-recipient');
+    sel.innerHTML = '<option value="">Select user...</option>';
+    users.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.id;
+      opt.textContent = `${u.full_name} (${u.user_type}) — ${u.email}`;
+      sel.appendChild(opt);
+    });
+
+    // Load sent messages
+    const { data: msgs } = await sb.from('direct_messages')
+      .select('*, profiles!direct_messages_recipient_id_fkey(full_name, email)')
+      .eq('sender_role', 'admin')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    const hist = document.getElementById('msg-history');
+    if (!msgs || msgs.length === 0) {
+      hist.innerHTML = '<p class="text-muted text-sm">No messages sent yet.</p>';
+      return;
+    }
+    hist.innerHTML = msgs.map(m => `
+      <div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px">
+        <div class="flex-between" style="margin-bottom:4px">
+          <strong style="font-size:0.875rem">${m.profiles?.full_name || 'Unknown'}</strong>
+          <span class="text-muted text-sm">${new Date(m.created_at).toLocaleDateString()}</span>
+        </div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:4px">${m.subject || 'No subject'}</div>
+        <div style="font-size:0.85rem">${m.content}</div>
+      </div>`).join('');
+  }
+
+  async function sendDirectMessage() {
+    const recipientId = document.getElementById('msg-recipient').value;
+    const subject = document.getElementById('msg-subject').value.trim();
+    const content = document.getElementById('msg-content').value.trim();
+    const err = document.getElementById('msg-err');
+    err.style.display = 'none';
+
+    if (!recipientId) { err.textContent = 'Please select a recipient.'; err.style.display = 'flex'; return; }
+    if (!content) { err.textContent = 'Please write a message.'; err.style.display = 'flex'; return; }
+
+    const { error } = await sb.from('direct_messages').insert({
+      sender_id: adminProfile.id,
+      recipient_id: recipientId,
+      sender_role: 'admin',
+      subject,
+      content,
+    });
+
+    if (error) { err.textContent = error.message; err.style.display = 'flex'; return; }
+
+    document.getElementById('msg-subject').value = '';
+    document.getElementById('msg-content').value = '';
+    document.getElementById('msg-recipient').value = '';
+    showGlobalToast('Message sent successfully!', 'success');
+    renderMessages();
+  }
+
   async function approveWithdrawal(id){await SC.withdrawals.updateStatus(id,'paid','Approved by admin');showGlobalToast('Withdrawal released!','success');renderSecurity();}
   async function denyWithdrawal(id){await SC.withdrawals.updateStatus(id,'rejected','Denied by admin');showGlobalToast('Withdrawal denied.','warning');renderSecurity();}
 

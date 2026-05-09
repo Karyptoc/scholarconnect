@@ -475,13 +475,14 @@ const SC = {
     async send(orderId, senderId, senderRole, content) {
       if (hasContactInfo(content)) {
         // Log the blocked attempt
-        await sb.from('security_logs').insert({
+        const { error: logError } = await sb.from('security_logs').insert({
           user_id: senderId,
           order_id: orderId,
           action: 'blocked_message',
           blocked_content: content,
           detail: `Contact info attempted in order ${orderId}`,
         });
+        if (logError) console.error('Security log error:', logError);
         return { error: 'Sharing personal contact details is strictly prohibited. This attempt has been logged.' };
       }
       const safe = content.replace(/</g, '&lt;').replace(/>/g, '&gt;');

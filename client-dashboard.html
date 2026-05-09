@@ -400,7 +400,7 @@
       actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">Complete Payment</h4><p class="text-sm text-muted" style="margin-bottom:12px">Pay the $${o.deposit_amount} deposit to make your order visible to writers.</p><button class="btn btn-gold btn-full" onclick="openPayModal(currentOrd)">Pay $${o.deposit_amount} Deposit</button></div>`;
     } else if (o.status === 'under_review') {
       actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">Review Submitted Work</h4>
-        ${delivery?.file_url?`<div class="flex-gap text-sm" style="padding:8px;background:var(--parch);border-radius:6px;margin-bottom:10px"><a href="${delivery.file_url}" target="_blank" style="color:var(--steel)">📄 Download Submitted Work</a></div>`:''}
+        <div class="alert alert-warning" style="margin-bottom:10px">⚠️ <strong>Please review and approve or dispute before accessing the file.</strong> Approving releases payment to the writer. File will be available after approval.</div>
         <button class="btn btn-success btn-full" style="margin-bottom:8px" onclick="openM('m-review')">✓ Approve Work</button>
         ${o.revisions_used<2?`<button class="btn btn-outline btn-full" style="margin-bottom:8px" onclick="openM('m-revision')">Request Revision (${2-o.revisions_used} left)</button>`:''}
         <button class="btn btn-danger btn-full btn-sm" onclick="openM('m-dispute')">Open Dispute</button></div>`;

@@ -129,11 +129,12 @@
       <div class="grid-2">
         <div class="card">
           <h3 style="font-family:var(--font-display);margin-bottom:18px">Withdraw Funds</h3>
-          <div class="alert alert-info" style="margin-bottom:16px"><span>💰</span><span>Minimum: <strong>$20</strong>. Processed within 48 business hours.</span></div>
+          <div class="alert alert-info" style="margin-bottom:16px"><span>💰</span><span>Withdrawals are processed on the <strong>14th and 28th</strong> of every month. Minimum: <strong>$20</strong>.</span></div>
+          <div id="w-window-alert"></div>
           <div class="form-group"><label class="form-label">Amount ($) *</label><input type="number" class="form-input" id="w-amt" min="20" placeholder="e.g. 40"></div>
-          <div class="form-group"><label class="form-label">Method *</label><select class="form-select" id="w-method" onchange="updateWLabel()"><option value="paypal">PayPal</option><option value="mpesa">M-Pesa</option><option value="bank">Bank Transfer</option></select></div>
+          <div class="form-group"><label class="form-label">Method *</label><select class="form-select" id="w-method" onchange="updateWLabel()"><option value="paypal">PayPal</option><option value="mpesa">M-Pesa</option><option value="bank">Bank Transfer</option><option value="payoneer">Payoneer</option></select></div>
           <div class="form-group"><label class="form-label" id="w-label">PayPal Email *</label><input type="text" class="form-input" id="w-details" placeholder="your@paypal.com"></div>
-          <button class="btn btn-gold btn-full" onclick="requestWithdrawal()">Request Withdrawal</button>
+          <button class="btn btn-gold btn-full" id="w-btn" onclick="requestWithdrawal()">Request Withdrawal</button>
         </div>
         <div class="card"><h3 style="font-family:var(--font-display);margin-bottom:16px">Withdrawal History</h3><div id="w-history"><div class="loading"><div class="spinner"></div></div></div></div>
       </div>
@@ -443,6 +444,7 @@
       </div>
       <div class="form-label">Instructions</div>
       <div style="background:var(--parch);border-radius:8px;padding:14px;margin-top:6px;font-size:0.875rem;line-height:1.7">${o.instructions}</div>
+      ${o.brief_url?`<div style="margin-top:12px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Client Brief File</a></div>`:''}
       ${o.revision_note?`<div class="alert alert-warning" style="margin-top:12px">📝 <strong>Revision note:</strong> ${o.revision_note}</div>`:''}
       ${delivery?.plagiarism_score?`<div class="badge badge-success" style="margin-top:12px">✓ Plagiarism: ${delivery.plagiarism_score}% original</div>`:''}`;
 
@@ -623,7 +625,27 @@
   }
 
   // ── Earnings ──────────────────────────────────────────────
+  function checkWithdrawalWindow() {
+    const today = new Date().getDate();
+    const isWindow = (today >= 12 && today <= 15) || (today >= 26 && today <= 29);
+    const alert = document.getElementById('w-window-alert');
+    const btn = document.getElementById('w-btn');
+    if (!isWindow) {
+      const next14 = new Date(); next14.setDate(14);
+      const next28 = new Date(); next28.setDate(28);
+      const nextDate = today < 14 ? next14 : today < 28 ? next28 : new Date(next14.getFullYear(), next14.getMonth()+1, 14);
+      alert.innerHTML = `<div class="alert alert-warning" style="margin-bottom:12px">⏳ <strong>Withdrawal window closed.</strong> Next window opens on the 14th or 28th of the month.</div>`;
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+    } else {
+      alert.innerHTML = `<div class="alert alert-success" style="margin-bottom:12px">✅ <strong>Withdrawal window is open!</strong> You can request a withdrawal now.</div>`;
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }
+  }
+
   async function renderEarnings() {
+    checkWithdrawalWindow();
     const { assigned } = await SC.orders.getForWriter(profile.id);
     const done = assigned.filter(o=>o.status==='completed');
     const payout = parseFloat(settings.writer_payout||4);
