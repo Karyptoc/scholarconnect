@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>ScholarConnect – Professional Academic Writing Marketplace</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 3L3 9v10l11 6 11-6V9L14 3z" fill="#0f2040"/><path d="M14 8l6 3.5v7L14 22l-6-3.5v-7L14 8z" fill="#d4a840"/></svg>
+    Scholar<span>Connect</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="#how-it-works">How It Works</a>
+    <a class="nav-link" href="#pricing">Pricing</a>
+    <a class="nav-link" href="#subjects">Subjects</a>
+    <a class="nav-link" href="#faq">FAQ</a>
+    <a class="nav-link" href="#support">Support</a>
+  </div>
+  <div class="flex-gap">
+    <button class="theme-toggle" id="theme-btn" aria-label="Toggle theme"></button>
+    <a href="auth.html?mode=login" class="btn btn-outline btn-sm">Log In</a>
+    <a href="auth.html?mode=register" class="btn btn-primary btn-sm">Get Started</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container hero-content">
+    <div class="hero-eyebrow">⭐ Trusted by 10,000+ students worldwide</div>
+    <h1>Academic Writing,<br><em>Professionally Delivered</em></h1>
+    <p>Connect with expert, vetted writers. Essays, dissertations, research papers — quality work, on time, every time. Secure escrow. 100% anonymous.</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+      <a href="auth.html?mode=register&role=client" class="btn btn-gold btn-lg">Post an Order →</a>
+      <a href="auth.html?mode=register&role=writer" class="btn btn-outline btn-lg" style="color:white;border-color:rgba(255,255,255,0.3)">Become a Writer</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="val">12,400+</div><div class="lbl">Orders Completed</div></div>
+      <div class="hero-stat"><div class="val">98%</div><div class="lbl">On-Time Delivery</div></div>
+      <div class="hero-stat"><div class="val">2,800+</div><div class="lbl">Verified Writers</div></div>
+      <div class="hero-stat"><div class="val">4.9★</div><div class="lbl">Avg. Rating</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section class="section section-alt" id="how-it-works">
+  <div class="container">
+    <div class="text-center" style="margin-bottom:48px"><h2 class="display-md">How It Works</h2><p class="text-muted text-lg" style="margin-top:10px">4 simple, secure steps</p></div>
+    <div class="grid-4">
+      <div class="card" style="text-align:center;padding:28px 20px">
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--navy2),var(--slate));color:white;font-family:var(--font-display);font-size:1.3rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">1</div>
+        <h3 style="font-size:1rem;margin-bottom:8px">Post Your Order</h3>
+        <p class="text-sm text-muted">Describe your assignment, set a deadline, select academic level, and pay a 50% deposit via Stripe, PayPal, or Bank Transfer.</p>
+      </div>
+      <div class="card" style="text-align:center;padding:28px 20px">
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--navy2),var(--slate));color:white;font-family:var(--font-display);font-size:1.3rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">2</div>
+        <h3 style="font-size:1rem;margin-bottom:8px">Writer Assigned</h3>
+        <p class="text-sm text-muted">Qualified writers (25-Q English test + subject essay) request your order. Admin assigns the best match.</p>
+      </div>
+      <div class="card" style="text-align:center;padding:28px 20px">
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--navy2),var(--slate));color:white;font-family:var(--font-display);font-size:1.3rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">3</div>
+        <h3 style="font-size:1rem;margin-bottom:8px">Work Delivered</h3>
+        <p class="text-sm text-muted">Writer submits work. Plagiarism check and virus scan run automatically before you are notified to review.</p>
+      </div>
+      <div class="card" style="text-align:center;padding:28px 20px">
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--navy2),var(--slate));color:white;font-family:var(--font-display);font-size:1.3rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">4</div>
+        <h3 style="font-size:1rem;margin-bottom:8px">Approve &amp; Pay</h3>
+        <p class="text-sm text-muted">Review the work, request up to 2 free revisions, or approve to release payment from escrow. Writer paid only on your approval.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="section" id="pricing">
+  <div class="container">
+    <div class="text-center" style="margin-bottom:48px"><h2 class="display-md">Transparent Pricing</h2><p class="text-muted text-lg" style="margin-top:10px">No hidden fees. See exactly what you pay.</p></div>
+    <div class="grid-2" style="max-width:680px;margin:0 auto 24px">
+      <div class="card" style="text-align:center;border:2px solid var(--border)">
+        <div class="badge badge-navy" style="margin-bottom:16px">Standard Delivery</div>
+        <div style="font-family:var(--font-display);font-size:3rem;font-weight:700;color:var(--navy)"><sup style="font-size:1.2rem">$</sup>10</div>
+        <div class="text-muted text-sm">per page · deadline ≥ 5 days</div>
+        <hr class="divider">
+        <ul style="text-align:left;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:0.875rem">
+          <li>✓ Up to 2 free revisions</li><li>✓ Plagiarism report included</li><li>✓ 50% deposit to start</li><li>✓ Escrow-protected</li>
+        </ul>
+      </div>
+      <div class="card" style="text-align:center;border:2px solid var(--gold);background:linear-gradient(135deg,rgba(212,168,64,0.06),transparent)">
+        <div class="badge badge-gold" style="margin-bottom:16px">⚡ Urgent Delivery</div>
+        <div style="font-family:var(--font-display);font-size:3rem;font-weight:700;color:var(--navy)"><sup style="font-size:1.2rem">$</sup>15</div>
+        <div class="text-muted text-sm">per page · deadline &lt; 5 days</div>
+        <hr class="divider">
+        <ul style="text-align:left;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:0.875rem">
+          <li>✓ Priority writer assignment</li><li>✓ Up to 2 free revisions</li><li>✓ Plagiarism report included</li><li>✓ 50% deposit to start</li>
+        </ul>
+      </div>
+    </div>
+    <div style="text-align:center">
+      <div class="card card-sm" style="display:inline-flex;align-items:center;gap:20px;flex-wrap:wrap;justify-content:center">
+        <span class="text-sm fw-600">Payment methods accepted:</span>
+        <span class="flex-gap text-sm"><span>💳</span>Card (Stripe)</span>
+        <span class="flex-gap text-sm"><span>🅿️</span>PayPal</span>
+        <span class="flex-gap text-sm"><span>🏦</span>Bank Transfer (Visa)</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Subjects -->
+<section class="section section-alt" id="subjects">
+  <div class="container text-center">
+    <h2 class="display-md" style="margin-bottom:12px">All Academic Subjects</h2>
+    <p class="text-muted" style="margin-bottom:36px">Expert writers across every discipline with sub-specialisations</p>
+    <div id="subjects-grid" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center"></div>
+  </div>
+</section>
+
+<!-- Security -->
+<section class="section">
+  <div class="container">
+    <div class="text-center" style="margin-bottom:48px"><h2 class="display-md">Security &amp; Privacy</h2></div>
+    <div class="grid-4">
+      <div class="card card-sm text-center"><div style="font-size:2rem;margin-bottom:12px">🛡️</div><h4 style="margin-bottom:8px">100% Anonymous</h4><p class="text-sm text-muted">Writers never see your name or email. Only your unique order number is used in all communication.</p></div>
+      <div class="card card-sm text-center"><div style="font-size:2rem;margin-bottom:12px">🔐</div><h4 style="margin-bottom:8px">2FA Security</h4><p class="text-sm text-muted">Email OTP on every login. Sessions auto-expire after 1 hour of inactivity. Powered by Supabase Auth.</p></div>
+      <div class="card card-sm text-center"><div style="font-size:2rem;margin-bottom:12px">🦠</div><h4 style="margin-bottom:8px">Virus Scanned</h4><p class="text-sm text-muted">Every uploaded file is scanned before delivery. Real-time database with Row Level Security.</p></div>
+      <div class="card card-sm text-center"><div style="font-size:2rem;margin-bottom:12px">📊</div><h4 style="margin-bottom:8px">Plagiarism Free</h4><p class="text-sm text-muted">Every paper is automatically plagiarism-checked before you are notified to review.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section section-alt" id="faq">
+  <div class="container-sm">
+    <h2 class="display-md text-center" style="margin-bottom:40px">Frequently Asked Questions</h2>
+    <div id="faq-list"></div>
+  </div>
+</section>
+
+<!-- Support -->
+<section class="section" id="support">
+  <div class="container-sm text-center">
+    <h2 class="display-md" style="margin-bottom:12px">Need Help?</h2>
+    <p class="text-muted text-lg" style="margin-bottom:36px">Our support team is available 24/7.</p>
+    <div class="grid-2">
+      <div class="card" style="text-align:center;padding:32px 24px">
+        <div style="font-size:2rem;margin-bottom:12px">📧</div>
+        <div class="fw-700" style="margin-bottom:8px">Email Support</div>
+        <a href="mailto:writerhub97@gmail.com" style="color:var(--steel);font-weight:600">writerhub97@gmail.com</a>
+        <p class="text-sm text-muted" style="margin-top:8px">Response within 2–4 hours</p>
+      </div>
+      <div class="card" style="text-align:center;padding:32px 24px">
+        <div style="font-size:2rem;margin-bottom:12px">💬</div>
+        <div class="fw-700" style="margin-bottom:8px">WhatsApp Support</div>
+        <a href="https://wa.me/254716603371" target="_blank" class="btn btn-green btn-sm" style="margin:4px auto">Chat on WhatsApp</a>
+        <p class="text-sm text-muted" style="margin-top:8px">+254 716 603 371 · 24/7</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section" style="background:linear-gradient(135deg,var(--navy),var(--slate));text-align:center;padding:80px 0">
+  <div class="container">
+    <h2 style="font-family:var(--font-display);font-size:2.5rem;color:white;margin-bottom:16px">Ready to Get Started?</h2>
+    <p style="color:rgba(255,255,255,0.7);font-size:1.1rem;margin-bottom:36px">Join thousands of students who trust ScholarConnect.</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+      <a href="auth.html?mode=register&role=client" class="btn btn-gold btn-lg">Place Your First Order</a>
+      <a href="auth.html?mode=register&role=writer" class="btn btn-outline btn-lg" style="color:white;border-color:rgba(255,255,255,0.3)">Apply as a Writer</a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <div class="grid-4">
+      <div>
+        <div class="footer-brand">Scholar<span>Connect</span></div>
+        <p style="font-size:0.875rem;line-height:1.7;margin-bottom:12px">Professional academic writing marketplace — powered by Supabase.</p>
+        <div class="footer-support">
+          <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.5);margin-bottom:8px">Customer Support</div>
+          <a href="mailto:writerhub97@gmail.com" style="color:var(--gold2);font-weight:600;display:block;margin-bottom:4px">📧 writerhub97@gmail.com</a>
+          <a href="https://wa.me/254716603371" target="_blank" style="color:#25D366;font-weight:600;display:block">💬 +254 716 603 371</a>
+        </div>
+      </div>
+      <div><h4>For Students</h4><a href="#pricing">Pricing</a><a href="#how-it-works">How It Works</a><a href="terms.html">Refund Policy</a><a href="auth.html?mode=register&role=client">Sign Up</a></div>
+      <div><h4>For Writers</h4><a href="auth.html?mode=register&role=writer">Apply Now</a><a href="#subjects">Subjects</a><a href="terms.html">Writer Terms</a></div>
+      <div><h4>Legal</h4><a href="terms.html">Terms of Service</a><a href="privacy.html">Privacy Policy</a><a href="admin.html">Admin Login</a></div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 ScholarConnect. All rights reserved. &nbsp;|&nbsp; Support: <a href="mailto:writerhub97@gmail.com" style="color:var(--gold2)">writerhub97@gmail.com</a> &nbsp;|&nbsp; <a href="terms.html" style="color:rgba(255,255,255,0.5)">Terms</a> · <a href="privacy.html" style="color:rgba(255,255,255,0.5)">Privacy</a></p>
+    </div>
+  </div>
+</footer>
+
+<!-- WhatsApp FAB -->
+<a href="https://wa.me/254716603371" target="_blank" class="whatsapp-fab" title="Chat on WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>
+  <span class="whatsapp-tooltip">Chat on WhatsApp</span>
+</a>
+
+<div class="toast-container" id="toasts"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-client.js"></script>
+<script>
+  // Theme
+  if (localStorage.getItem('sc_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  const tb = document.getElementById('theme-btn');
+  if (localStorage.getItem('sc_theme') === 'dark') tb.classList.add('on');
+  tb.addEventListener('click', () => {
+    const d = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', d ? '' : 'dark');
+    localStorage.setItem('sc_theme', d ? '' : 'dark');
+    tb.classList.toggle('on', !d);
+  });
+
+  // Subjects grid (loaded from Supabase settings or hardcoded fallback)
+  const SUBJECTS = {
+    'Business & Management':['General','Strategy','Marketing','Finance','Accounting'],
+    'Nursing & Medicine':['General','Clinical','Pharmacology','Pediatrics'],
+    'Computer Science & IT':['General','Programming','AI & Machine Learning','Cybersecurity'],
+    'Psychology':['General','Clinical Psychology','Developmental Psychology'],
+    'Education':['General','Curriculum Design','Special Education'],
+    'Law':['General','Criminal Law','Constitutional Law','Corporate Law'],
+    'History':['General','World History','African History','American History'],
+    'English Literature':['General','British Literature','American Literature'],
+    'Mathematics':['General','Calculus','Statistics','Linear Algebra'],
+    'Biology & Life Sciences':['General','Molecular Biology','Genetics','Ecology'],
+    'Chemistry':['General','Organic','Inorganic','Physical Chemistry'],
+    'Political Science':['General','International Relations','Public Policy'],
+    'Sociology':['General','Cultural Studies','Gender Studies'],
+    'Economics':['General','Microeconomics','Macroeconomics','Econometrics'],
+    'Engineering':['General','Civil','Mechanical','Electrical','Chemical']
+  };
+  const icons = {'Business & Management':'📊','Nursing & Medicine':'🏥','Computer Science & IT':'💻','Psychology':'🧠','Education':'📚','Law':'⚖️','History':'📜','English Literature':'✍️','Mathematics':'📐','Biology & Life Sciences':'🔬','Chemistry':'⚗️','Political Science':'🌍','Sociology':'👥','Economics':'📈','Engineering':'⚙️'};
+  const sg = document.getElementById('subjects-grid');
+  Object.keys(SUBJECTS).forEach(s => {
+    const el = document.createElement('span');
+    el.style.cssText = 'padding:8px 16px;border-radius:100px;border:1.5px solid var(--border);background:var(--surface);font-size:0.875rem;font-weight:500;color:var(--ink);cursor:default;transition:all 0.2s;';
+    el.textContent = (icons[s] || '📄') + ' ' + s;
+    el.addEventListener('mouseenter', () => { el.style.borderColor='var(--steel)'; el.style.background='var(--parch)'; });
+    el.addEventListener('mouseleave', () => { el.style.borderColor='var(--border)'; el.style.background='var(--surface)'; });
+    sg.appendChild(el);
+  });
+
+  // FAQ
+  const faqs = [
+    { q:'Is my identity protected?', a:'Absolutely. Writers never see your name, email, or any personal information. All communication uses only your unique order number (e.g., ORD-XXXXXX).' },
+    { q:'How does payment work?', a:'You pay a 50% deposit via Stripe, PayPal, or Bank Transfer. Funds are held in secure escrow. The remaining 50% is released to the writer only after you approve the work.' },
+    { q:'What if I\'m not satisfied?', a:'You can request up to 2 free revisions. If issues persist, file a dispute and our admin team will review and mediate — issuing a partial or full refund if warranted.' },
+    { q:'How are writers vetted?', a:'All writers must pass a 25-question English Proficiency Test (80% pass mark, 10-minute limit) AND submit a 5-page subject essay for each subject. Admin reviews each essay individually.' },
+    { q:'What are the deadlines?', a:'Deadlines ≥ 5 days = $10/page (standard). Deadlines < 5 days = $15/page (urgent) with priority assignment. Auto-approval occurs 72h after delivery with no action.' },
+    { q:'What payment methods do you accept?', a:'Credit/Debit cards via Stripe, PayPal (jameskinyua1997@gmail.com), and Bank Transfer. PayPal and bank transfers are confirmed manually by admin before activation.' },
+    { q:'How do I contact support?', a:'Email writerhub97@gmail.com or WhatsApp +254 716 603 371. We respond within 2–4 hours, 24/7.' },
+  ];
+  const fl = document.getElementById('faq-list');
+  faqs.forEach((f, i) => {
+    fl.innerHTML += `<div style="border-bottom:1px solid var(--border)">
+      <div style="padding:16px 0;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600" onclick="tFaq(${i})">
+        <span>${f.q}</span><span id="fa${i}">▼</span>
+      </div>
+      <div id="fb${i}" style="display:none;padding-bottom:16px;color:var(--muted);font-size:0.9rem;line-height:1.7">${f.a}</div>
+    </div>`;
+  });
+  function tFaq(i) {
+    const a = document.getElementById('fb'+i);
+    a.style.display = a.style.display === 'none' ? 'block' : 'none';
+    document.getElementById('fa'+i).textContent = a.style.display === 'block' ? '▲' : '▼';
+  }
+</script>
+</body>
+</html>

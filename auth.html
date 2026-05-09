@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>ScholarConnect – Sign In / Register</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="auth-split">
+
+  <!-- Left panel -->
+  <div class="auth-left">
+    <div style="position:relative;z-index:1">
+      <a href="index.html" style="font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:white;display:block;margin-bottom:40px">Scholar<span style="color:var(--gold2)">Connect</span></a>
+      <div class="auth-tagline">Academic Excellence,<br>Professionally Delivered</div>
+      <div class="auth-sub" style="margin-top:12px">Secure, anonymous academic writing delivered on time — backed by Supabase.</div>
+      <div class="auth-features">
+        <div class="auth-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Your identity is always protected</div>
+        <div class="auth-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>Email verification + 2FA on every login</div>
+        <div class="auth-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>Writers pass 25-Q English test + essay review</div>
+        <div class="auth-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>Secure escrow · Session expires in 1h</div>
+      </div>
+      <div style="margin-top:36px;padding:16px 20px;background:rgba(255,255,255,0.07);border-radius:12px;border:1px solid rgba(255,255,255,0.12)">
+        <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px">📞 Support</div>
+        <a href="mailto:writerhub97@gmail.com" style="color:var(--gold2);font-size:0.85rem;font-weight:600;display:block;margin-bottom:4px">📧 writerhub97@gmail.com</a>
+        <a href="https://wa.me/254716603371" target="_blank" style="color:#25D366;font-size:0.85rem;font-weight:600;display:block">💬 WhatsApp: +254 716 603 371</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="auth-right">
+    <div class="auth-form-wrap">
+      <a href="index.html" class="auth-logo">Scholar<span>Connect</span></a>
+
+      <!-- EMAIL VERIFIED -->
+      <div id="step-verified" style="display:none;text-align:center">
+        <div style="font-size:3rem;margin-bottom:16px">✅</div>
+        <h1 class="auth-title">Email Verified!</h1>
+        <p class="auth-subtitle">Your email is confirmed. You can now log in.</p>
+        <button class="btn btn-primary btn-full btn-lg" onclick="showStep('login')" style="margin-top:16px">Go to Login →</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div id="step-login" style="display:none">
+        <h1 class="auth-title">Welcome back</h1>
+        <p class="auth-subtitle">Sign in to your account</p>
+        <div id="login-err" class="alert alert-danger" style="display:none"></div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" id="l-email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="l-pass" placeholder="Your password" autocomplete="current-password">
+        </div>
+        <button class="btn btn-primary btn-full btn-lg" id="login-btn" onclick="doLogin()">Continue →</button>
+        <div style="text-align:center;margin-top:14px;font-size:0.875rem;color:var(--muted)">No account? <a onclick="showStep('register')" style="cursor:pointer;color:var(--steel);font-weight:600">Create one</a></div>
+        <div style="text-align:center;margin-top:8px"><a href="admin.html" style="font-size:0.8rem;color:var(--muted)">Admin panel →</a></div>
+      </div>
+
+      <!-- 2FA -->
+      <div id="step-2fa" style="display:none">
+        <div style="width:60px;height:60px;background:linear-gradient(135deg,var(--navy2),var(--slate));border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:24px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div>
+        <h1 class="auth-title">Check Your Email</h1>
+        <p class="auth-subtitle">A 6-digit security code was sent to <strong id="tfa-email"></strong></p>
+        <div class="alert alert-info"><span>📧</span><span>Enter the code below. Expires in <strong id="tfa-countdown">10:00</strong>.</span></div>
+        <div id="tfa-err" class="alert alert-danger" style="display:none"></div>
+        <div class="form-group">
+          <label class="form-label">6-Digit Code</label>
+          <input type="text" class="form-input" id="tfa-code" placeholder="000000" maxlength="6" inputmode="numeric" style="font-size:1.5rem;letter-spacing:10px;text-align:center" autocomplete="one-time-code">
+        </div>
+        <button class="btn btn-primary btn-full btn-lg" onclick="do2FA()">Verify →</button>
+        <div style="text-align:center;margin-top:12px"><a onclick="showStep('login')" style="cursor:pointer;font-size:0.875rem;color:var(--muted)">← Back</a></div>
+      </div>
+
+      <!-- REGISTER -->
+      <div id="step-register" style="display:none">
+        <h1 class="auth-title">Create Account</h1>
+        <p class="auth-subtitle">Join ScholarConnect today</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+          <div class="card card-compact" id="role-client" onclick="selRole('client')" style="cursor:pointer;text-align:center;border:2px solid var(--border);transition:all 0.2s">
+            <div style="font-size:1.6rem;margin-bottom:6px">📝</div>
+            <div style="font-weight:600;font-size:0.875rem">Student / Client</div>
+            <div style="font-size:0.75rem;color:var(--muted)">I need writing help</div>
+          </div>
+          <div class="card card-compact" id="role-writer" onclick="selRole('writer')" style="cursor:pointer;text-align:center;border:2px solid var(--border);transition:all 0.2s">
+            <div style="font-size:1.6rem;margin-bottom:6px">✍️</div>
+            <div style="font-weight:600;font-size:0.875rem">Writer</div>
+            <div style="font-size:0.75rem;color:var(--muted)">I want to earn</div>
+          </div>
+        </div>
+        <div id="reg-err" class="alert alert-danger" style="display:none"></div>
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" class="form-input" id="r-name" placeholder="John Doe" autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input type="email" class="form-input" id="r-email" placeholder="john@example.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password * <span class="text-muted text-xs">(8+ chars, uppercase, number, special)</span></label>
+          <input type="password" class="form-input" id="r-pass" placeholder="Create a strong password" oninput="checkPwStrength()" autocomplete="new-password">
+          <div class="strength-bar" id="pw-bar" style="background:var(--warm)"></div>
+          <div class="pw-rules">
+            <div class="pw-rule fail" id="pr-len">✗ At least 8 characters</div>
+            <div class="pw-rule fail" id="pr-upper">✗ One uppercase letter</div>
+            <div class="pw-rule fail" id="pr-num">✗ One number</div>
+            <div class="pw-rule fail" id="pr-spec">✗ One special character</div>
+          </div>
+        </div>
+        <div id="writer-note" class="alert alert-info" style="display:none"><span>✍️</span><span>Writers must pass a <strong>25-question English test (80%)</strong> then submit a <strong>subject essay</strong> before accessing orders.</span></div>
+        <div class="consent-box" style="margin-bottom:18px">
+          <input type="checkbox" id="r-consent">
+          <label for="r-consent">I agree to the <a href="terms.html" target="_blank">Terms of Service</a> and <a href="privacy.html" target="_blank">Privacy Policy</a>, and consent to receive order-related and platform emails.</label>
+        </div>
+        <button class="btn btn-primary btn-full btn-lg" id="reg-btn" onclick="doRegister()">Create Account →</button>
+        <div style="text-align:center;margin-top:14px;font-size:0.875rem;color:var(--muted)">Already have an account? <a onclick="showStep('login')" style="cursor:pointer;color:var(--steel);font-weight:600">Sign in</a></div>
+      </div>
+
+      <!-- CHECK EMAIL (post-register) -->
+      <div id="step-check-email" style="display:none;text-align:center">
+        <div style="font-size:3rem;margin-bottom:16px">📬</div>
+        <h1 class="auth-title">Verify Your Email</h1>
+        <p class="auth-subtitle">We sent a verification link to <strong id="reg-email-show"></strong></p>
+        <div class="alert alert-info" style="text-align:left"><span>📧</span><span>Click the link in the email to activate your account, then come back here to log in.<br><br><strong>No email?</strong> Check spam or <a onclick="resendVerify()" style="cursor:pointer;color:var(--steel);font-weight:600">click to resend</a>.</span></div>
+        <button class="btn btn-outline btn-full" onclick="showStep('login')" style="margin-top:12px">Back to Login</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<a href="https://wa.me/254716603371" target="_blank" class="whatsapp-fab">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>
+  <span class="whatsapp-tooltip">Chat on WhatsApp</span>
+</a>
+<div class="toast-container" id="toasts"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-client.js"></script>
+<script>
+  if (localStorage.getItem('sc_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
+
+  // Redirect if already logged in
+  const existing = SC.auth.getProfile();
+  if (existing) redirectByRole(existing.user_type);
+
+  // Handle post-email-verification redirect
+  const params = new URLSearchParams(location.search);
+  if (params.get('verified') === '1') showStep('verified');
+  else if (params.get('mode') === 'register') { showStep('register'); if (params.get('role')) selRole(params.get('role')); }
+  else showStep('login');
+
+  let selectedRole = null, pendingRegEmail = null, tfaTimerInt = null;
+
+  function redirectByRole(role) {
+    const map = { client:'client-dashboard.html', writer:'freelancer-dashboard.html', admin:'admin.html' };
+    location.href = map[role] || 'auth.html';
+  }
+
+  function showStep(name) {
+    ['verified','login','2fa','register','check-email'].forEach(s =>
+      document.getElementById('step-'+s).style.display = 'none'
+    );
+    document.getElementById('step-'+name).style.display = 'block';
+    if (name === '2fa') setTimeout(() => document.getElementById('tfa-code').focus(), 120);
+  }
+
+  function selRole(r) {
+    selectedRole = r;
+    ['client','writer'].forEach(x => {
+      const el = document.getElementById('role-'+x);
+      el.style.borderColor = x === r ? 'var(--steel)' : 'var(--border)';
+      el.style.background  = x === r ? 'rgba(107,159,212,0.08)' : 'var(--surface)';
+    });
+    document.getElementById('writer-note').style.display = r === 'writer' ? 'flex' : 'none';
+  }
+
+  function checkPwStrength() {
+    const pw = document.getElementById('r-pass').value;
+    const rules = [
+      { id:'pr-len',   ok: pw.length >= 8 },
+      { id:'pr-upper', ok: /[A-Z]/.test(pw) },
+      { id:'pr-num',   ok: /[0-9]/.test(pw) },
+      { id:'pr-spec',  ok: /[!@#$%^&*()\-_=+\[\]{};:,.<>?]/.test(pw) },
+    ];
+    const score = rules.filter(r => r.ok).length;
+    rules.forEach(r => {
+      const el = document.getElementById(r.id);
+      el.className = 'pw-rule ' + (r.ok ? 'ok' : 'fail');
+      el.textContent = (r.ok ? '✓' : '✗') + el.textContent.slice(1);
+    });
+    const bar = document.getElementById('pw-bar');
+    bar.style.width = score * 25 + '%';
+    bar.style.background = ['','var(--danger)','var(--warning)','#9ab800','var(--success)'][score] || '';
+  }
+
+  function startTfaTimer(s = 600) {
+    clearInterval(tfaTimerInt);
+    const tick = () => {
+      const m = Math.floor(s/60), sec = s % 60;
+      const el = document.getElementById('tfa-countdown');
+      if (el) el.textContent = `${m}:${sec.toString().padStart(2,'0')}`;
+      if (s <= 0) { clearInterval(tfaTimerInt); showGlobalToast('Code expired. Please log in again.','error'); setTimeout(() => showStep('login'), 1500); }
+      s--;
+    };
+    tick(); tfaTimerInt = setInterval(tick, 1000);
+  }
+
+  async function doLogin() {
+    const email = document.getElementById('l-email').value.trim();
+    const pass  = document.getElementById('l-pass').value;
+    const err   = document.getElementById('login-err');
+    err.style.display = 'none';
+    if (!email || !pass) { err.textContent = 'Please fill in all fields.'; err.style.display = 'flex'; return; }
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true; btn.textContent = 'Verifying…';
+    const res = await SC.auth.login(email, pass);
+    btn.disabled = false; btn.textContent = 'Continue →';
+    if (res.error) { err.textContent = res.error; err.style.display = 'flex'; return; }
+    document.getElementById('tfa-email').textContent = email;
+    showStep('2fa'); startTfaTimer();
+  }
+
+  async function do2FA() {
+    const code = document.getElementById('tfa-code').value.trim();
+    const err  = document.getElementById('tfa-err');
+    err.style.display = 'none';
+    if (!code) { err.textContent = 'Please enter the 6-digit code.'; err.style.display = 'flex'; return; }
+    const res = await SC.auth.verify2FA(code);
+    if (res.error) { err.textContent = res.error; err.style.display = 'flex'; return; }
+    clearInterval(tfaTimerInt);
+    showGlobalToast('Login successful! Redirecting…','success');
+    setTimeout(() => redirectByRole(res.profile.user_type), 700);
+  }
+
+  async function doRegister() {
+    const name    = document.getElementById('r-name').value.trim();
+    const email   = document.getElementById('r-email').value.trim();
+    const pass    = document.getElementById('r-pass').value;
+    const consent = document.getElementById('r-consent').checked;
+    const err     = document.getElementById('reg-err');
+    err.style.display = 'none';
+    if (!name || !email || !pass) { err.textContent = 'Please fill in all required fields.'; err.style.display = 'flex'; return; }
+    if (!selectedRole)            { err.textContent = 'Please select your account type.'; err.style.display = 'flex'; return; }
+    if (!consent)                 { err.textContent = 'You must accept the Terms of Service to continue.'; err.style.display = 'flex'; return; }
+    const btn = document.getElementById('reg-btn');
+    btn.disabled = true; btn.textContent = 'Creating account…';
+    const res = await SC.auth.register({ email, password: pass, fullName: name, userType: selectedRole, consent });
+    btn.disabled = false; btn.textContent = 'Create Account →';
+    if (res.error) { err.textContent = res.error; err.style.display = 'flex'; return; }
+    pendingRegEmail = email;
+    document.getElementById('reg-email-show').textContent = email;
+    showStep('check-email');
+  }
+
+  async function resendVerify() {
+    if (!pendingRegEmail) return;
+    await sb.auth.resend({ type: 'signup', email: pendingRegEmail });
+    showGlobalToast('Verification email resent!','success');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (document.getElementById('step-login').style.display !== 'none') doLogin();
+    else if (document.getElementById('step-2fa').style.display !== 'none') do2FA();
+    else if (document.getElementById('step-register').style.display !== 'none') doRegister();
+  });
+</script>
+</body>
+</html>

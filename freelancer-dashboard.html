@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>ScholarConnect – Writer Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><path d="M14 3L3 9v10l11 6 11-6V9L14 3z" fill="var(--navy2)"/><path d="M14 8l6 3.5v7L14 22l-6-3.5v-7L14 8z" fill="var(--gold)"/></svg>Scholar<span>Connect</span></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Main</div>
+      <button class="sidebar-link active" id="nav-overview" onclick="showPage('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</button>
+      <button class="sidebar-link" id="nav-available" onclick="showPage('available')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Available Orders<span id="avail-badge" class="badge badge-gold" style="margin-left:auto;display:none">0</span></button>
+      <button class="sidebar-link" id="nav-my-orders" onclick="showPage('my-orders')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>My Orders</button>
+      <button class="sidebar-link" id="nav-qualifications" onclick="showPage('qualifications')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>Qualifications</button>
+      <button class="sidebar-link" id="nav-earnings" onclick="showPage('earnings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Earnings</button>
+      <div class="sidebar-section">Support</div>
+      <a class="sidebar-link" href="mailto:writerhub97@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Support</a>
+      <a class="sidebar-link" href="https://wa.me/254716603371" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>WhatsApp</a>
+      <div class="sidebar-section">Account</div>
+      <button class="sidebar-link" onclick="SC.auth.logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Log Out</button>
+    </nav>
+    <div style="margin-top:auto;padding-top:20px;padding-left:12px"><button class="theme-toggle" id="theme-btn"></button></div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- ENGLISH TEST OVERLAY -->
+    <div id="test-overlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:500;overflow-y:auto;padding:40px 24px" oncontextmenu="return false" onselectstart="return false">
+      <div style="max-width:700px;margin:0 auto">
+        <div class="text-center" style="margin-bottom:28px">
+          <h1 style="font-family:var(--font-display);font-size:1.8rem;margin-bottom:8px">English Proficiency Test</h1>
+          <p class="text-muted">25 questions · 80% pass mark (20/25) · 10-minute limit · No copy/paste</p>
+          <div class="flex-center" style="gap:16px;margin-top:12px"><div class="timer-pill" id="test-timer">10:00</div></div>
+        </div>
+        <div class="test-progress"><div class="test-progress-fill" id="test-prog" style="width:4%"></div></div>
+        <div id="test-container"></div>
+        <div id="test-result" style="display:none;text-align:center;padding:40px 0">
+          <div id="res-icon" style="font-size:4rem;margin-bottom:16px"></div>
+          <h2 id="res-title" style="font-family:var(--font-display);font-size:2rem;margin-bottom:10px"></h2>
+          <div id="res-score" style="font-family:var(--font-display);font-size:3.5rem;font-weight:700;color:var(--navy);margin-bottom:6px"></div>
+          <div id="res-pct" style="font-size:1rem;color:var(--muted);margin-bottom:8px"></div>
+          <p id="res-msg" class="text-muted" style="max-width:500px;margin:0 auto 28px"></p>
+          <div id="res-actions"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="page active" id="page-overview">
+      <div class="page-header flex-between">
+        <div><div class="page-title" id="welcome-msg">Welcome!</div><div class="page-subtitle">Writer dashboard</div></div>
+        <span class="badge" id="status-badge">Loading…</span>
+      </div>
+      <div class="grid-4" style="margin-bottom:24px">
+        <div class="stat-card"><div class="stat-value" id="st-orders">—</div><div class="stat-label">My Orders</div></div>
+        <div class="stat-card"><div class="stat-value" id="st-done">—</div><div class="stat-label">Completed</div></div>
+        <div class="stat-card"><div class="stat-value" id="st-earn">—</div><div class="stat-label">Earnings</div></div>
+        <div class="stat-card"><div class="stat-value" id="st-subjs">—</div><div class="stat-label">Approved Subjects</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="flex-between" style="margin-bottom:16px"><h3 style="font-family:var(--font-display)">Active Orders</h3><button class="btn btn-ghost btn-sm" onclick="showPage('my-orders')">View all →</button></div><div id="active-list"><div class="loading"><div class="spinner"></div></div></div></div>
+        <div class="card"><div class="flex-between" style="margin-bottom:16px"><h3 style="font-family:var(--font-display)">Available Now</h3><button class="btn btn-ghost btn-sm" onclick="showPage('available')">Browse →</button></div><div id="avail-preview"><div class="loading"><div class="spinner"></div></div></div></div>
+      </div>
+    </div>
+
+    <!-- AVAILABLE ORDERS -->
+    <div class="page" id="page-available">
+      <div class="page-header"><div class="page-title">Available Orders</div><div class="page-subtitle">Orders matching your approved subjects</div></div>
+      <div class="card card-sm" style="margin-bottom:18px">
+        <div class="flex-gap" style="flex-wrap:wrap">
+          <select class="form-select" id="f-subj" style="width:200px" onchange="renderAvailable()"><option value="">All Subjects</option></select>
+          <select class="form-select" id="f-level" style="width:170px" onchange="renderAvailable()"><option value="">All Levels</option><option>High School</option><option>College (Freshman/Sophomore)</option><option>University (Junior/Senior)</option><option>Master's</option><option>PhD</option></select>
+          <select class="form-select" id="f-urg" style="width:130px" onchange="renderAvailable()"><option value="">Any</option><option value="urgent">Urgent</option><option value="standard">Standard</option></select>
+          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear</button>
+        </div>
+      </div>
+      <div id="available-list"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- MY ORDERS -->
+    <div class="page" id="page-my-orders">
+      <div class="page-header flex-between">
+        <div><div class="page-title">My Orders</div></div>
+        <select class="form-select" id="my-filter" style="width:150px" onchange="renderMyOrders()"><option value="">All</option><option value="in_progress">In Progress</option><option value="under_review">Under Review</option><option value="completed">Completed</option></select>
+      </div>
+      <div id="my-orders-list"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- ORDER DETAIL -->
+    <div class="page" id="page-order-detail">
+      <div class="page-header">
+        <button class="btn btn-ghost btn-sm" id="det-back" onclick="goBack()" style="margin-bottom:8px">← Back</button>
+        <div class="flex-between"><div><div class="page-title" id="det-title"></div><div id="det-num" class="text-muted text-sm"></div></div><div id="det-badge"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div class="card" id="det-info"></div>
+          <div class="card">
+            <h3 style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:14px">Anonymous Chat</h3>
+            <div class="alert alert-warning" style="margin-bottom:12px">🛡️ Do not share personal contact info. Violations are logged and reported to admin immediately.</div>
+            <div class="chat-wrap">
+              <div class="chat-header"><div class="dot dot-success"></div><span style="font-weight:600;font-size:0.875rem" id="chat-label">Chat</span><span class="text-xs text-muted" style="margin-left:auto">Real-time · Identity protected</span></div>
+              <div class="chat-messages" id="chat-msgs"></div>
+              <div class="chat-input-area"><input type="text" class="form-input" id="chat-input" placeholder="Type message… (no contact info)" style="flex:1"><button class="btn btn-primary" onclick="sendMsg()">Send</button></div>
+            </div>
+          </div>
+        </div>
+        <div id="det-actions" style="display:flex;flex-direction:column;gap:14px"></div>
+      </div>
+    </div>
+
+    <!-- QUALIFICATIONS -->
+    <div class="page" id="page-qualifications">
+      <div class="page-header"><div class="page-title">My Qualifications</div><div class="page-subtitle">English test and subject essay submissions</div></div>
+      <div id="qual-content"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- EARNINGS -->
+    <div class="page" id="page-earnings">
+      <div class="page-header"><div class="page-title">Earnings</div><div class="page-subtitle">$4 per page · minimum withdrawal $20</div></div>
+      <div class="grid-3" style="margin-bottom:24px">
+        <div class="stat-card"><div class="stat-value" id="earn-bal">—</div><div class="stat-label">Available Balance</div></div>
+        <div class="stat-card"><div class="stat-value" id="earn-done">—</div><div class="stat-label">Completed Orders</div></div>
+        <div class="stat-card"><div class="stat-value" id="earn-total">—</div><div class="stat-label">Total Earned</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="font-family:var(--font-display);margin-bottom:18px">Withdraw Funds</h3>
+          <div class="alert alert-info" style="margin-bottom:16px"><span>💰</span><span>Minimum: <strong>$20</strong>. Processed within 48 business hours.</span></div>
+          <div class="form-group"><label class="form-label">Amount ($) *</label><input type="number" class="form-input" id="w-amt" min="20" placeholder="e.g. 40"></div>
+          <div class="form-group"><label class="form-label">Method *</label><select class="form-select" id="w-method" onchange="updateWLabel()"><option value="paypal">PayPal</option><option value="mpesa">M-Pesa</option><option value="bank">Bank Transfer</option></select></div>
+          <div class="form-group"><label class="form-label" id="w-label">PayPal Email *</label><input type="text" class="form-input" id="w-details" placeholder="your@paypal.com"></div>
+          <button class="btn btn-gold btn-full" onclick="requestWithdrawal()">Request Withdrawal</button>
+        </div>
+        <div class="card"><h3 style="font-family:var(--font-display);margin-bottom:16px">Withdrawal History</h3><div id="w-history"><div class="loading"><div class="spinner"></div></div></div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- SUBMIT WORK MODAL -->
+<div class="modal-overlay" id="m-submit">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Submit Completed Work</div><button class="modal-close" onclick="closeM('m-submit')">×</button></div>
+    <div class="alert alert-info"><span>🔒</span><span>Files are automatically virus-scanned and plagiarism-checked before the client is notified.</span></div>
+    <div class="form-group" style="margin-top:14px"><label class="form-label">Final Document * (.pdf, .doc, .docx)</label><input type="file" class="form-input" id="sub-file" accept=".pdf,.doc,.docx"></div>
+    <div class="form-group"><label class="form-label">Notes to Client <span class="text-muted">(optional)</span></label><textarea class="form-textarea" id="sub-notes" placeholder="Sources used, any relevant notes…"></textarea></div>
+    <div id="submit-err" class="alert alert-danger" style="display:none"></div>
+    <button class="btn btn-primary btn-full" id="submit-btn" onclick="doSubmitWork()">Submit for Client Review</button>
+  </div>
+</div>
+
+<!-- REQUEST ORDER MODAL -->
+<div class="modal-overlay" id="m-req">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Request This Order</div><button class="modal-close" onclick="closeM('m-req')">×</button></div>
+    <div id="req-info" style="background:var(--parch);border-radius:8px;padding:14px;margin-bottom:14px;font-size:0.875rem;line-height:1.9"></div>
+    <div class="alert alert-info"><span>ℹ️</span><span>Admin reviews all requests and assigns the best-fit writer. You will be notified if selected.</span></div>
+    <button class="btn btn-primary btn-full" onclick="confirmRequest()">Send Request to Admin</button>
+  </div>
+</div>
+
+<!-- ESSAY MODAL -->
+<div class="modal-overlay" id="m-essay">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header"><div class="modal-title">Submit Subject Essay</div><button class="modal-close" onclick="closeM('m-essay')">×</button></div>
+    <div id="essay-prompt" class="essay-instructions"><p class="text-sm text-muted">Select a subject above to see the essay question and formatting requirements.</p></div>
+    <div class="grid-2" style="margin-bottom:14px">
+      <div class="form-group"><label class="form-label">Subject *</label><select class="form-select" id="e-subject" onchange="onEssaySubjChange()"><option value="">Select…</option></select></div>
+      <div class="form-group"><label class="form-label">Sub-Level *</label><select class="form-select" id="e-sublevel"><option value="General">General</option></select></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Essay Content * <span id="wc-disp" class="text-muted text-sm">(0 words)</span></label>
+      <textarea class="form-textarea" id="essay-text" style="min-height:260px" placeholder="Write your academic essay here. Minimum 1,250 words (~5 pages). Demonstrate subject expertise, academic writing style, and proper citations per the required format…" oninput="updateWC()" onpaste="setTimeout(updateWC,10)"></textarea>
+    </div>
+    <div class="form-group"><label class="form-label">Or Upload Essay File <span class="text-muted">(PDF/DOCX)</span></label><input type="file" class="form-input" id="essay-file" accept=".pdf,.docx,.doc"></div>
+    <div id="essay-err" class="alert alert-danger" style="display:none"></div>
+    <button class="btn btn-primary btn-full" id="essay-btn" onclick="submitEssay()">Submit Essay for Admin Review</button>
+  </div>
+</div>
+
+<a href="https://wa.me/254716603371" target="_blank" class="whatsapp-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg><span class="whatsapp-tooltip">WhatsApp Support</span></a>
+<div class="toast-container" id="toasts"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-client.js"></script>
+<script>
+  // ── Auth guard ────────────────────────────────────────────
+  const profile = SC.auth.requireRole('writer');
+  if (!profile) throw new Error('redirect');
+
+  // ── Theme ─────────────────────────────────────────────────
+  if (localStorage.getItem('sc_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  const tb = document.getElementById('theme-btn');
+  if (localStorage.getItem('sc_theme') === 'dark') tb.classList.add('on');
+  tb.addEventListener('click', () => { const d = document.documentElement.getAttribute('data-theme')==='dark'; document.documentElement.setAttribute('data-theme',d?'':'dark'); localStorage.setItem('sc_theme',d?'':'dark'); tb.classList.toggle('on',!d); });
+
+  // ── Subjects ──────────────────────────────────────────────
+  const SUBJECTS = {'Business & Management':['General','Strategy','Marketing','Finance','Accounting','HR Management'],'Nursing & Medicine':['General','Clinical','Pharmacology','Pediatrics','Mental Health Nursing'],'Computer Science & IT':['General','Programming','Algorithms','AI & Machine Learning','Cybersecurity'],'Psychology':['General','Clinical Psychology','Developmental Psychology','Social Psychology'],'Education':['General','Curriculum Design','Special Education','Educational Psychology'],'Law':['General','Criminal Law','Constitutional Law','Corporate Law','International Law'],'History':['General','World History','African History','American History','European History'],'English Literature':['General','British Literature','American Literature','African Literature','Poetry'],'Mathematics':['General','Calculus','Statistics','Linear Algebra','Discrete Mathematics'],'Biology & Life Sciences':['General','Molecular Biology','Ecology','Genetics','Microbiology'],'Chemistry':['General','Organic','Inorganic','Physical Chemistry'],'Political Science':['General','International Relations','Comparative Politics','Public Policy'],'Sociology':['General','Urban Sociology','Cultural Studies','Gender Studies'],'Economics':['General','Microeconomics','Macroeconomics','Econometrics'],'Engineering':['General','Civil','Mechanical','Electrical','Chemical Engineering']};
+
+  // ── State ─────────────────────────────────────────────────
+  let curOrdId = null, reqOrdId = null, detFrom = 'my-orders';
+  let chatSub = null, questions = [], testAnswers = [], qIdx = 0, testTimerInt = null;
+  let settings = {}, testResults = [];
+
+  // ── Init ──────────────────────────────────────────────────
+  document.getElementById('welcome-msg').textContent = `Welcome, ${profile.full_name.split(' ')[0]}!`;
+  const badge = document.getElementById('status-badge');
+
+  async function init() {
+    settings = await SC.settings.get();
+    testResults = await SC.tests.getResultsForWriter(profile.id);
+
+    const engPassed = testResults.some(r => r.test_type === 'english' && r.passed);
+    if (!engPassed) {
+      startEnglishTest();
+      return;
+    }
+    if (!profile.is_writer_approved) {
+      badge.textContent = '⏳ Pending Approval'; badge.className = 'badge badge-warning';
+    } else {
+      badge.textContent = '● Active'; badge.className = 'badge badge-success';
+    }
+    populateSubjectFilter();
+    renderOverview();
+    updateAvailBadge();
+  }
+  init();
+
+  function populateSubjectFilter() {
+    const sel = document.getElementById('f-subj');
+    Object.keys(SUBJECTS).forEach(s => { const o = document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+  }
+
+  // ── ENGLISH TEST ──────────────────────────────────────────
+  async function startEnglishTest() {
+    const { data: qs } = await SC.tests.getEnglishQuestions();
+    questions = qs;
+    document.getElementById('test-overlay').style.display = 'block';
+    testAnswers = new Array(qs.length).fill(null); qIdx = 0;
+    renderQ();
+
+    // 10-minute countdown
+    let s = 600;
+    const tick = () => {
+      const m = Math.floor(s/60), sec = s%60;
+      const el = document.getElementById('test-timer');
+      if (el) { el.textContent = `${m}:${sec.toString().padStart(2,'0')}`; el.className = 'timer-pill' + (s<=60?' urgent':''); }
+      if (s <= 0) { clearInterval(testTimerInt); autoSubmit(); }
+      s--;
+    };
+    tick(); testTimerInt = setInterval(tick, 1000);
+
+    // Disable copy/paste/right-click
+    document.addEventListener('copy', e => { e.preventDefault(); showGlobalToast('Copying is not allowed during the test.','error'); });
+    document.addEventListener('paste', e => e.preventDefault());
+    document.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  function renderQ() {
+    if (!questions.length) return;
+    const q = questions[qIdx];
+    document.getElementById('test-prog').style.width = ((qIdx+1)/questions.length*100) + '%';
+    document.getElementById('test-container').innerHTML = `
+      <div class="card no-copy" style="user-select:none">
+        <div class="flex-between" style="margin-bottom:18px">
+          <span class="badge badge-navy">Q${qIdx+1} of ${questions.length}</span>
+          <span class="text-muted text-sm">Pass: 80% (20/25)</span>
+        </div>
+        <h3 style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:22px;line-height:1.5;user-select:none">${q.question_text}</h3>
+        ${['A','B','C','D'].map(k => `<button class="option-btn ${testAnswers[qIdx]===k?'selected':''}" onclick="pickAns('${k}')" style="user-select:none">${k}. ${q['option_'+k.toLowerCase()]}</button>`).join('')}
+        <div class="flex-between" style="margin-top:18px">
+          <button class="btn btn-ghost" onclick="prevQ()" ${qIdx===0?'disabled':''}>← Previous</button>
+          <button class="btn btn-primary" onclick="nextQ()">${qIdx===questions.length-1?'Submit Test':'Next →'}</button>
+        </div>
+      </div>`;
+  }
+
+  function pickAns(k) { testAnswers[qIdx]=k; renderQ(); }
+  function prevQ()    { if(qIdx>0){qIdx--;renderQ();} }
+  function nextQ()    { if(testAnswers[qIdx]===null){showGlobalToast('Please select an answer.','error');return;} if(qIdx<questions.length-1){qIdx++;renderQ();}else submitTest(); }
+  function autoSubmit() { testAnswers = testAnswers.map(a=>a===null?'X':a); submitTest(); }
+
+  async function submitTest() {
+    clearInterval(testTimerInt);
+    const r = await SC.tests.submitEnglishTest(profile.id, testAnswers, questions);
+    document.getElementById('test-container').style.display = 'none';
+    document.getElementById('test-prog').style.width = '100%';
+    document.getElementById('test-result').style.display = 'block';
+    document.getElementById('res-icon').textContent  = r.passed ? '🎉' : '😔';
+    document.getElementById('res-title').textContent = r.passed ? 'Test Passed!' : 'Below Pass Mark';
+    document.getElementById('res-score').textContent = `${r.score} / ${r.total}`;
+    document.getElementById('res-pct').textContent   = `${r.pct}% – ${r.passed?'PASS ✓':'required 80%'}`;
+    document.getElementById('res-msg').textContent   = r.passed
+      ? 'Congratulations! You can now submit subject essays for admin review to unlock order access.'
+      : `You scored ${r.pct}%. You need at least 80% (20/25) to pass. Please review and try again.`;
+    document.getElementById('res-actions').innerHTML = r.passed
+      ? `<button class="btn btn-primary btn-lg" onclick="onTestPassed()">Continue to Dashboard →</button>`
+      : `<button class="btn btn-gold btn-lg" onclick="retakeTest()">Retake Test</button>`;
+  }
+
+  async function onTestPassed() {
+    document.getElementById('test-overlay').style.display = 'none';
+    testResults = await SC.tests.getResultsForWriter(profile.id);
+    badge.textContent = '⏳ Pending Approval'; badge.className = 'badge badge-warning';
+    populateSubjectFilter();
+    renderOverview();
+    showGlobalToast('Test passed! Now submit a subject essay to unlock orders.','success');
+  }
+
+  function retakeTest() {
+    document.getElementById('test-container').style.display = 'block';
+    document.getElementById('test-result').style.display = 'none';
+    testAnswers = new Array(questions.length).fill(null); qIdx = 0;
+    renderQ();
+    let s = 600; clearInterval(testTimerInt);
+    testTimerInt = setInterval(() => {
+      const el = document.getElementById('test-timer');
+      if (el) { el.textContent=`${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`; el.className='timer-pill'+(s<=60?' urgent':''); }
+      if (s<=0){clearInterval(testTimerInt);autoSubmit();}
+      s--;
+    }, 1000);
+  }
+
+  // ── Navigation ────────────────────────────────────────────
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.sidebar-link').forEach(l=>l.classList.remove('active'));
+    document.getElementById('page-'+name).classList.add('active');
+    const n=document.getElementById('nav-'+name); if(n)n.classList.add('active');
+    if(name==='available')renderAvailable();
+    if(name==='my-orders')renderMyOrders();
+    if(name==='overview')renderOverview();
+    if(name==='earnings')renderEarnings();
+    if(name==='qualifications')renderQualifications();
+    if(chatSub&&name!=='order-detail'){chatSub.unsubscribe();chatSub=null;}
+  }
+  function goBack() { showPage(detFrom); }
+
+  // ── Overview ──────────────────────────────────────────────
+  async function renderOverview() {
+    const { assigned, available } = await SC.orders.getForWriter(profile.id);
+    const done = assigned.filter(o=>o.status==='completed');
+    document.getElementById('st-orders').textContent = assigned.length;
+    document.getElementById('st-done').textContent = done.length;
+    const payout = parseFloat(settings.writer_payout||4);
+    const totalEarned = done.reduce((a,o)=>a+payout*o.page_count,0);
+    document.getElementById('st-earn').textContent = '$'+totalEarned.toFixed(0);
+    const approvedEssays = testResults.filter(r=>r.test_type==='essay'&&r.admin_approved);
+    document.getElementById('st-subjs').textContent = new Set(approvedEssays.map(r=>r.subject)).size;
+    const active = assigned.filter(o=>['in_progress','under_review'].includes(o.status));
+    document.getElementById('active-list').innerHTML = active.length
+      ? active.slice(0,3).map(o=>miniCard(o)).join('')
+      : '<div class="empty-state" style="padding:16px"><p class="text-sm">No active orders.</p></div>';
+    document.getElementById('avail-preview').innerHTML = available.length
+      ? available.slice(0,3).map(o=>availMini(o)).join('')
+      : '<div class="empty-state" style="padding:16px"><p class="text-sm">No orders available now.</p></div>';
+  }
+
+  function miniCard(o) {
+    const d=new Date(o.deadline),days=Math.ceil((d-Date.now())/86400000);
+    return `<div class="order-card" style="margin-bottom:10px" onclick="openDetail(${o.id},'my-orders')"><div class="flex-between"><span class="order-num">${o.order_number}</span><span class="badge status-${o.status}">${statusLabel(o.status)}</span></div><div style="font-weight:600;margin:4px 0;font-size:0.9rem">${o.subject} · ${o.page_count}p</div><div class="text-sm text-muted" style="color:${days<=1?'var(--danger)':'inherit'}">${days}d left</div></div>`;
+  }
+  function availMini(o) {
+    const p=(parseFloat(settings.writer_payout||4)*o.page_count).toFixed(0);
+    return `<div class="order-card" style="margin-bottom:10px;cursor:pointer" onclick="showPage('available')"><div class="flex-between"><span class="order-num">${o.order_number}</span><span class="badge badge-success">$${p}</span></div><div style="font-weight:600;margin:4px 0;font-size:0.9rem">${o.subject}</div><div class="text-sm text-muted">${o.page_count} pages</div></div>`;
+  }
+  function statusLabel(s){return{pending_payment:'Pending Payment',pending_writer:'Available',in_progress:'In Progress',under_review:'Under Review',completed:'Completed',disputed:'Disputed'}[s]||s;}
+
+  // ── Available Orders ──────────────────────────────────────
+  async function renderAvailable() {
+    const el = document.getElementById('available-list');
+    el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    const { available } = await SC.orders.getForWriter(profile.id);
+    const subjF = document.getElementById('f-subj').value;
+    const levF  = document.getElementById('f-level').value;
+    const urgF  = document.getElementById('f-urg').value;
+    let orders = available;
+    if (subjF) orders = orders.filter(o=>o.subject===subjF);
+    if (levF)  orders = orders.filter(o=>o.academic_level===levF);
+    if (urgF==='urgent')   orders = orders.filter(o=>o.is_urgent);
+    if (urgF==='standard') orders = orders.filter(o=>!o.is_urgent);
+    orders.sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));
+    if (!orders.length) { el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><h3>No orders available</h3><p>Check back later or adjust filters.</p></div>'; return; }
+    el.innerHTML = orders.map(o => {
+      const p = (parseFloat(settings.writer_payout||4)*o.page_count).toFixed(0);
+      const hrs = Math.ceil((new Date(o.deadline)-Date.now())/3600000);
+      return `<div class="order-card" style="margin-bottom:12px" onclick="openDetail(${o.id},'available')">
+        <div class="flex-between" style="margin-bottom:6px"><span class="order-num">${o.order_number}</span><div class="flex-gap">${o.is_urgent?'<span class="badge badge-warning">⚡ Urgent</span>':''}<span class="badge badge-success">$${p} payout</span></div></div>
+        <div style="font-weight:600;margin-bottom:10px;color:var(--navy)">${o.subject} → ${o.sub_level||'General'} · ${o.academic_level}</div>
+        <div class="flex-gap" style="flex-wrap:wrap"><span class="tag">${o.page_count} pages</span><span class="text-sm" style="color:${hrs<=24?'var(--danger)':'var(--muted)'};margin-left:auto">⏱ ${hrs<48?hrs+'h':Math.ceil(hrs/24)+'d'} left</span></div>
+        <div style="margin-top:12px"><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openReqModal(${o.id},'${o.order_number}',${o.page_count})">Request Order</button></div>
+      </div>`;
+    }).join('');
+    updateAvailBadge();
+  }
+
+  async function updateAvailBadge() {
+    const { available } = await SC.orders.getForWriter(profile.id);
+    const b = document.getElementById('avail-badge');
+    b.textContent = available.length; b.style.display = available.length > 0 ? 'inline-flex' : 'none';
+  }
+  function clearFilters(){document.getElementById('f-subj').value='';document.getElementById('f-level').value='';document.getElementById('f-urg').value='';renderAvailable();}
+
+  // ── My Orders ─────────────────────────────────────────────
+  async function renderMyOrders() {
+    const el = document.getElementById('my-orders-list');
+    el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    const { assigned } = await SC.orders.getForWriter(profile.id);
+    const f = document.getElementById('my-filter').value;
+    const orders = f ? assigned.filter(o=>o.status===f) : assigned;
+    if (!orders.length) { el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg><h3>No orders yet</h3><p>Browse available orders and request one to get started.</p></div>'; return; }
+    el.innerHTML = orders.map(o=>`<div onclick="openDetail(${o.id},'my-orders')">${miniCard(o)}</div>`).join('');
+  }
+
+  // ── Order Detail ──────────────────────────────────────────
+  async function openDetail(ordId, from='my-orders') {
+    curOrdId = ordId; detFrom = from;
+    const { data: o } = await SC.orders.getOne(ordId);
+    if (!o) return;
+    document.getElementById('det-title').textContent = `${o.subject} · ${o.page_count} pages`;
+    document.getElementById('det-num').textContent = o.order_number + ' · ' + o.academic_level;
+    document.getElementById('chat-label').textContent = o.order_number;
+    document.getElementById('det-badge').innerHTML = `<span class="badge status-${o.status}">${statusLabel(o.status)}</span>`;
+    const p = (parseFloat(settings.writer_payout||4)*o.page_count).toFixed(0);
+    const hrs = Math.ceil((new Date(o.deadline)-Date.now())/3600000);
+    const delivery = o.deliveries;
+
+    document.getElementById('det-info').innerHTML = `
+      <h3 style="font-family:var(--font-display);margin-bottom:14px">Order Brief</h3>
+      <div class="alert alert-info" style="margin-bottom:14px">🔒 <strong>Anonymous.</strong> Client identity is never revealed. Only the order number is used.</div>
+      <div class="grid-2" style="gap:14px;margin-bottom:14px">
+        <div><div class="form-label">Subject</div><div>${o.subject} → ${o.sub_level||'General'}</div></div>
+        <div><div class="form-label">Level</div><div>${o.academic_level}</div></div>
+        <div><div class="form-label">Pages</div><div>${o.page_count}</div></div>
+        <div><div class="form-label">Deadline</div><div style="color:${hrs<=24?'var(--danger)':'inherit'}">${new Date(o.deadline).toLocaleString()} (${hrs}h)</div></div>
+        <div><div class="form-label">Your Payout</div><div class="fw-700 text-success">$${p}</div></div>
+        <div><div class="form-label">Revisions</div><div>${o.revisions_used}/2</div></div>
+      </div>
+      <div class="form-label">Instructions</div>
+      <div style="background:var(--parch);border-radius:8px;padding:14px;margin-top:6px;font-size:0.875rem;line-height:1.7">${o.instructions}</div>
+      ${o.revision_note?`<div class="alert alert-warning" style="margin-top:12px">📝 <strong>Revision note:</strong> ${o.revision_note}</div>`:''}
+      ${delivery?.plagiarism_score?`<div class="badge badge-success" style="margin-top:12px">✓ Plagiarism: ${delivery.plagiarism_score}% original</div>`:''}`;
+
+    const isMine = o.assigned_writer_id === profile.id;
+    let actions = '';
+    if (!isMine && o.status === 'pending_writer') {
+      actions = `<div class="card card-sm"><h4 style="margin-bottom:12px">Available</h4><div class="price-display" style="margin-bottom:12px"><div style="font-size:0.78rem;color:var(--muted);margin-bottom:4px">Your Payout</div><div style="font-family:var(--font-display);font-size:2rem;font-weight:700;color:var(--success)">$${p}</div><div style="font-size:0.78rem;color:var(--muted)">$${settings.writer_payout||4} × ${o.page_count} pages</div></div><button class="btn btn-primary btn-full" onclick="openReqModal(${o.id},'${o.order_number}',${o.page_count})">Request This Order</button></div>`;
+    } else if (isMine && o.status === 'in_progress') {
+      actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">Submit Work</h4><p class="text-sm text-muted" style="margin-bottom:12px">Files are auto virus-scanned and plagiarism-checked before client notification.</p><button class="btn btn-primary btn-full" onclick="openM('m-submit')">Upload &amp; Submit</button></div>`;
+    } else if (isMine && o.status === 'under_review') {
+      actions = `<div class="card card-sm"><h4>⏳ Under Review</h4><p class="text-sm text-muted" style="margin-top:6px">Client is reviewing. Auto-approves in ${o.auto_approve_at?Math.max(0,Math.ceil((new Date(o.auto_approve_at)-Date.now())/3600000)):72}h if no action.</p></div>`;
+    } else if (isMine && o.status === 'completed') {
+      actions = `<div class="card card-sm"><h4>✅ Completed</h4><div class="alert alert-success" style="margin-top:8px">$${p} released to your account.</div>${o.rating?`<div style="margin-top:8px">${'⭐'.repeat(o.rating)} <span class="text-sm">${o.review_text||''}</span></div>`:''}</div>`;
+    }
+    document.getElementById('det-actions').innerHTML = actions + `<div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Order Info</div><div style="font-size:0.82rem;color:var(--muted);line-height:2.2"><div class="flex-between"><span>Pages:</span><strong>${o.page_count}</strong></div><div class="flex-between"><span>Rate:</span><strong>$${settings.writer_payout||4}/page</strong></div><div class="flex-between"><span>Payout:</span><strong style="color:var(--success)">$${p}</strong></div><div class="flex-between"><span>Type:</span><strong>${o.is_urgent?'⚡ Urgent':'Standard'}</strong></div></div></div>`;
+
+    showPage('order-detail');
+    loadMessages();
+    if (chatSub) chatSub.unsubscribe();
+    chatSub = SC.messages.subscribe(ordId, msg => appendMsg(msg));
+  }
+
+  // ── Chat ──────────────────────────────────────────────────
+  async function loadMessages() {
+    const { data: msgs } = await SC.messages.getForOrder(curOrdId);
+    const el = document.getElementById('chat-msgs');
+    if (!msgs.length) { el.innerHTML='<div class="text-center text-muted text-sm" style="padding:20px">No messages yet.</div>'; return; }
+    el.innerHTML = msgs.map(m=>msgHTML(m)).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+  function msgHTML(m) {
+    const mine = m.sender_id === profile.id;
+    return `<div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'}"><div class="msg-bubble ${mine?'msg-mine':'msg-theirs'}">${m.content}</div><div class="msg-meta">${mine?'You':'Client'} · ${new Date(m.created_at).toLocaleTimeString()}</div></div>`;
+  }
+  function appendMsg(m) {
+    const el = document.getElementById('chat-msgs');
+    const empty = el.querySelector('.text-center'); if(empty) el.innerHTML='';
+    el.insertAdjacentHTML('beforeend', msgHTML(m));
+    el.scrollTop = el.scrollHeight;
+  }
+  async function sendMsg() {
+    const input=document.getElementById('chat-input'), text=input.value.trim();
+    if(!text) return;
+    const res = await SC.messages.send(curOrdId, profile.id, 'writer', text);
+    if(res.error){showGlobalToast(res.error,'error');return;}
+    input.value='';
+  }
+  document.getElementById('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}});
+
+  // ── Request Order ─────────────────────────────────────────
+  function openReqModal(id, num, pages) {
+    reqOrdId = id;
+    const p = (parseFloat(settings.writer_payout||4)*pages).toFixed(0);
+    document.getElementById('req-info').innerHTML = `<strong>${num}</strong><br>Your payout: <strong style="color:var(--success)">$${p}</strong>`;
+    openM('m-req');
+  }
+  async function confirmRequest() {
+    const res = await SC.orders.requestOrder(reqOrdId, profile.id);
+    if(res.error){showGlobalToast(res.error,'error');return;}
+    closeM('m-req'); showGlobalToast('Order requested! Admin will assign it shortly.','success');
+    renderAvailable(); renderOverview();
+  }
+
+  // ── Submit Work ───────────────────────────────────────────
+  async function doSubmitWork() {
+    const fi = document.getElementById('sub-file');
+    const notes = document.getElementById('sub-notes').value;
+    const err = document.getElementById('submit-err'); err.style.display='none';
+    const btn = document.getElementById('submit-btn'); btn.disabled=true; btn.textContent='Submitting…';
+    let fileUrl = '', fileName = 'submitted_work.pdf';
+    if (fi.files.length) {
+      const r = await SC.storage.uploadDeliverable(curOrdId, profile.id, fi.files[0]);
+      if (r.error) { err.textContent=r.error; err.style.display='flex'; btn.disabled=false; btn.textContent='Submit for Client Review'; return; }
+      fileUrl = r.url; fileName = fi.files[0].name;
+    }
+    const res = await SC.orders.submitWork(curOrdId, profile.id, fileUrl, fileName, notes);
+    btn.disabled=false; btn.textContent='Submit for Client Review';
+    if(res.error){err.textContent=res.error;err.style.display='flex';return;}
+    closeM('m-submit');
+    showGlobalToast(`Work submitted! Plagiarism: ${res.plagiarismScore}% original. Client notified.`,'success');
+    setTimeout(()=>openDetail(curOrdId,detFrom),500);
+  }
+
+  // ── Qualifications ────────────────────────────────────────
+  async function renderQualifications() {
+    testResults = await SC.tests.getResultsForWriter(profile.id);
+    const engTest = testResults.find(r=>r.test_type==='english');
+    const essays  = testResults.filter(r=>r.test_type==='essay');
+    const approved = essays.filter(r=>r.admin_approved);
+
+    // Populate essay subject select
+    const sel = document.getElementById('e-subject');
+    if (!sel.options.length || sel.options[0].value==='') {
+      sel.innerHTML = '<option value="">Select subject…</option>';
+      Object.keys(SUBJECTS).forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+    }
+
+    const rows = essays.map(e=>`<tr><td><strong>${e.subject}</strong></td><td>${e.sub_level||'General'}</td><td><span class="badge ${e.admin_approved?'badge-success':e.admin_note?'badge-danger':'badge-warning'}">${e.admin_approved?'Approved':e.admin_note?'Rejected':'Pending'}</span></td><td style="font-size:0.82rem;color:var(--muted)">${e.admin_note||'—'}</td><td style="font-size:0.8rem;color:var(--muted)">${new Date(e.completed_at).toLocaleDateString()}</td></tr>`).join('');
+
+    document.getElementById('qual-content').innerHTML = `
+      <div class="card" style="margin-bottom:18px">
+        <div class="flex-between" style="margin-bottom:14px">
+          <h3 style="font-family:var(--font-display)">English Proficiency Test</h3>
+          ${engTest?`<span class="badge ${engTest.passed?'badge-success':'badge-danger'}">${engTest.passed?'✓ Passed':'✗ Failed'} – ${engTest.score}/25 (${engTest.percentage}%)</span>`:'<span class="badge badge-warning">Not taken</span>'}
+        </div>
+        <div class="grid-2" style="gap:10px;font-size:0.875rem">
+          <div><span class="text-muted">Score:</span> <strong>${engTest?.score||0} / 25</strong></div>
+          <div><span class="text-muted">Percentage:</span> <strong>${engTest?.percentage||0}%</strong></div>
+          <div><span class="text-muted">Pass mark:</span> <strong>80% (20/25)</strong></div>
+          <div><span class="text-muted">Time limit:</span> <strong>10 minutes</strong></div>
+        </div>
+        ${!engTest?.passed?'<button class="btn btn-gold btn-sm" style="margin-top:12px" onclick="startEnglishTest()">Retake Test</button>':''}
+      </div>
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:14px">
+          <h3 style="font-family:var(--font-display)">Subject Essays</h3>
+          ${engTest?.passed?'<button class="btn btn-primary btn-sm" onclick="openEssayModal()">+ Submit Essay</button>':'<span class="text-muted text-sm">Pass English test first</span>'}
+        </div>
+        <p class="text-sm text-muted" style="margin-bottom:14px">Submit a 5-page (1,250+ word) academic essay for each subject you want to work on. Admin reviews each essay individually.</p>
+        ${approved.length?`<div style="margin-bottom:14px"><div class="form-label">Approved Subjects</div><div class="flex-gap" style="flex-wrap:wrap;margin-top:8px">${[...new Set(approved.map(r=>r.subject))].map(s=>`<span class="badge badge-success">✓ ${s}</span>`).join('')}</div></div>`:''}
+        ${rows?`<div class="table-wrap"><table><thead><tr><th>Subject</th><th>Sub-Level</th><th>Status</th><th>Admin Feedback</th><th>Submitted</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty-state" style="padding:24px"><p class="text-sm">No essays submitted yet. Click "+ Submit Essay" to apply for a subject.</p></div>'}
+      </div>`;
+  }
+
+  // ── Essay Modal ───────────────────────────────────────────
+  function openEssayModal() {
+    document.getElementById('essay-text').value='';
+    document.getElementById('essay-err').style.display='none';
+    document.getElementById('essay-prompt').innerHTML='<p class="text-sm text-muted">Select a subject above to see the essay question and formatting requirements.</p>';
+    updateWC();
+    openM('m-essay');
+  }
+
+  async function onEssaySubjChange() {
+    const subj = document.getElementById('e-subject').value;
+    const sl = document.getElementById('e-sublevel');
+    sl.innerHTML=''; (SUBJECTS[subj]||['General']).forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sl.appendChild(o);});
+    if (!subj) return;
+    const { data: eq } = await SC.tests.getEssayPrompt(subj);
+    if (eq) {
+      const reqs = Array.isArray(eq.requirements) ? eq.requirements : JSON.parse(eq.requirements||'[]');
+      document.getElementById('essay-prompt').innerHTML = `
+        <h4>${eq.title}</h4>
+        <p style="margin:8px 0;font-size:0.875rem;color:var(--ink)">${eq.prompt}</p>
+        <div style="margin-top:10px"><strong style="font-size:0.82rem">Required format: ${eq.format}</strong></div>
+        <ul style="margin-top:8px">${reqs.map(r=>`<li>${r}</li>`).join('')}</ul>`;
+    }
+  }
+
+  function updateWC() {
+    const wc = document.getElementById('essay-text').value.trim().split(/\s+/).filter(Boolean).length;
+    const el = document.getElementById('wc-disp');
+    el.textContent = `(${wc} words – ${wc>=1250?'✓ minimum met':'need '+(1250-wc)+' more'})`;
+    el.style.color = wc>=1250 ? 'var(--success)' : 'var(--warning)';
+  }
+
+  async function submitEssay() {
+    const subj = document.getElementById('e-subject').value;
+    const subl = document.getElementById('e-sublevel').value;
+    const text = document.getElementById('essay-text').value;
+    const fi   = document.getElementById('essay-file');
+    const err  = document.getElementById('essay-err'); err.style.display='none';
+    if (!subj) { err.textContent='Please select a subject.'; err.style.display='flex'; return; }
+    const hasFile = fi.files.length > 0;
+    if (!subj) { err.textContent='Please select a subject.'; err.style.display='flex'; return; }
+    const btn = document.getElementById('essay-btn'); btn.disabled=true; btn.textContent='Submitting…';
+    let fileUrl = '';
+    if (fi.files.length) {
+      const r = await SC.storage.uploadEssay(profile.id, subj, fi.files[0]);
+      if (r.url) fileUrl = r.url;
+    }
+    const res = await SC.tests.submitEssay(profile.id, subj, subl, text, fileUrl);
+    btn.disabled=false; btn.textContent='Submit Essay for Admin Review';
+    if (res.error) { err.textContent=res.error; err.style.display='flex'; return; }
+    closeM('m-essay');
+    showGlobalToast(`Essay submitted (${res.wordCount} words). Admin will review shortly.`,'success');
+    renderQualifications();
+  }
+
+  // ── Earnings ──────────────────────────────────────────────
+  async function renderEarnings() {
+    const { assigned } = await SC.orders.getForWriter(profile.id);
+    const done = assigned.filter(o=>o.status==='completed');
+    const payout = parseFloat(settings.writer_payout||4);
+    const totalEarned = done.reduce((a,o)=>a+payout*o.page_count,0);
+    document.getElementById('earn-bal').textContent   = '$'+totalEarned.toFixed(0);
+    document.getElementById('earn-done').textContent  = done.length;
+    document.getElementById('earn-total').textContent = '$'+totalEarned.toFixed(0);
+    const ws = await SC.withdrawals.getForWriter(profile.id);
+    document.getElementById('w-history').innerHTML = ws.length
+      ? ws.map(w=>`<div class="flex-between" style="padding:10px 0;border-bottom:1px solid var(--border);font-size:0.875rem"><div><strong>$${w.amount}</strong> via ${w.method}<br><span class="text-xs text-muted">${w.account_details}</span></div><span class="badge badge-${w.status==='pending'?'warning':w.status==='paid'?'success':'danger'}">${w.status}</span></div>`).join('')
+      : '<div class="empty-state" style="padding:16px"><p class="text-sm">No withdrawals yet.</p></div>';
+  }
+
+  function updateWLabel() {
+    const m = document.getElementById('w-method').value;
+    const labels = {paypal:'PayPal Email *', mpesa:'M-Pesa Number *', bank:'Bank Account / IBAN *'};
+    const phs    = {paypal:'your@paypal.com', mpesa:'+254700000000', bank:'GB29 NWBK 6016 1331 9268 19'};
+    document.getElementById('w-label').textContent = labels[m]||'Account Details *';
+    document.getElementById('w-details').placeholder = phs[m]||'Account details';
+  }
+
+  async function requestWithdrawal() {
+    const amount  = parseFloat(document.getElementById('w-amt').value);
+    const method  = document.getElementById('w-method').value;
+    const details = document.getElementById('w-details').value.trim();
+    if (!amount||amount<20) { showGlobalToast('Minimum withdrawal is $20.','error'); return; }
+    if (!details) { showGlobalToast('Please enter your account details.','error'); return; }
+    const res = await SC.withdrawals.request(profile.id, amount, method, details);
+    if (res.error) { showGlobalToast(res.error,'error'); return; }
+    showGlobalToast(`Withdrawal of $${amount} requested!`,'success');
+    renderEarnings();
+  }
+
+  function openM(id) { document.getElementById(id).classList.add('open'); }
+  function closeM(id) { document.getElementById(id).classList.remove('open'); }
+</script>
+</body>
+</html>
