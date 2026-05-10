@@ -16,6 +16,7 @@
       <button class="sidebar-link" id="nav-my-orders" onclick="showPage('my-orders')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>My Orders</button>
       <button class="sidebar-link" id="nav-qualifications" onclick="showPage('qualifications')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>Qualifications</button>
       <button class="sidebar-link" id="nav-earnings" onclick="showPage('earnings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Earnings</button>
+      <button class="sidebar-link" id="nav-inbox" onclick="showPage('inbox')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>Inbox <span id="inbox-badge" class="badge badge-warning" style="display:none;margin-left:3px">0</span></button>
       <div class="sidebar-section">Support</div>
       <a class="sidebar-link" href="mailto:writerhub97@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Support</a>
       <a class="sidebar-link" href="https://wa.me/254716603371" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>WhatsApp</a>
@@ -140,6 +141,11 @@
       </div>
     </div>
 
+  <!-- INBOX -->
+    <div class="page" id="page-inbox" style="display:none">
+      <div class="page-header"><div class="page-title">Inbox</div><div class="page-subtitle">Messages from ScholarConnect admin</div></div>
+      <div id="inbox-list"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
   </main>
 </div>
 
@@ -337,6 +343,7 @@
     if(name==='my-orders')renderMyOrders();
     if(name==='overview')renderOverview();
     if(name==='earnings')renderEarnings();
+    if(name==='inbox')loadInbox();
     if(name==='qualifications')renderQualifications();
     if(chatSub&&name!=='order-detail'){chatSub.unsubscribe();chatSub=null;}
   }
@@ -642,6 +649,48 @@
       btn.disabled = false;
       btn.style.opacity = '1';
     }
+  }
+
+  async function loadInbox() {
+    const { data: msgs } = await sb.from('direct_messages')
+      .select('*')
+      .eq('recipient_id', profile.id)
+      .order('created_at', { ascending: false });
+
+    const list = document.getElementById('inbox-list');
+    const badge = document.getElementById('inbox-badge');
+    const unread = (msgs || []).filter(m => !m.is_read).length;
+    
+    if (unread > 0) {
+      badge.textContent = unread;
+      badge.style.display = 'inline-flex';
+    }
+
+    if (!msgs || msgs.length === 0) {
+      list.innerHTML = '<div class="card"><p class="text-muted text-sm">No messages yet.</p></div>';
+      return;
+    }
+
+    list.innerHTML = msgs.map(m => `
+      <div class="card" style="margin-bottom:12px;${!m.is_read?'border-left:3px solid var(--gold)':''}">
+        <div class="flex-between" style="margin-bottom:8px">
+          <strong style="font-size:0.9rem">📩 ${m.subject || 'Message from Admin'}</strong>
+          <span class="text-muted text-sm">${new Date(m.created_at).toLocaleDateString()}</span>
+        </div>
+        <div style="font-size:0.875rem;line-height:1.6">${m.content}</div>
+        ${!m.is_read ? `<button class="btn btn-sm btn-outline" style="margin-top:8px" onclick="markRead('${m.id}')">Mark as Read</button>` : '<span class="text-muted text-sm" style="display:block;margin-top:6px">✓ Read</span>'}
+      </div>`).join('');
+
+    // Mark all as read when opened
+    await sb.from('direct_messages')
+      .update({ is_read: true })
+      .eq('recipient_id', profile.id)
+      .eq('is_read', false);
+  }
+
+  async function markRead(id) {
+    await sb.from('direct_messages').update({ is_read: true }).eq('id', id);
+    loadInbox();
   }
 
   async function renderEarnings() {

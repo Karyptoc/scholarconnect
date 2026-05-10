@@ -622,10 +622,15 @@
 
     // Load sent messages
     const { data: msgs } = await sb.from('direct_messages')
-      .select('*, profiles!direct_messages_recipient_id_fkey(full_name, email)')
+      .select('*')
       .eq('sender_role', 'admin')
       .order('created_at', { ascending: false })
       .limit(50);
+
+    // Get recipient names separately
+    const allUsers = await SC.users.getAll();
+    const userMap = {};
+    allUsers.forEach(u => userMap[u.id] = u);
 
     const hist = document.getElementById('msg-history');
     if (!msgs || msgs.length === 0) {
@@ -635,7 +640,7 @@
     hist.innerHTML = msgs.map(m => `
       <div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px">
         <div class="flex-between" style="margin-bottom:4px">
-          <strong style="font-size:0.875rem">${m.profiles?.full_name || 'Unknown'}</strong>
+          <strong style="font-size:0.875rem">To: ${userMap[m.recipient_id]?.full_name || 'Unknown'} (${userMap[m.recipient_id]?.email || ''})</strong>
           <span class="text-muted text-sm">${new Date(m.created_at).toLocaleDateString()}</span>
         </div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:4px">${m.subject || 'No subject'}</div>
