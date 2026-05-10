@@ -415,7 +415,20 @@
     } else if (o.status === 'in_progress') {
       actions = `<div class="card card-sm"><h4>In Progress</h4><p class="text-sm text-muted" style="margin-top:6px">Your writer is working on the assignment. You'll be notified when submitted.</p></div>`;
     } else if (o.status === 'pending_writer') {
-      actions = `<div class="card card-sm"><h4>Finding Writer</h4><p class="text-sm text-muted" style="margin-top:6px">Admin is reviewing writer requests for your order.</p></div>`;
+      // Load writer requests for this order
+      const { data: requests } = await sb.from('order_requests')
+        .select('*, profiles(full_name, is_writer_approved)')
+        .eq('order_id', o.id);
+      const reqs = requests || [];
+      const reqHTML = reqs.length ? reqs.map(r => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--parch);border-radius:8px;margin-bottom:8px">
+          <div>
+            <strong style="font-size:0.875rem">✍️ ${r.profiles?.full_name || 'Writer'}</strong>
+            <div class="text-xs text-muted">${new Date(r.created_at).toLocaleDateString()}</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="assignWriter('${o.id}','${r.writer_id}')">Assign</button>
+        </div>`).join('') : '<p class="text-sm text-muted">No writer requests yet. Check back soon.</p>';
+      actions = `<div class="card card-sm"><h4 style="margin-bottom:12px">Writer Requests (${reqs.length})</h4>${reqHTML}</div>`;
     } else if (o.status === 'completed') {
       actions = `<div class="card card-sm"><h4>✅ Completed</h4><div class="alert alert-success" style="margin-top:8px">Order complete. Writer has been paid.</div>${delivery?.file_url?`<a href="${delivery.file_url}" target="_blank" class="btn btn-outline btn-full btn-sm" style="margin-top:10px">📄 Download Work</a>`:''}</div>`;
     } else if (o.status === 'disputed') {
@@ -601,6 +614,13 @@
     if (error) { showGlobalToast(error.message,'error'); return; }
     input.value = '';
     openClientConv(convId);
+  }
+
+  async function assignWriter(orderId, writerId) {
+    const res = await SC.orders.assign(orderId, writerId);
+    if (res.error) { showGlobalToast(res.error, 'error'); return; }
+    showGlobalToast('Writer assigned successfully!', 'success');
+    setTimeout(() => openDetail(orderId), 500);
   }
 
   async function submitDispute() {
