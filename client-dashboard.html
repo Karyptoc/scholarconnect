@@ -694,14 +694,7 @@ Current client: ${profile.full_name}`,
       document.getElementById('ai-typing')?.remove();
       msgs.insertAdjacentHTML('beforeend', `<div style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%">${reply.replace(/\n/g,'<br>')}</div>`);
       msgs.scrollTop = msgs.scrollHeight;
-    } catch (err) {
-      document.getElementById('ai-typing')?.remove();
-      msgs.insertAdjacentHTML('beforeend', `<div style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%;color:var(--danger)">Sorry, I'm having trouble connecting. Please contact support via WhatsApp: +254716603371</div>`);
-      msgs.scrollTop = msgs.scrollHeight;
-    }
-  }
-
-  async function submitDispute() {
+    } async function submitDispute() {
     const reason = document.getElementById('dispute-reason').value.trim();
     if (!reason) { showGlobalToast('Please provide a reason.','error'); return; }
     const res = await SC.orders.dispute(currentOrdId, profile.id, reason);
