@@ -299,8 +299,10 @@
   tb.addEventListener('click',()=>{const d=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',d?'':'dark');localStorage.setItem('sc_theme',d?'':'dark');tb.classList.toggle('on',!d);});
 
   // ── Boot ──────────────────────────────────────────────────
+  let adminProfile = null;
   const existingProfile = SC.auth.getProfile();
   if (existingProfile && existingProfile.user_type === 'admin') {
+    adminProfile = existingProfile;
     showDashboard();
   } else {
     showLoginPage();
@@ -318,7 +320,6 @@
     document.getElementById('page-login').style.display = 'none';
     document.getElementById('page-dashboard').style.display = 'block';
     document.getElementById('admin-bar').style.display = 'block';
-    document.getElementById('reset-btn').style.display = 'block';
     document.getElementById('ov-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
     initOverview();
     updateEssayBadge();
@@ -340,6 +341,7 @@
     const res=await SC.auth.adminLogin(pass);
     btn.disabled=false;btn.textContent='Access Admin Panel →';
     if(res.error){err.textContent=res.error;err.style.display='flex';return;}
+    adminProfile = res.profile;
     showDashboard();
   }
 
@@ -401,8 +403,9 @@
     if(window._sc)window._sc.destroy();
     window._sc=new Chart(c2,{type:'doughnut',data:{labels:Object.keys(sc).map(s=>s.replace(/_/g,' ')),datasets:[{data:Object.values(sc),backgroundColor:['#e8a020','#6b9fd4','#3a9e6e','#d4a840','#0f2040','#e05555','#8898b8']}]},options:{plugins:{legend:{position:'right'}},responsive:true}});
 
-    const esc=await SC.escrow?.getAll?.() || [];
-    document.getElementById('ov-escrow').innerHTML=esc.filter?esc.filter(e=>e.status==='held').slice(0,6).map(e=>`<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border);font-size:0.82rem"><span><strong>${e.id}</strong></span><span class="badge badge-gold">$${e.amount} · ${e.payment_method||'—'}</span></div>`).join('')||'<p class="text-muted text-sm">No active escrow.</p>':'<p class="text-muted text-sm">—</p>';
+    const {data:escData}=await sb.from('escrow').select('*,orders(order_number)').eq('status','held').limit(6);
+    const esc=escData||[];
+    document.getElementById('ov-escrow').innerHTML=esc.length?esc.map(e=>`<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border);font-size:0.82rem"><span><strong>${e.orders?.order_number||e.order_id}</strong></span><span class="badge badge-gold">$${e.amount} · ${e.payment_method||'—'}</span></div>`).join(''):'<p class="text-muted text-sm">No active escrow.</p>';
 
     const logs=await SC.security.getLogs();
     document.getElementById('ov-activity').innerHTML=logs.slice(0,8).map(l=>`<div style="display:grid;grid-template-columns:130px 1fr 100px;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.78rem"><span class="fw-700" style="color:var(--navy2)">${l.action}</span><span class="text-muted">${l.detail||'—'}</span><span class="text-muted">${l.ip_address||'—'}</span></div>`).join('');
