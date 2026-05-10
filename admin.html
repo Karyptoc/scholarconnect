@@ -608,6 +608,8 @@
     document.getElementById('withdrawals-list').innerHTML=pend.length?pend.map(w=>{const u=w.profiles||{};return `<div class="flex-between" style="padding:10px 0;border-bottom:1px solid var(--border);font-size:0.875rem"><div><strong>${u.full_name||'Writer'}</strong> · $${w.amount} via ${w.method}<br><span class="text-xs text-muted">${w.account_details}</span></div><div class="flex-gap"><button class="btn btn-sm btn-success" onclick="approveWithdrawal('${w.id}')">✓ Release</button><button class="btn btn-sm btn-ghost" onclick="denyWithdrawal('${w.id}')">✗ Deny</button></div></div>`;}).join(''):'<p class="text-muted text-sm">No pending withdrawals.</p>';
   }
   // ── Direct Messages ────────────────────────────────────────
+  let adminActiveConv = null;
+
   async function renderMessages() {
     // Load all users for recipient dropdown
     const users = await SC.users.getAll();
@@ -620,32 +622,121 @@
       sel.appendChild(opt);
     });
 
-    // Load sent messages
-    const { data: msgs } = await sb.from('direct_messages')
-      .select('*')
-      .eq('sender_role', 'admin')
-      .order('created_at', { ascending: false })
-      .limit(50);
+    // Load all conversations (sent + received)
+    const [sent, received] = await Promise.all([
+      sb.from('direct_messages').select('*').eq('sender_id', adminProfile.id).order('created_at', { ascending: false }),
+      sb.from('direct_messages').select('*').eq('recipient_id', adminProfile.id).order('created_at', { ascending: false })
+    ]);
 
-    // Get recipient names separately
-    const allUsers = await SC.users.getAll();
-    const userMap = {};
-    allUsers.forEach(u => userMap[u.id] = u);
+    const allMsgs = [...(sent.data||[]), ...(received.data||[])];
+    const conversations = {};
+    allMsgs.forEach(m => {
+      const convId = m.conversation_id || m.id;
+      if (!conversations[convId]) conversations[convId] = [];
+      conversations[convId].push(m);
+    });
+
+    const convList = Object.entries(conversations).map(([id, msgs]) => {
+      msgs.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+      return { id, msgs, latest: msgs[msgs.length-1] };
+    }).sort((a,b) => new Date(b.latest.created_at) - new Date(a.latest.created_at));
+
+    const unreadCount = (received.data||[]).filter(m => !m.is_read).length;
+    const badge = document.getElementById('msg-badge');
+    if (badge) {
+      badge.textContent = unreadCount;
+      badge.style.display = unreadCount > 0 ? 'inline-flex' : 'none';
+    }
 
     const hist = document.getElementById('msg-history');
-    if (!msgs || msgs.length === 0) {
-      hist.innerHTML = '<p class="text-muted text-sm">No messages sent yet.</p>';
+    if (!convList.length) {
+      hist.innerHTML = '<p class="text-muted text-sm">No conversations yet.</p>';
       return;
     }
-    hist.innerHTML = msgs.map(m => `
-      <div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px">
-        <div class="flex-between" style="margin-bottom:4px">
-          <strong style="font-size:0.875rem">To: ${userMap[m.recipient_id]?.full_name || 'Unknown'} (${userMap[m.recipient_id]?.email || ''})</strong>
-          <span class="text-muted text-sm">${new Date(m.created_at).toLocaleDateString()}</span>
+
+    hist.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px" id="admin-conv-list">
+      ${convList.map(c => {
+        const latest = c.latest;
+        const isUnread = (received.data||[]).some(m => m.conversation_id === c.id && !m.is_read);
+        const isMine = latest.sender_id === adminProfile.id;
+        return `<div onclick="openAdminConv('${c.id}')" id="aconv-${c.id}" style="padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:${isUnread?'var(--parch)':'transparent'}">
+          <div class="flex-between" style="margin-bottom:4px">
+            <strong style="font-size:0.875rem">${latest.subject||'Message'}</strong>
+            <span class="text-xs text-muted">${new Date(latest.created_at).toLocaleDateString()}</span>
+          </div>
+          <div style="font-size:0.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${isMine?'You: ':latest.sender_name||'User: '}${latest.content}</div>
+          ${isUnread?'<span class="badge badge-warning" style="margin-top:4px;font-size:0.7rem">New Reply</span>':''}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  async function openAdminConv(convId) {
+    adminActiveConv = convId;
+    document.querySelectorAll('[id^="aconv-"]').forEach(el => el.style.borderLeft = '');
+    const convEl = document.getElementById('aconv-'+convId);
+    if (convEl) convEl.style.border = '1px solid var(--gold)';
+
+    const [received, sent] = await Promise.all([
+      sb.from('direct_messages').select('*').eq('conversation_id', convId),
+      sb.from('direct_messages').select('*').eq('conversation_id', convId)
+    ]);
+
+    const allMsgs = [...new Map([...(received.data||[]), ...(sent.data||[])].map(m => [m.id, m])).values()];
+    allMsgs.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+
+    const subject = allMsgs[0]?.subject || 'Conversation';
+    const otherUserId = allMsgs[0]?.sender_id === adminProfile.id ? allMsgs[0]?.recipient_id : allMsgs[0]?.sender_id;
+
+    // Show conversation in compose area
+    const composeCard = document.querySelector('#tab-messages .card:first-child');
+    composeCard.innerHTML = `
+      <div class="flex-between" style="margin-bottom:14px">
+        <h3 style="font-family:var(--font-display)">${subject}</h3>
+        <button class="btn btn-ghost btn-sm" onclick="renderMessages()">← Back to list</button>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <div id="admin-conv-msgs" style="height:300px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+          ${allMsgs.map(m => {
+            const isMine = m.sender_id === adminProfile.id;
+            return `<div style="display:flex;flex-direction:column;align-items:${isMine?'flex-end':'flex-start'}">
+              <div style="max-width:75%;padding:10px 14px;border-radius:${isMine?'12px 12px 2px 12px':'12px 12px 12px 2px'};background:${isMine?'var(--navy)':'var(--parch)'};color:${isMine?'white':'var(--ink)'};font-size:0.875rem">${m.content}</div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:3px">${isMine?'You':m.sender_name||'User'} · ${new Date(m.created_at).toLocaleString('en-US',{dateStyle:'short',timeStyle:'short'})}</div>
+            </div>`;
+          }).join('')}
         </div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:4px">${m.subject || 'No subject'}</div>
-        <div style="font-size:0.85rem">${m.content}</div>
-      </div>`).join('');
+        <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px">
+          <input type="text" class="form-input" id="admin-reply-input" placeholder="Type reply..." style="flex:1" onkeydown="if(event.key==='Enter')sendAdminReply('${convId}','${otherUserId}','${subject.replace(/'/g,"\\'")}')">
+          <button class="btn btn-primary" onclick="sendAdminReply('${convId}','${otherUserId}','${subject.replace(/'/g,"\\'")}')">Send</button>
+        </div>
+      </div>`;
+
+    // Scroll to bottom
+    const msgs = document.getElementById('admin-conv-msgs');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+
+    // Mark as read
+    await sb.from('direct_messages').update({ is_read: true }).eq('recipient_id', adminProfile.id).eq('conversation_id', convId);
+  }
+
+  async function sendAdminReply(convId, recipientId, subject) {
+    const input = document.getElementById('admin-reply-input');
+    const content = input.value.trim();
+    if (!content) return;
+
+    const { error } = await sb.from('direct_messages').insert({
+      sender_id: adminProfile.id,
+      recipient_id: recipientId,
+      sender_role: 'admin',
+      subject: subject.startsWith('Re:') ? subject : 'Re: ' + subject,
+      content,
+      conversation_id: convId,
+      is_read: false,
+    });
+
+    if (error) { showGlobalToast(error.message,'error'); return; }
+    input.value = '';
+    openAdminConv(convId);
   }
 
   async function sendDirectMessage() {
@@ -658,12 +749,15 @@
     if (!recipientId) { err.textContent = 'Please select a recipient.'; err.style.display = 'flex'; return; }
     if (!content) { err.textContent = 'Please write a message.'; err.style.display = 'flex'; return; }
 
+    const convId = crypto.randomUUID();
+
     const { error } = await sb.from('direct_messages').insert({
       sender_id: adminProfile.id,
       recipient_id: recipientId,
       sender_role: 'admin',
       subject,
       content,
+      conversation_id: convId,
     });
 
     if (error) { err.textContent = error.message; err.style.display = 'flex'; return; }
