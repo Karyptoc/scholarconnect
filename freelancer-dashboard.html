@@ -652,14 +652,15 @@
   }
 
   async function loadInbox() {
+    const list = document.getElementById('inbox-list');
+    const badge = document.getElementById('inbox-badge');
+    if (!list) return;
+    list.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
     const result = await sb.from('direct_messages')
       .select('*')
       .eq('recipient_id', profile.id)
       .order('created_at', { ascending: false });
     const msgs = result.data || [];
-
-    const list = document.getElementById('inbox-list');
-    const badge = document.getElementById('inbox-badge');
     const unread = (msgs || []).filter(m => !m.is_read).length;
     
     if (unread > 0) {
