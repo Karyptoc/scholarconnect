@@ -652,10 +652,11 @@
   }
 
   async function loadInbox() {
-    const { data: msgs } = await sb.from('direct_messages')
+    const result = await sb.from('direct_messages')
       .select('*')
       .eq('recipient_id', profile.id)
       .order('created_at', { ascending: false });
+    const msgs = result.data || [];
 
     const list = document.getElementById('inbox-list');
     const badge = document.getElementById('inbox-badge');
