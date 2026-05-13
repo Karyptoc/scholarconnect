@@ -12,11 +12,15 @@
     .anav{display:flex;gap:4px;align-items:center;}
     .anav-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.65);font-size:0.85rem;font-weight:500;padding:8px 13px;border-radius:6px;transition:all 0.2s;font-family:var(--font-body);}
     .anav-btn:hover,.anav-btn.active{background:rgba(255,255,255,0.1);color:white;}
+    .search-bar{display:flex;gap:8px;margin-bottom:16px;align-items:center;}
+    .search-bar input{flex:1;max-width:320px;}
+    .window-status-open{background:rgba(58,158,110,0.15);border:1px solid var(--success);border-radius:8px;padding:10px 16px;color:var(--success);font-weight:600;font-size:0.875rem;}
+    .window-status-closed{background:rgba(224,85,85,0.1);border:1px solid var(--danger);border-radius:8px;padding:10px 16px;color:var(--danger);font-weight:600;font-size:0.875rem;}
   </style>
 </head>
 <body>
 
-<!-- Admin Bar (hidden until logged in) -->
+<!-- Admin Bar -->
 <div id="admin-bar" style="display:none">
   <div class="admin-bar">
     <div class="admin-logo"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><path d="M14 3L3 9v10l11 6 11-6V9L14 3z" fill="rgba(255,255,255,0.15)"/><path d="M14 8l6 3.5v7L14 22l-6-3.5v-7L14 8z" fill="var(--gold2)"/></svg>ScholarConnect <span class="admin-pill">ADMIN</span></div>
@@ -25,11 +29,11 @@
       <button class="anav-btn" onclick="showTab('orders')">Orders</button>
       <button class="anav-btn" onclick="showTab('users')">Users</button>
       <button class="anav-btn" onclick="showTab('essays')">Essays <span id="essay-badge" class="badge badge-warning" style="display:none;margin-left:3px">0</span></button>
+      <button class="anav-btn" onclick="showTab('applications')">Applications <span id="app-badge" class="badge badge-warning" style="display:none;margin-left:3px">0</span></button>
       <button class="anav-btn" onclick="showTab('security')">Security</button>
       <button class="anav-btn" onclick="showTab('logs')">Logs</button>
       <button class="anav-btn" onclick="showTab('settings')">Settings</button>
       <button class="anav-btn" onclick="showTab('messages')">Messages <span id="msg-badge" class="badge badge-warning" style="display:none;margin-left:3px">0</span></button>
-    </div>
     </div>
     <div class="flex-gap">
       <button class="theme-toggle" id="theme-btn"></button>
@@ -44,7 +48,7 @@
     <div style="text-align:center;margin-bottom:32px">
       <div style="width:64px;height:64px;background:linear-gradient(135deg,var(--gold),var(--amber));border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
       <h1 style="font-family:var(--font-display);font-size:1.8rem;margin-bottom:8px">Admin Setup</h1>
-      <p class="text-muted">Welcome! Set your admin password to secure the platform. One-time setup.</p>
+      <p class="text-muted">Welcome! Set your admin password to secure the platform.</p>
     </div>
     <div class="alert alert-warning"><span>⚠️</span><span>Choose a strong password — min 8 chars, uppercase, number, special character.</span></div>
     <div id="setup-err" class="alert alert-danger" style="display:none"></div>
@@ -69,8 +73,8 @@
     <p style="text-align:center;margin-top:16px;font-size:0.875rem"><a href="index.html" style="color:var(--muted)">← Back to site</a></p>
   </div>
 </div>
-  
-  <!-- ADMIN 2FA -->
+
+<!-- ADMIN 2FA -->
 <div id="page-2fa" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:40px">
   <div style="max-width:440px;width:100%;margin:0 auto">
     <div style="text-align:center;margin-bottom:32px">
@@ -83,7 +87,7 @@
       <label class="form-label">6-Digit Security Code</label>
       <input type="text" class="form-input" id="tfa-code" placeholder="000000" maxlength="6" inputmode="numeric" style="font-size:1.5rem;letter-spacing:10px;text-align:center" autocomplete="one-time-code">
     </div>
-    <button class="btn btn-primary btn-full btn-lg" onclick="do2FA()">Verify & Enter →</button>
+    <button class="btn btn-primary btn-full btn-lg" onclick="do2FA()">Verify &amp; Enter →</button>
     <p style="text-align:center;margin-top:16px;font-size:0.875rem"><a onclick="document.getElementById('page-2fa').style.display='none';document.getElementById('page-login').style.display='flex';" style="cursor:pointer;color:var(--muted)">← Back</a></p>
   </div>
 </div>
@@ -115,7 +119,7 @@
     <div class="page-header flex-between">
       <div><div class="page-title">Order Management</div></div>
       <div class="flex-gap">
-        <input type="text" class="form-input" id="ord-search" placeholder="Search order # or subject…" style="width:200px" oninput="renderOrders()">
+        <input type="text" class="form-input" id="ord-search" placeholder="Search order #, subject, writer…" style="width:220px" oninput="renderOrders()">
         <select class="form-select" id="ord-filter" style="width:170px" onchange="renderOrders()">
           <option value="">All Statuses</option>
           <option value="pending_payment">Pending Payment</option>
@@ -129,8 +133,8 @@
       </div>
     </div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Order #</th><th>Subject / Level</th><th>Client (Private)</th><th>Pages / $</th><th>Status</th><th>Writer</th><th>Deadline</th><th>Actions</th></tr></thead>
-      <tbody id="ord-tbody"><tr><td colspan="8" style="text-align:center;padding:30px"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
+      <thead><tr><th>Order #</th><th>Subject / Level</th><th>Client (Private)</th><th>Pages / $</th><th>Status</th><th>Writer</th><th>Submitted Work</th><th>Deadline</th><th>Actions</th></tr></thead>
+      <tbody id="ord-tbody"><tr><td colspan="9" style="text-align:center;padding:30px"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
     </table></div>
   </div>
 
@@ -161,21 +165,57 @@
     <div id="essays-list"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 
+  <!-- WRITER APPLICATIONS -->
+  <div class="tab-pane" id="tab-applications" style="display:none">
+    <div class="page-header flex-between">
+      <div><div class="page-title">Writer Applications</div><div class="page-subtitle">Control when writers can apply to join the platform</div></div>
+      <div class="flex-gap" id="app-window-controls"></div>
+    </div>
+    <div id="app-window-status" style="margin-bottom:24px"></div>
+    <div class="card" style="margin-bottom:20px">
+      <h3 style="font-family:var(--font-display);margin-bottom:16px">Application Window Settings</h3>
+      <div class="grid-2" style="gap:16px;margin-bottom:16px">
+        <div class="form-group">
+          <label class="form-label">Open From Date</label>
+          <input type="datetime-local" class="form-input" id="app-open-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Close On Date</label>
+          <input type="datetime-local" class="form-input" id="app-close-date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message to Applicants (shown on registration page)</label>
+        <textarea class="form-textarea" id="app-message" placeholder="e.g. We are currently accepting new writer applications. Apply before December 31st…"></textarea>
+      </div>
+      <div class="flex-gap">
+        <button class="btn btn-success" onclick="openApplicationWindow()">✅ Open Applications Now</button>
+        <button class="btn btn-danger" onclick="closeApplicationWindow()">🚫 Close Applications Now</button>
+        <button class="btn btn-primary" onclick="saveAppWindowSettings()">💾 Save Schedule</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="font-family:var(--font-display);margin-bottom:16px">Pending Writer Applications</h3>
+      <div id="pending-applications"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+  </div>
+
   <!-- MESSAGES -->
   <div class="tab-pane" id="tab-messages" style="display:none">
-    <div class="page-header"><div class="page-title">Messages</div><div class="page-subtitle">Send direct messages to clients and writers</div></div>
+    <div class="page-header"><div class="page-title">Messages</div><div class="page-subtitle">Direct messages to clients and writers</div></div>
+    <div class="search-bar">
+      <input type="text" class="form-input" id="msg-search" placeholder="Search by name, email, or order number…" oninput="filterConversations()">
+    </div>
     <div class="grid-2" style="gap:20px">
-      <div class="card">
+      <div class="card" id="compose-card">
         <h3 style="font-family:var(--font-display);margin-bottom:16px">Compose Message</h3>
         <div class="form-group">
           <label class="form-label">Recipient *</label>
-          <select class="form-select" id="msg-recipient">
-            <option value="">Select user...</option>
-          </select>
+          <select class="form-select" id="msg-recipient"><option value="">Select user...</option></select>
         </div>
         <div class="form-group">
           <label class="form-label">Subject *</label>
-          <input type="text" class="form-input" id="msg-subject" placeholder="e.g. Important update about your order">
+          <input type="text" class="form-input" id="msg-subject" placeholder="e.g. Update on order ORD-ABC123">
         </div>
         <div class="form-group">
           <label class="form-label">Message *</label>
@@ -185,7 +225,7 @@
         <button class="btn btn-primary btn-full" onclick="sendDirectMessage()">Send Message</button>
       </div>
       <div class="card">
-        <h3 style="font-family:var(--font-display);margin-bottom:16px">Sent Messages</h3>
+        <h3 style="font-family:var(--font-display);margin-bottom:16px">Conversations</h3>
         <div id="msg-history"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
@@ -273,7 +313,7 @@
 
 <!-- Order detail -->
 <div class="modal-overlay" id="m-ord">
-  <div class="modal" style="max-width:660px"><div class="modal-header"><div class="modal-title" id="m-ord-title">Order Detail</div><button class="modal-close" onclick="closeM('m-ord')">×</button></div>
+  <div class="modal" style="max-width:700px"><div class="modal-header"><div class="modal-title" id="m-ord-title">Order Detail</div><button class="modal-close" onclick="closeM('m-ord')">×</button></div>
   <div id="m-ord-body"></div></div>
 </div>
 
@@ -304,13 +344,23 @@
   <button class="btn btn-danger btn-full" onclick="confirmRefund()">Issue Refund</button></div>
 </div>
 
-<div class="toast-container" id="toasts"></div>
+<!-- Remove User Confirmation -->
+<div class="modal-overlay" id="m-remove-user">
+  <div class="modal"><div class="modal-header"><div class="modal-title" style="color:var(--danger)">⚠️ Remove User from Platform</div><button class="modal-close" onclick="closeM('m-remove-user')">×</button></div>
+  <div class="alert alert-danger" style="margin-bottom:16px">This will permanently deactivate the user and block their account. This action is for repeated offenders only.</div>
+  <div id="remove-user-info" style="background:var(--parch);border-radius:8px;padding:14px;margin-bottom:16px;font-size:0.875rem"></div>
+  <div class="form-group"><label class="form-label">Reason for Removal *</label><textarea class="form-textarea" id="remove-reason" placeholder="Describe the offense(s) that led to this removal…"></textarea></div>
+  <div class="flex-gap">
+    <button class="btn btn-danger btn-full" onclick="confirmRemoveUser()">Permanently Remove User</button>
+    <button class="btn btn-outline btn-full" onclick="closeM('m-remove-user')">Cancel</button>
+  </div></div>
+</div>
 
+<div class="toast-container" id="toasts"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase-client.js"></script>
 <script>
-  // Theme
   async function do2FA() {
     const code = document.getElementById('tfa-code').value.trim();
     const err = document.getElementById('tfa-err');
@@ -324,21 +374,17 @@
     showDashboard();
   }
 
-  // Theme
   if(localStorage.getItem('sc_theme')==='dark') document.documentElement.setAttribute('data-theme','dark');
   const tb=document.getElementById('theme-btn');
   if(localStorage.getItem('sc_theme')==='dark') tb.classList.add('on');
   tb.addEventListener('click',()=>{const d=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',d?'':'dark');localStorage.setItem('sc_theme',d?'':'dark');tb.classList.toggle('on',!d);});
 
-  // ── Boot ──────────────────────────────────────────────────
+  document.getElementById('tfa-code')?.addEventListener('keydown',e=>{if(e.key==='Enter')do2FA();});
+
   let adminProfile = null;
   const existingProfile = SC.auth.getProfile();
-  if (existingProfile && existingProfile.user_type === 'admin') {
-    adminProfile = existingProfile;
-    showDashboard();
-  } else {
-    showLoginPage();
-  }
+  if (existingProfile && existingProfile.user_type === 'admin') { adminProfile = existingProfile; showDashboard(); }
+  else { showLoginPage(); }
 
   function showLoginPage() {
     document.getElementById('page-setup').style.display = 'none';
@@ -350,20 +396,20 @@
   function showDashboard() {
     document.getElementById('page-setup').style.display = 'none';
     document.getElementById('page-login').style.display = 'none';
+    document.getElementById('page-2fa').style.display = 'none';
     document.getElementById('page-dashboard').style.display = 'block';
     document.getElementById('admin-bar').style.display = 'block';
     document.getElementById('ov-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
     initOverview();
     updateEssayBadge();
+    updateAppBadge();
   }
 
-  // ── Password strength ──────────────────────────────────────
   function pwScore(pw){return [{ok:pw.length>=8},{ok:/[A-Z]/.test(pw)},{ok:/[0-9]/.test(pw)},{ok:/[!@#$%^&*()\-_=+\[\]{};:,.<>?]/.test(pw)}].filter(r=>r.ok).length;}
   function applyBar(pw,id){const s=pwScore(pw);const c=['','var(--danger)','var(--warning)','#9ab800','var(--success)'];const b=document.getElementById(id);b.style.width=s*25+'%';b.style.background=c[s]||'';}
   function checkSetupPw(){applyBar(document.getElementById('setup-pass').value,'setup-bar');}
   function checkCpPw(){applyBar(document.getElementById('cp-new').value,'cp-bar');}
 
-  // ── Login ─────────────────────────────────────────────────
   document.getElementById('a-pass')?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
   async function doLogin() {
@@ -377,13 +423,11 @@
     const res = await SC.auth.login(email, pass);
     btn.disabled = false; btn.textContent = 'Access Admin Panel →';
     if (res.error) { err.textContent = res.error; err.style.display = 'flex'; return; }
-    // Show 2FA step
     document.getElementById('page-login').style.display = 'none';
     document.getElementById('page-2fa').style.display = 'flex';
     document.getElementById('tfa-email-display').textContent = email;
   }
 
-  // ── First-time setup ───────────────────────────────────────
   async function doSetup() {
     const p=document.getElementById('setup-pass').value;
     const c=document.getElementById('setup-conf').value;
@@ -391,25 +435,23 @@
     if(p!==c){err.textContent='Passwords do not match.';err.style.display='flex';return;}
     const pwErr=validatePassword(p);
     if(pwErr){err.textContent=pwErr;err.style.display='flex';return;}
-    // In production: call Supabase edge function to update admin password
-    // For demo: update via sb.auth.updateUser
     const{error}=await sb.auth.updateUser({password:p});
     if(error){err.textContent=error.message;err.style.display='flex';return;}
     showGlobalToast('Password set! Logging you in…','success');
     setTimeout(()=>showDashboard(),800);
   }
 
-  // ── Tab navigation ─────────────────────────────────────────
   function showTab(name){
     document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
     document.querySelectorAll('.anav-btn').forEach(b=>b.classList.remove('active'));
     document.getElementById('tab-'+name).style.display='block';
-    const tabs=['overview','orders','users','essays','security','logs','settings','messages'];
+    const tabs=['overview','orders','users','essays','applications','security','logs','settings','messages'];
     const btns=document.querySelectorAll('.anav-btn');
     const i=tabs.indexOf(name);if(btns[i])btns[i].classList.add('active');
     if(name==='orders')renderOrders();
     if(name==='users')renderUsers('client');
     if(name==='essays')renderEssays('pending');
+    if(name==='applications')renderApplications();
     if(name==='security')renderSecurity();
     if(name==='logs')renderLogs();
     if(name==='settings')loadSettings();
@@ -428,7 +470,6 @@
       <div class="stat-card"><div class="stat-value">${stats.clients}</div><div class="stat-label">Clients</div></div>
       <div class="stat-card"><div class="stat-value">${stats.writers}</div><div class="stat-label">Writers</div></div>
       <div class="stat-card"><div class="stat-value" style="color:${stats.disputes>0?'var(--danger)':'inherit'}">${stats.disputes}</div><div class="stat-label">Disputes</div></div>`;
-
     const {data:orders}=await SC.orders.getAll();
     const s=await SC.settings.get();const pw=parseFloat(s.writer_payout||4);
     const labels=[],rev=[],pay=[];
@@ -440,40 +481,49 @@
     const c2=document.getElementById('status-chart').getContext('2d');
     if(window._sc)window._sc.destroy();
     window._sc=new Chart(c2,{type:'doughnut',data:{labels:Object.keys(sc).map(s=>s.replace(/_/g,' ')),datasets:[{data:Object.values(sc),backgroundColor:['#e8a020','#6b9fd4','#3a9e6e','#d4a840','#0f2040','#e05555','#8898b8']}]},options:{plugins:{legend:{position:'right'}},responsive:true}});
-
     const {data:escData}=await sb.from('escrow').select('*,orders(order_number)').eq('status','held').limit(6);
     const esc=escData||[];
     document.getElementById('ov-escrow').innerHTML=esc.length?esc.map(e=>`<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border);font-size:0.82rem"><span><strong>${e.orders?.order_number||e.order_id}</strong></span><span class="badge badge-gold">$${e.amount} · ${e.payment_method||'—'}</span></div>`).join(''):'<p class="text-muted text-sm">No active escrow.</p>';
-
     const logs=await SC.security.getLogs();
     document.getElementById('ov-activity').innerHTML=logs.slice(0,8).map(l=>`<div style="display:grid;grid-template-columns:130px 1fr 100px;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.78rem"><span class="fw-700" style="color:var(--navy2)">${l.action}</span><span class="text-muted">${l.detail||'—'}</span><span class="text-muted">${l.ip_address||'—'}</span></div>`).join('');
   }
 
   // ── Orders ─────────────────────────────────────────────────
   let assignOrdId=null,disputeOrdId=null,refundOrdId=null;
+  let allOrdersCache = [];
 
   async function renderOrders(){
     const filter=document.getElementById('ord-filter').value;
     const search=document.getElementById('ord-search').value.toLowerCase();
     const{data:orders}=await SC.orders.getAll(filter);
-    let list=orders||[];
-    if(search)list=list.filter(o=>o.order_number.toLowerCase().includes(search)||o.subject.toLowerCase().includes(search));
+    allOrdersCache = orders || [];
+    let list=allOrdersCache;
+    if(search) list=list.filter(o=>
+      o.order_number.toLowerCase().includes(search)||
+      o.subject.toLowerCase().includes(search)||
+      (o.writer?.full_name||'').toLowerCase().includes(search)||
+      (o.client?.full_name||'').toLowerCase().includes(search)
+    );
     const tbody=document.getElementById('ord-tbody');
-    if(!list.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">No orders found</td></tr>';return;}
+    if(!list.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">No orders found</td></tr>';return;}
     tbody.innerHTML=list.map(o=>{
       const cl=o.client||{};const wr=o.writer||{};
       const dl=Math.ceil((new Date(o.deadline)-Date.now())/86400000);
+      const delivery=o.deliveries;
+      const hasFile = delivery?.file_url;
       return `<tr>
         <td><strong style="font-size:0.85rem">${o.order_number}</strong></td>
         <td><span class="tag" style="font-size:0.72rem">${o.subject}</span><br><span class="text-xs text-muted">${o.academic_level}</span></td>
-        <td><div style="font-size:0.82rem;font-weight:600">${cl.full_name||'?'}</div><div style="font-size:0.75rem;color:var(--danger)">${cl.email||''}</div><div style="font-size:0.72rem;color:var(--muted)">${cl.last_ip||''}</div></td>
+        <td><div style="font-size:0.82rem;font-weight:600">${cl.full_name||'?'}</div><div style="font-size:0.75rem;color:var(--danger)">${cl.email||''}</div></td>
         <td style="font-size:0.82rem">${o.page_count}p<br><strong>$${o.total_price}</strong><br><span class="text-xs text-muted">dep $${o.deposit_amount}</span></td>
         <td><span class="badge status-${o.status}" style="font-size:0.72rem">${o.status.replace(/_/g,' ')}</span>${o.is_urgent?'<br><span class="badge badge-warning" style="margin-top:3px;font-size:0.7rem">⚡</span>':''}</td>
         <td style="font-size:0.82rem">${wr.full_name||'<span class="text-muted">Unassigned</span>'}</td>
+        <td style="font-size:0.82rem">${hasFile?`<a href="${delivery.file_url}" target="_blank" class="btn btn-sm btn-outline" style="font-size:0.72rem">📄 Download</a>${delivery.plagiarism_score?`<br><span class="badge badge-success" style="margin-top:4px;font-size:0.7rem">${delivery.plagiarism_score}% orig</span>`:''}`:'-'}</td>
         <td style="font-size:0.78rem;color:${dl<=1?'var(--danger)':'var(--muted)'}">${new Date(o.deadline).toLocaleDateString()}<br>${dl}d left</td>
         <td><div style="display:flex;gap:4px;flex-wrap:wrap">
           <button class="btn btn-sm btn-primary" onclick="openAssign(${o.id},'${o.order_number}','${o.subject}',${o.page_count})">Assign</button>
           <button class="btn btn-sm btn-outline" onclick="viewOrder(${JSON.stringify(o).replace(/"/g,'&quot;')})">View</button>
+          <button class="btn btn-sm btn-navy" onclick="openOrderReply(${o.id},'${o.order_number}','${(wr.id||'')}','${(cl.id||'')}')">💬 Reply</button>
           ${o.status==='disputed'?`<button class="btn btn-sm btn-danger" onclick="openDispute(${o.id},'${o.order_number}','${o.dispute_reason||''}')">Resolve</button>`:''}
           ${o.deposit_paid&&!['completed','refunded'].includes(o.status)?`<button class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="openRefund(${o.id},'${o.order_number}',${o.deposit_amount})">Refund</button>`:''}
         </div></td>
@@ -497,9 +547,25 @@
     closeM('m-assign');showGlobalToast('Writer assigned!','success');renderOrders();
   }
 
+  // Open reply modal pre-filled with order number in subject
+  async function openOrderReply(orderId, orderNumber, writerId, clientId) {
+    // Switch to messages tab and pre-fill
+    showTab('messages');
+    await new Promise(r => setTimeout(r, 300));
+    document.getElementById('msg-subject').value = `Re: Order ${orderNumber}`;
+    // Try to pre-select the writer if available
+    if (writerId) {
+      const sel = document.getElementById('msg-recipient');
+      for (let opt of sel.options) { if (opt.value === writerId) { opt.selected = true; break; } }
+    }
+    document.getElementById('msg-content').focus();
+    showGlobalToast(`Composing reply for order ${orderNumber}`, 'success');
+  }
+
   function viewOrder(o){
     document.getElementById('m-ord-title').textContent=o.order_number;
     const cl=o.client||{};const wr=o.writer||{};
+    const delivery=o.deliveries;
     document.getElementById('m-ord-body').innerHTML=`
       <div class="grid-2" style="gap:12px;margin-bottom:14px">
         <div><div class="form-label" style="color:var(--danger)">🔒 CLIENT (CONFIDENTIAL)</div><div style="background:rgba(224,85,85,0.05);border:1px solid rgba(224,85,85,0.2);border-radius:6px;padding:12px;font-size:0.875rem"><strong>${cl.full_name||'?'}</strong><br><span style="color:var(--danger)">${cl.email||''}</span><br>IP: ${cl.last_ip||'?'} · Logins: ${cl.login_count||0}<br>Consent: ${cl.consent_given?'✓':'✗'}</div></div>
@@ -511,8 +577,9 @@
         <div><strong>Pages:</strong> ${o.page_count} · <strong>Total:</strong> $${o.total_price}</div>
         <div><strong>Deposit:</strong> ${o.deposit_paid?`✓ $${o.deposit_amount} via ${o.payment_method}`:'Not paid'}</div>
         <div><strong>Status:</strong> <span class="badge status-${o.status}">${o.status}</span></div>
-        <div><strong>Plagiarism:</strong> ${o.deliveries?.plagiarism_score?o.deliveries.plagiarism_score+'% original':'Not checked'}</div>
+        <div><strong>Plagiarism:</strong> ${delivery?.plagiarism_score?delivery.plagiarism_score+'% original':'Not checked'}</div>
       </div>
+      ${delivery?.file_url?`<div style="margin-bottom:12px"><a href="${delivery.file_url}" target="_blank" class="btn btn-outline btn-sm">📄 Download Submitted Work</a>${delivery.notes_to_client?`<div style="margin-top:8px;font-size:0.82rem;color:var(--muted)"><strong>Writer notes:</strong> ${delivery.notes_to_client}</div>`:''}</div>`:''}
       <div class="form-label">Instructions</div>
       <div style="background:var(--parch);border-radius:6px;padding:12px;font-size:0.82rem;line-height:1.7;max-height:130px;overflow-y:auto">${o.instructions||'—'}</div>
       ${o.dispute_reason?`<div class="alert alert-danger" style="margin-top:12px">⚠️ <strong>Dispute:</strong> ${o.dispute_reason}</div>`:''}`;
@@ -545,6 +612,8 @@
 
   // ── Users ──────────────────────────────────────────────────
   let curUserTab='client';
+  let removeUserId=null, removeUserName='';
+
   async function renderUsers(role){
     curUserTab=role;
     ['client','writer'].forEach(r=>{document.getElementById('ut-'+r).style.borderBottomColor=r===role?'var(--navy2)':'transparent';});
@@ -564,9 +633,11 @@
         <button class="btn btn-sm ${u.is_active?'btn-outline':'btn-success'}" onclick="toggleUser('${u.id}',${!u.is_active})">${u.is_active?'Suspend':'Activate'}</button>
         ${role==='writer'&&!u.is_writer_approved?`<button class="btn btn-sm btn-gold" onclick="approveWriter('${u.id}')">Approve</button>`:''}
         <button class="btn btn-sm btn-primary" onclick="quickMessage('${u.id}','${u.full_name}')">✉ Message</button>
+        <button class="btn btn-sm btn-danger" onclick="openRemoveUser('${u.id}','${u.full_name}')">🗑 Remove</button>
       </div></td>
     </tr>`).join('');
   }
+
   function quickMessage(userId, userName) {
     showTab('messages');
     setTimeout(() => {
@@ -575,6 +646,30 @@
       showGlobalToast(`Composing message to ${userName}`, 'success');
     }, 300);
   }
+
+  function openRemoveUser(id, name) {
+    removeUserId = id;
+    removeUserName = name;
+    document.getElementById('remove-user-info').innerHTML = `<strong>User:</strong> ${name}<br><span class="text-sm text-muted">This user will be permanently deactivated and blocked from the platform.</span>`;
+    document.getElementById('remove-reason').value = '';
+    openM('m-remove-user');
+  }
+
+  async function confirmRemoveUser() {
+    const reason = document.getElementById('remove-reason').value.trim();
+    if (!reason) { showGlobalToast('Please provide a reason for removal.', 'error'); return; }
+    // Deactivate user and log the removal
+    await SC.users.update(removeUserId, { is_active: false, removal_reason: reason, removed_at: new Date().toISOString() });
+    await sb.from('security_logs').insert({
+      user_id: removeUserId,
+      action: 'user_removed',
+      detail: `Admin removed user "${removeUserName}". Reason: ${reason}`,
+    });
+    closeM('m-remove-user');
+    showGlobalToast(`${removeUserName} has been removed from the platform.`, 'success');
+    renderUsers(curUserTab);
+  }
+
   async function toggleUser(id,active){await SC.users[active?'activate':'suspend'](id);renderUsers(curUserTab);showGlobalToast(active?'User activated.':'User suspended.',active?'success':'warning');}
   async function approveWriter(id){await SC.users.update(id,{is_writer_approved:true});renderUsers('writer');updateEssayBadge();showGlobalToast('Writer approved!','success');}
 
@@ -583,16 +678,47 @@
 
   async function renderEssays(status){
     ['pending','approved','rejected'].forEach(s=>document.getElementById('et-'+s).classList.toggle('active',s===status));
-    const all=await SC.tests.getAllPendingEssays();
-    const essays=status==='pending'?all:[];
     const el=document.getElementById('essays-list');
+    el.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+
+    let essays = [];
+    if (status === 'pending') {
+      essays = await SC.tests.getAllPendingEssays();
+    } else if (status === 'approved') {
+      const { data } = await sb.from('writer_test_results')
+        .select('*, profiles(full_name, email)')
+        .eq('test_type', 'essay')
+        .eq('admin_approved', true)
+        .order('completed_at', { ascending: false });
+      essays = data || [];
+    } else if (status === 'rejected') {
+      const { data } = await sb.from('writer_test_results')
+        .select('*, profiles(full_name, email)')
+        .eq('test_type', 'essay')
+        .eq('admin_approved', false)
+        .not('admin_note', 'is', null)
+        .order('completed_at', { ascending: false });
+      essays = (data || []).filter(e => e.admin_note && e.admin_note.length > 0);
+    }
+
     if(!essays.length){el.innerHTML=`<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg><h3>No ${status} essays</h3></div>`;return;}
+
     el.innerHTML=essays.map(e=>`<div class="card" style="margin-bottom:14px">
       <div class="flex-between" style="margin-bottom:10px">
-        <div><div class="fw-700">${e.profiles?.full_name||'Writer'} <span class="text-muted text-sm">· ${e.profiles?.email||''}</span></div><div style="margin-top:6px"><span class="badge badge-navy">${e.subject}</span> <span class="badge badge-muted" style="margin-left:4px">${e.sub_level||'General'}</span></div></div>
-        <div class="flex-gap"><button class="btn btn-primary btn-sm" onclick="openEssayReview(${e.id},'${e.writer_id}','${e.profiles?.full_name||''}','${e.subject}','${e.sub_level||'General'}')">Read &amp; Review</button><button class="btn btn-success btn-sm" onclick="quickApprove(${e.id},'${e.writer_id}')">Quick ✓</button></div>
+        <div>
+          <div class="fw-700">${e.profiles?.full_name||'Writer'} <span class="text-muted text-sm">· ${e.profiles?.email||''}</span></div>
+          <div style="margin-top:6px"><span class="badge badge-navy">${e.subject}</span> <span class="badge badge-muted" style="margin-left:4px">${e.sub_level||'General'}</span>
+          ${status==='approved'?'<span class="badge badge-success" style="margin-left:4px">✓ Approved</span>':''}
+          ${status==='rejected'?'<span class="badge badge-danger" style="margin-left:4px">✗ Rejected</span>':''}
+          </div>
+          ${e.admin_note?`<div style="margin-top:6px;font-size:0.82rem;color:var(--muted)"><strong>Feedback:</strong> ${e.admin_note}</div>`:''}
+        </div>
+        <div class="flex-gap">
+          ${status==='pending'?`<button class="btn btn-primary btn-sm" onclick="openEssayReview(${e.id},'${e.writer_id}','${e.profiles?.full_name||''}','${e.subject}','${e.sub_level||'General'}')">Read &amp; Review</button><button class="btn btn-success btn-sm" onclick="quickApprove(${e.id},'${e.writer_id}')">Quick ✓</button>`:''}
+          ${status!=='pending'?`<button class="btn btn-outline btn-sm" onclick="openEssayReview(${e.id},'${e.writer_id}','${e.profiles?.full_name||''}','${e.subject}','${e.sub_level||'General'}')">View Essay</button>`:''}
+        </div>
       </div>
-      <div style="background:var(--parch);border-radius:6px;padding:10px;font-size:0.8rem;line-height:1.7;max-height:70px;overflow:hidden;color:var(--muted)">${(e.essay_text||'').slice(0,280)}…</div>
+      <div style="background:var(--parch);border-radius:6px;padding:10px;font-size:0.8rem;line-height:1.7;max-height:70px;overflow:hidden;color:var(--muted)">${(e.essay_text||'No text — file upload only').slice(0,280)}…</div>
     </div>`).join('');
   }
 
@@ -605,14 +731,14 @@
   function openEssayReview(id,writerId,name,subj,sl){
     reviewingEssayId=id;reviewingWriterId=writerId;
     document.getElementById('er-header').innerHTML=`<strong>${name}</strong> · ${subj} → ${sl}`;
-    // Fetch full essay text
-    sb.from('writer_test_results').select('essay_text,admin_note').eq('id',id).single().then(({data})=>{
+    sb.from('writer_test_results').select('essay_text,admin_note,file_url').eq('id',id).single().then(({data})=>{
       const fileLink = data?.file_url ? `<br><br><a href="${data.file_url}" target="_blank" style="color:#2e75b6;font-weight:bold;">📎 Download Uploaded Essay File</a>` : '';
       document.getElementById('er-text').innerHTML=`<strong>ESSAY:</strong><br><br>${(data?.essay_text||'No content typed.').replace(/\n/g,'<br>')}${fileLink}`;
       document.getElementById('er-note').value=data?.admin_note||'';
     });
     openM('m-essay');
   }
+
   async function doEssayReview(approved){
     const note=document.getElementById('er-note').value.trim();
     if(!note){showGlobalToast('Please provide feedback for the writer.','error');return;}
@@ -621,9 +747,81 @@
     closeM('m-essay');showGlobalToast(`Essay ${approved?'approved':'rejected'}!`,approved?'success':'error');
     renderEssays('pending');updateEssayBadge();
   }
+
   async function quickApprove(id,wid){
     await SC.tests.reviewEssay(id,wid,'approved','Approved by admin.');
     showGlobalToast('Essay approved!','success');renderEssays('pending');updateEssayBadge();
+  }
+
+  // ── Writer Applications Window ─────────────────────────────
+  async function renderApplications() {
+    const s = await SC.settings.get();
+    const isOpen = s.applications_open === 'true';
+    const openDate = s.applications_open_date || '';
+    const closeDate = s.applications_close_date || '';
+    const appMessage = s.applications_message || '';
+
+    document.getElementById('app-open-date').value = openDate;
+    document.getElementById('app-close-date').value = closeDate;
+    document.getElementById('app-message').value = appMessage;
+
+    document.getElementById('app-window-status').innerHTML = isOpen
+      ? `<div class="window-status-open">✅ Writer Applications are currently OPEN — new writers can register and apply</div>`
+      : `<div class="window-status-closed">🚫 Writer Applications are currently CLOSED — new writer registrations are paused</div>`;
+
+    document.getElementById('app-window-controls').innerHTML = isOpen
+      ? `<button class="btn btn-danger" onclick="closeApplicationWindow()">🚫 Close Applications Now</button>`
+      : `<button class="btn btn-success" onclick="openApplicationWindow()">✅ Open Applications Now</button>`;
+
+    // Load pending writer applicants
+    const writers = await SC.users.getAll('writer');
+    const pending = writers.filter(w => !w.is_writer_approved && w.is_active);
+    const el = document.getElementById('pending-applications');
+    if (!pending.length) { el.innerHTML = '<p class="text-muted text-sm">No pending writer applications.</p>'; return; }
+    el.innerHTML = pending.map(w => `
+      <div class="flex-between" style="padding:12px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <strong>${w.full_name}</strong> <span class="text-muted text-sm">· ${w.email}</span>
+          <div class="text-xs text-muted">Applied: ${new Date(w.created_at).toLocaleDateString()}</div>
+        </div>
+        <div class="flex-gap">
+          <button class="btn btn-sm btn-gold" onclick="approveWriter('${w.id}')">✓ Approve</button>
+          <button class="btn btn-sm btn-outline" onclick="toggleUser('${w.id}',false)">✗ Reject</button>
+          <button class="btn btn-sm btn-primary" onclick="quickMessage('${w.id}','${w.full_name}')">✉ Message</button>
+        </div>
+      </div>`).join('');
+  }
+
+  async function openApplicationWindow() {
+    await SC.settings.update({ applications_open: 'true' });
+    showGlobalToast('Writer applications are now OPEN!', 'success');
+    renderApplications();
+  }
+
+  async function closeApplicationWindow() {
+    await SC.settings.update({ applications_open: 'false' });
+    showGlobalToast('Writer applications are now CLOSED.', 'warning');
+    renderApplications();
+  }
+
+  async function saveAppWindowSettings() {
+    const openDate = document.getElementById('app-open-date').value;
+    const closeDate = document.getElementById('app-close-date').value;
+    const message = document.getElementById('app-message').value.trim();
+    await SC.settings.update({
+      applications_open_date: openDate,
+      applications_close_date: closeDate,
+      applications_message: message,
+    });
+    showGlobalToast('Application window settings saved!', 'success');
+  }
+
+  async function updateAppBadge() {
+    const writers = await SC.users.getAll('writer');
+    const pending = writers.filter(w => !w.is_writer_approved && w.is_active);
+    const b = document.getElementById('app-badge');
+    b.textContent = pending.length;
+    b.style.display = pending.length > 0 ? 'inline-flex' : 'none';
   }
 
   // ── Security ───────────────────────────────────────────────
@@ -635,32 +833,30 @@
     document.getElementById('sec-disputes').textContent=disp.length;
     document.getElementById('sec-withdrawals').textContent=pend.length;
     document.getElementById('bl-count').textContent=blocked.length;
-
     document.getElementById('blocked-list').innerHTML=blocked.length?blocked.map(b=>`<div style="border:1px solid rgba(224,85,85,0.2);background:rgba(224,85,85,0.03);border-radius:8px;padding:12px;margin-bottom:8px">
       <div class="flex-between" style="margin-bottom:6px"><div class="flex-gap"><span class="badge badge-danger">⚠️ BLOCKED</span><span class="fw-600 text-sm">${b.profiles?.full_name||b.user_id}</span><span class="tag" style="font-size:0.72rem">Order ${b.order_id}</span></div><span class="text-xs text-muted">${new Date(b.created_at).toLocaleString()}</span></div>
       <div style="font-size:0.82rem;color:var(--danger);background:rgba(224,85,85,0.06);padding:8px;border-radius:6px">"${b.blocked_content||b.detail}"</div>
     </div>`).join(''):'<div class="empty-state" style="padding:20px"><p class="text-sm">No blocked messages 🎉</p></div>';
-
     document.getElementById('disputes-list').innerHTML=disp.length?disp.map(o=>{const cl=o.client||{};return `<div class="card card-sm" style="margin-bottom:10px"><div class="flex-between"><div><strong>${o.order_number}</strong> – ${o.subject}<br><span class="text-sm text-muted">Client: ${cl.full_name||'?'} · <span style="color:var(--danger)">${(o.dispute_reason||'').slice(0,80)}</span></span></div><button class="btn btn-sm btn-primary" onclick="openDispute(${o.id},'${o.order_number}','${o.dispute_reason||''}')">Resolve</button></div></div>`;}).join(''):'<p class="text-muted text-sm">No active disputes.</p>';
-
     document.getElementById('withdrawals-list').innerHTML=pend.length?pend.map(w=>{const u=w.profiles||{};return `<div class="flex-between" style="padding:10px 0;border-bottom:1px solid var(--border);font-size:0.875rem"><div><strong>${u.full_name||'Writer'}</strong> · $${w.amount} via ${w.method}<br><span class="text-xs text-muted">${w.account_details}</span></div><div class="flex-gap"><button class="btn btn-sm btn-success" onclick="approveWithdrawal('${w.id}')">✓ Release</button><button class="btn btn-sm btn-ghost" onclick="denyWithdrawal('${w.id}')">✗ Deny</button></div></div>`;}).join(''):'<p class="text-muted text-sm">No pending withdrawals.</p>';
   }
-  // ── Direct Messages ────────────────────────────────────────
+
+  // ── Messages ───────────────────────────────────────────────
   let adminActiveConv = null;
+  let allConversations = [];
+  let allUsers = [];
 
   async function renderMessages() {
-    // Load all users for recipient dropdown
-    const users = await SC.users.getAll();
+    allUsers = await SC.users.getAll();
     const sel = document.getElementById('msg-recipient');
     sel.innerHTML = '<option value="">Select user...</option>';
-    users.forEach(u => {
+    allUsers.forEach(u => {
       const opt = document.createElement('option');
       opt.value = u.id;
       opt.textContent = `${u.full_name} (${u.user_type}) — ${u.email}`;
       sel.appendChild(opt);
     });
 
-    // Load all conversations (sent + received)
     const [sent, received] = await Promise.all([
       sb.from('direct_messages').select('*').eq('sender_id', adminProfile.id).order('created_at', { ascending: false }),
       sb.from('direct_messages').select('*').eq('recipient_id', adminProfile.id).order('created_at', { ascending: false })
@@ -674,86 +870,95 @@
       conversations[convId].push(m);
     });
 
-    const convList = Object.entries(conversations).map(([id, msgs]) => {
+    allConversations = Object.entries(conversations).map(([id, msgs]) => {
       msgs.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
-      return { id, msgs, latest: msgs[msgs.length-1] };
+      const otherUserId = msgs[0]?.sender_id === adminProfile.id ? msgs[0]?.recipient_id : msgs[0]?.sender_id;
+      const otherUser = allUsers.find(u => u.id === otherUserId);
+      return { id, msgs, latest: msgs[msgs.length-1], otherUser, otherUserId };
     }).sort((a,b) => new Date(b.latest.created_at) - new Date(a.latest.created_at));
 
     const unreadCount = (received.data||[]).filter(m => !m.is_read).length;
     const badge = document.getElementById('msg-badge');
-    if (badge) {
-      badge.textContent = unreadCount;
-      badge.style.display = unreadCount > 0 ? 'inline-flex' : 'none';
-    }
+    if (badge) { badge.textContent = unreadCount; badge.style.display = unreadCount > 0 ? 'inline-flex' : 'none'; }
 
+    renderConversationList(allConversations, received.data||[]);
+  }
+
+  function renderConversationList(convs, receivedMsgs) {
     const hist = document.getElementById('msg-history');
-    if (!convList.length) {
-      hist.innerHTML = '<p class="text-muted text-sm">No conversations yet.</p>';
-      return;
-    }
-
+    if (!convs.length) { hist.innerHTML = '<p class="text-muted text-sm">No conversations yet.</p>'; return; }
     hist.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px" id="admin-conv-list">
-      ${convList.map(c => {
+      ${convs.map(c => {
         const latest = c.latest;
-        const isUnread = (received.data||[]).some(m => m.conversation_id === c.id && !m.is_read);
+        const isUnread = receivedMsgs.some(m => m.conversation_id === c.id && !m.is_read);
         const isMine = latest.sender_id === adminProfile.id;
+        const userName = c.otherUser ? `${c.otherUser.full_name} (${c.otherUser.user_type})` : latest.sender_name || 'User';
         return `<div onclick="openAdminConv('${c.id}')" id="aconv-${c.id}" style="padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:${isUnread?'var(--parch)':'transparent'}">
-          <div class="flex-between" style="margin-bottom:4px">
-            <strong style="font-size:0.875rem">${latest.subject||'Message'}</strong>
+          <div class="flex-between" style="margin-bottom:2px">
+            <strong style="font-size:0.82rem">${userName}</strong>
             <span class="text-xs text-muted">${new Date(latest.created_at).toLocaleDateString()}</span>
           </div>
-          <div style="font-size:0.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${isMine?'You: ':latest.sender_name||'User: '}${latest.content}</div>
+          <div style="font-size:0.8rem;font-weight:600;color:var(--navy2);margin-bottom:2px">${latest.subject||'Message'}</div>
+          <div style="font-size:0.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${isMine?'You: ':userName+': '}${latest.content}</div>
           ${isUnread?'<span class="badge badge-warning" style="margin-top:4px;font-size:0.7rem">New Reply</span>':''}
         </div>`;
       }).join('')}
     </div>`;
   }
 
+  function filterConversations() {
+    const q = document.getElementById('msg-search').value.toLowerCase();
+    if (!q) { renderConversationList(allConversations, []); return; }
+    const filtered = allConversations.filter(c => {
+      const userName = (c.otherUser?.full_name || '').toLowerCase();
+      const email = (c.otherUser?.email || '').toLowerCase();
+      const subject = (c.latest?.subject || '').toLowerCase();
+      const content = c.msgs.some(m => m.content.toLowerCase().includes(q));
+      return userName.includes(q) || email.includes(q) || subject.includes(q) || content;
+    });
+    renderConversationList(filtered, []);
+  }
+
   async function openAdminConv(convId) {
     adminActiveConv = convId;
-    document.querySelectorAll('[id^="aconv-"]').forEach(el => el.style.borderLeft = '');
+    document.querySelectorAll('[id^="aconv-"]').forEach(el => el.style.border = '1px solid var(--border)');
     const convEl = document.getElementById('aconv-'+convId);
     if (convEl) convEl.style.border = '1px solid var(--gold)';
 
-    const [received, sent] = await Promise.all([
-      sb.from('direct_messages').select('*').eq('conversation_id', convId),
-      sb.from('direct_messages').select('*').eq('conversation_id', convId)
-    ]);
-
-    const allMsgs = [...new Map([...(received.data||[]), ...(sent.data||[])].map(m => [m.id, m])).values()];
-    allMsgs.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
-
+    const result = await sb.from('direct_messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
+    const allMsgs = result.data || [];
     const subject = allMsgs[0]?.subject || 'Conversation';
     const otherUserId = allMsgs[0]?.sender_id === adminProfile.id ? allMsgs[0]?.recipient_id : allMsgs[0]?.sender_id;
+    const otherUser = allUsers.find(u => u.id === otherUserId);
+    const userName = otherUser ? `${otherUser.full_name} (${otherUser.user_type})` : allMsgs[0]?.sender_name || 'User';
 
-    // Show conversation in compose area
-    const composeCard = document.querySelector('#tab-messages .card:first-child');
+    const composeCard = document.getElementById('compose-card');
     composeCard.innerHTML = `
       <div class="flex-between" style="margin-bottom:14px">
-        <h3 style="font-family:var(--font-display)">${subject}</h3>
+        <div>
+          <h3 style="font-family:var(--font-display)">${subject}</h3>
+          <div class="text-sm text-muted">${userName}</div>
+        </div>
         <button class="btn btn-ghost btn-sm" onclick="renderMessages()">← Back to list</button>
       </div>
       <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
-        <div id="admin-conv-msgs" style="height:300px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+        <div id="admin-conv-msgs" style="height:320px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
           ${allMsgs.map(m => {
             const isMine = m.sender_id === adminProfile.id;
             return `<div style="display:flex;flex-direction:column;align-items:${isMine?'flex-end':'flex-start'}">
               <div style="max-width:75%;padding:10px 14px;border-radius:${isMine?'12px 12px 2px 12px':'12px 12px 12px 2px'};background:${isMine?'var(--navy)':'var(--parch)'};color:${isMine?'white':'var(--ink)'};font-size:0.875rem">${m.content}</div>
-              <div style="font-size:0.75rem;color:var(--muted);margin-top:3px">${isMine?'You':m.sender_name||'User'} · ${new Date(m.created_at).toLocaleString('en-US',{dateStyle:'short',timeStyle:'short'})}</div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:3px">${isMine?'You':userName} · ${new Date(m.created_at).toLocaleString('en-US',{dateStyle:'short',timeStyle:'short'})}</div>
             </div>`;
           }).join('')}
         </div>
         <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px">
-          <input type="text" class="form-input" id="admin-reply-input" placeholder="Type reply..." style="flex:1" onkeydown="if(event.key==='Enter')sendAdminReply('${convId}','${otherUserId}','${subject.replace(/'/g,"\\'")}')">
+          <input type="text" class="form-input" id="admin-reply-input" placeholder="Type reply…" style="flex:1" onkeydown="if(event.key==='Enter')sendAdminReply('${convId}','${otherUserId}','${subject.replace(/'/g,"\\'")}')">
           <button class="btn btn-primary" onclick="sendAdminReply('${convId}','${otherUserId}','${subject.replace(/'/g,"\\'")}')">Send</button>
         </div>
       </div>`;
 
-    // Scroll to bottom
     const msgs = document.getElementById('admin-conv-msgs');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
-
-    // Mark as read
     await sb.from('direct_messages').update({ is_read: true }).eq('recipient_id', adminProfile.id).eq('conversation_id', convId);
   }
 
@@ -761,17 +966,12 @@
     const input = document.getElementById('admin-reply-input');
     const content = input.value.trim();
     if (!content) return;
-
     const { error } = await sb.from('direct_messages').insert({
-      sender_id: adminProfile.id,
-      recipient_id: recipientId,
+      sender_id: adminProfile.id, recipient_id: recipientId,
       sender_role: 'admin',
       subject: subject.startsWith('Re:') ? subject : 'Re: ' + subject,
-      content,
-      conversation_id: convId,
-      is_read: false,
+      content, conversation_id: convId, is_read: false,
     });
-
     if (error) { showGlobalToast(error.message,'error'); return; }
     input.value = '';
     openAdminConv(convId);
@@ -783,23 +983,14 @@
     const content = document.getElementById('msg-content').value.trim();
     const err = document.getElementById('msg-err');
     err.style.display = 'none';
-
     if (!recipientId) { err.textContent = 'Please select a recipient.'; err.style.display = 'flex'; return; }
     if (!content) { err.textContent = 'Please write a message.'; err.style.display = 'flex'; return; }
-
     const convId = crypto.randomUUID();
-
     const { error } = await sb.from('direct_messages').insert({
-      sender_id: adminProfile.id,
-      recipient_id: recipientId,
-      sender_role: 'admin',
-      subject,
-      content,
-      conversation_id: convId,
+      sender_id: adminProfile.id, recipient_id: recipientId,
+      sender_role: 'admin', subject, content, conversation_id: convId,
     });
-
     if (error) { err.textContent = error.message; err.style.display = 'flex'; return; }
-
     document.getElementById('msg-subject').value = '';
     document.getElementById('msg-content').value = '';
     document.getElementById('msg-recipient').value = '';
@@ -819,7 +1010,7 @@
     if(search)logs=logs.filter(l=>(l.detail||'').toLowerCase().includes(search)||(l.profiles?.full_name||'').toLowerCase().includes(search));
     const tbody=document.getElementById('log-tbody');
     if(!logs.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">No logs found</td></tr>';return;}
-    const colors={blocked_message:'var(--danger)',failed_login:'var(--danger)'};
+    const colors={blocked_message:'var(--danger)',failed_login:'var(--danger)',user_removed:'var(--danger)'};
     tbody.innerHTML=logs.slice(0,300).map(l=>`<tr>
       <td style="font-size:0.78rem;color:var(--muted);white-space:nowrap">${new Date(l.created_at).toLocaleString()}</td>
       <td style="font-size:0.82rem"><strong>${l.profiles?.full_name||l.user_id||'System'}</strong></td>
@@ -873,21 +1064,18 @@
   }
 
   async function changePassword(){
-    const curr=document.getElementById('cp-curr').value;
     const np=document.getElementById('cp-new').value;
     const conf=document.getElementById('cp-conf').value;
     const err=document.getElementById('cp-err');err.style.display='none';
     if(np!==conf){err.textContent='New passwords do not match.';err.style.display='flex';return;}
     const pwErr=validatePassword(np);
     if(pwErr){err.textContent=pwErr;err.style.display='flex';return;}
-    // Verify current by re-signing in, then update
     const{error}=await sb.auth.updateUser({password:np});
     if(error){err.textContent=error.message;err.style.display='flex';return;}
     showGlobalToast('Password updated!','success');
     document.getElementById('cp-curr').value='';document.getElementById('cp-new').value='';document.getElementById('cp-conf').value='';
   }
 
-  // ── Export ─────────────────────────────────────────────────
   async function exportCSV(){
     const{data:orders}=await SC.orders.getAll('completed');
     const s=await SC.settings.get();const pw=parseFloat(s.writer_payout||4);
@@ -896,8 +1084,6 @@
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='scholarconnect-revenue.csv';a.click();
     showGlobalToast('Revenue CSV exported!','success');
   }
-
-  function confirmReset(){if(!confirm('Reset all demo data? This action cannot be undone.'))return;showGlobalToast('In production: run database reset script from Supabase dashboard.','warning');}
 
   function openM(id){document.getElementById(id).classList.add('open');}
   function closeM(id){document.getElementById(id).classList.remove('open');}
