@@ -141,7 +141,7 @@
       </div>
     </div>
 
-  <!-- INBOX -->
+    <!-- INBOX -->
     <div class="page" id="page-inbox">
       <div class="page-header"><div class="page-title">Inbox</div><div class="page-subtitle">Messages from ScholarConnect admin</div></div>
       <div id="inbox-list"><div class="loading"><div class="spinner"></div></div></div>
@@ -182,7 +182,7 @@
     </div>
     <div class="form-group">
       <label class="form-label">Essay Content * <span id="wc-disp" class="text-muted text-sm">(0 words)</span></label>
-      <textarea class="form-textarea" id="essay-text" style="min-height:260px" placeholder="Write your academic essay here. Minimum 1,250 words (~5 pages). Demonstrate subject expertise, academic writing style, and proper citations per the required format…" oninput="updateWC()" onpaste="setTimeout(updateWC,10)"></textarea>
+      <textarea class="form-textarea" id="essay-text" style="min-height:260px" placeholder="Write your academic essay here. Minimum 1,250 words (~5 pages). Demonstrate subject expertise, academic writing style, and proper citations…" oninput="updateWC()" onpaste="setTimeout(updateWC,10)"></textarea>
     </div>
     <div class="form-group"><label class="form-label">Or Upload Essay File <span class="text-muted">(PDF/DOCX)</span></label><input type="file" class="form-input" id="essay-file" accept=".pdf,.docx,.doc"></div>
     <div id="essay-err" class="alert alert-danger" style="display:none"></div>
@@ -196,42 +196,30 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase-client.js"></script>
 <script>
-  // ── Auth guard ────────────────────────────────────────────
   const profile = SC.auth.requireRole('writer');
   if (!profile) throw new Error('redirect');
 
-  // ── Theme ─────────────────────────────────────────────────
   if (localStorage.getItem('sc_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
   const tb = document.getElementById('theme-btn');
   if (localStorage.getItem('sc_theme') === 'dark') tb.classList.add('on');
   tb.addEventListener('click', () => { const d = document.documentElement.getAttribute('data-theme')==='dark'; document.documentElement.setAttribute('data-theme',d?'':'dark'); localStorage.setItem('sc_theme',d?'':'dark'); tb.classList.toggle('on',!d); });
 
-  // ── Subjects ──────────────────────────────────────────────
   const SUBJECTS = {'Business & Management':['General','Strategy','Marketing','Finance','Accounting','HR Management'],'Nursing & Medicine':['General','Clinical','Pharmacology','Pediatrics','Mental Health Nursing'],'Computer Science & IT':['General','Programming','Algorithms','AI & Machine Learning','Cybersecurity'],'Psychology':['General','Clinical Psychology','Developmental Psychology','Social Psychology'],'Education':['General','Curriculum Design','Special Education','Educational Psychology'],'Law':['General','Criminal Law','Constitutional Law','Corporate Law','International Law'],'History':['General','World History','African History','American History','European History'],'English Literature':['General','British Literature','American Literature','African Literature','Poetry'],'Mathematics':['General','Calculus','Statistics','Linear Algebra','Discrete Mathematics'],'Biology & Life Sciences':['General','Molecular Biology','Ecology','Genetics','Microbiology'],'Chemistry':['General','Organic','Inorganic','Physical Chemistry'],'Political Science':['General','International Relations','Comparative Politics','Public Policy'],'Sociology':['General','Urban Sociology','Cultural Studies','Gender Studies'],'Economics':['General','Microeconomics','Macroeconomics','Econometrics'],'Engineering':['General','Civil','Mechanical','Electrical','Chemical Engineering']};
 
-  // ── State ─────────────────────────────────────────────────
   let curOrdId = null, reqOrdId = null, detFrom = 'my-orders';
   let chatSub = null, questions = [], testAnswers = [], qIdx = 0, testTimerInt = null;
   let settings = {}, testResults = [];
 
-  // ── Init ──────────────────────────────────────────────────
   document.getElementById('welcome-msg').textContent = `Welcome, ${profile.full_name.split(' ')[0]}!`;
   const badge = document.getElementById('status-badge');
 
   async function init() {
     settings = await SC.settings.get();
     testResults = await SC.tests.getResultsForWriter(profile.id);
-
     const engPassed = testResults.some(r => r.test_type === 'english' && r.passed);
-    if (!engPassed) {
-      startEnglishTest();
-      return;
-    }
-    if (!profile.is_writer_approved) {
-      badge.textContent = '⏳ Pending Approval'; badge.className = 'badge badge-warning';
-    } else {
-      badge.textContent = '● Active'; badge.className = 'badge badge-success';
-    }
+    if (!engPassed) { startEnglishTest(); return; }
+    if (!profile.is_writer_approved) { badge.textContent = '⏳ Pending Approval'; badge.className = 'badge badge-warning'; }
+    else { badge.textContent = '● Active'; badge.className = 'badge badge-success'; }
     populateSubjectFilter();
     renderOverview();
     updateAvailBadge();
@@ -250,8 +238,6 @@
     document.getElementById('test-overlay').style.display = 'block';
     testAnswers = new Array(qs.length).fill(null); qIdx = 0;
     renderQ();
-
-    // 10-minute countdown
     let s = 600;
     const tick = () => {
       const m = Math.floor(s/60), sec = s%60;
@@ -261,8 +247,6 @@
       s--;
     };
     tick(); testTimerInt = setInterval(tick, 1000);
-
-    // Disable copy/paste/right-click
     document.addEventListener('copy', e => { e.preventDefault(); showGlobalToast('Copying is not allowed during the test.','error'); });
     document.addEventListener('paste', e => e.preventDefault());
     document.addEventListener('contextmenu', e => e.preventDefault());
@@ -274,10 +258,7 @@
     document.getElementById('test-prog').style.width = ((qIdx+1)/questions.length*100) + '%';
     document.getElementById('test-container').innerHTML = `
       <div class="card no-copy" style="user-select:none">
-        <div class="flex-between" style="margin-bottom:18px">
-          <span class="badge badge-navy">Q${qIdx+1} of ${questions.length}</span>
-          <span class="text-muted text-sm">Pass: 80% (20/25)</span>
-        </div>
+        <div class="flex-between" style="margin-bottom:18px"><span class="badge badge-navy">Q${qIdx+1} of ${questions.length}</span><span class="text-muted text-sm">Pass: 80% (20/25)</span></div>
         <h3 style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:22px;line-height:1.5;user-select:none">${q.question_text}</h3>
         ${['A','B','C','D'].map(k => `<button class="option-btn ${testAnswers[qIdx]===k?'selected':''}" onclick="pickAns('${k}')" style="user-select:none">${k}. ${q['option_'+k.toLowerCase()]}</button>`).join('')}
         <div class="flex-between" style="margin-top:18px">
@@ -302,20 +283,15 @@
     document.getElementById('res-title').textContent = r.passed ? 'Test Passed!' : 'Below Pass Mark';
     document.getElementById('res-score').textContent = `${r.score} / ${r.total}`;
     document.getElementById('res-pct').textContent   = `${r.pct}% – ${r.passed?'PASS ✓':'required 80%'}`;
-    document.getElementById('res-msg').textContent   = r.passed
-      ? 'Congratulations! You can now submit subject essays for admin review to unlock order access.'
-      : `You scored ${r.pct}%. You need at least 80% (20/25) to pass. Please review and try again.`;
-    document.getElementById('res-actions').innerHTML = r.passed
-      ? `<button class="btn btn-primary btn-lg" onclick="onTestPassed()">Continue to Dashboard →</button>`
-      : `<button class="btn btn-gold btn-lg" onclick="retakeTest()">Retake Test</button>`;
+    document.getElementById('res-msg').textContent   = r.passed ? 'Congratulations! You can now submit subject essays for admin review to unlock order access.' : `You scored ${r.pct}%. You need at least 80% (20/25) to pass. Please review and try again.`;
+    document.getElementById('res-actions').innerHTML = r.passed ? `<button class="btn btn-primary btn-lg" onclick="onTestPassed()">Continue to Dashboard →</button>` : `<button class="btn btn-gold btn-lg" onclick="retakeTest()">Retake Test</button>`;
   }
 
   async function onTestPassed() {
     document.getElementById('test-overlay').style.display = 'none';
     testResults = await SC.tests.getResultsForWriter(profile.id);
     badge.textContent = '⏳ Pending Approval'; badge.className = 'badge badge-warning';
-    populateSubjectFilter();
-    renderOverview();
+    populateSubjectFilter(); renderOverview();
     showGlobalToast('Test passed! Now submit a subject essay to unlock orders.','success');
   }
 
@@ -333,7 +309,6 @@
     }, 1000);
   }
 
-  // ── Navigation ────────────────────────────────────────────
   function showPage(name) {
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.sidebar-link').forEach(l=>l.classList.remove('active'));
@@ -349,7 +324,6 @@
   }
   function goBack() { showPage(detFrom); }
 
-  // ── Overview ──────────────────────────────────────────────
   async function renderOverview() {
     const { assigned, available } = await SC.orders.getForWriter(profile.id);
     const done = assigned.filter(o=>o.status==='completed');
@@ -361,25 +335,20 @@
     const approvedEssays = testResults.filter(r=>r.test_type==='essay'&&r.admin_approved);
     document.getElementById('st-subjs').textContent = new Set(approvedEssays.map(r=>r.subject)).size;
     const active = assigned.filter(o=>['in_progress','under_review'].includes(o.status));
-    document.getElementById('active-list').innerHTML = active.length
-      ? active.slice(0,3).map(o=>miniCard(o)).join('')
-      : '<div class="empty-state" style="padding:16px"><p class="text-sm">No active orders.</p></div>';
-    document.getElementById('avail-preview').innerHTML = available.length
-      ? available.slice(0,3).map(o=>availMini(o)).join('')
-      : '<div class="empty-state" style="padding:16px"><p class="text-sm">No orders available now.</p></div>';
+    document.getElementById('active-list').innerHTML = active.length ? active.slice(0,3).map(o=>miniCard(o)).join('') : '<div class="empty-state" style="padding:16px"><p class="text-sm">No active orders.</p></div>';
+    document.getElementById('avail-preview').innerHTML = available.length ? available.slice(0,3).map(o=>availMini(o)).join('') : '<div class="empty-state" style="padding:16px"><p class="text-sm">No orders available now.</p></div>';
   }
 
   function miniCard(o) {
     const d=new Date(o.deadline),days=Math.ceil((d-Date.now())/86400000);
-    return `<div class="order-card" style="margin-bottom:10px" onclick="openDetail(${o.id},'my-orders')"><div class="flex-between"><span class="order-num">${o.order_number}</span><span class="badge status-${o.status}">${statusLabel(o.status)}</span></div><div style="font-weight:600;margin:4px 0;font-size:0.9rem">${o.subject} · ${o.page_count}p</div><div class="text-sm text-muted" style="color:${days<=1?'var(--danger)':'inherit'}">${days}d left</div></div>`;
+    return `<div class="order-card" style="margin-bottom:10px" onclick="openDetail(${o.id},'my-orders')"><div class="flex-between"><span class="order-num">${o.order_number}</span><span class="badge status-${o.status}">${statusLabel(o.status)}</span></div><div style="font-weight:600;margin:4px 0;font-size:0.9rem">${o.subject} · ${o.page_count}p${o.citation_style?' · '+o.citation_style:''}</div><div class="text-sm text-muted" style="color:${days<=1?'var(--danger)':'inherit'}">${days}d left</div></div>`;
   }
   function availMini(o) {
     const p=(parseFloat(settings.writer_payout||4)*o.page_count).toFixed(0);
-    return `<div class="order-card" style="margin-bottom:10px;cursor:pointer" onclick="showPage('available')"><div class="flex-between"><span class="order-num">${o.order_number}</span><span class="badge badge-success">$${p}</span></div><div style="font-weight:600;margin:4px 0;font-size:0.9rem">${o.subject}</div><div class="text-sm text-muted">${o.page_count} pages</div></div>`;
+    return `<div class="order-card" style="margin-bottom:10px;cursor:pointer" onclick="showPage('available')"><div class="flex-between"><span class="order-num">${o.order_number}</span><span class="badge badge-success">$${p}</span></div><div style="font-weight:600;margin:4px 0;font-size:0.9rem">${o.subject}</div><div class="text-sm text-muted">${o.page_count} pages${o.citation_style?' · '+o.citation_style:''}</div></div>`;
   }
   function statusLabel(s){return{pending_payment:'Pending Payment',pending_writer:'Available',in_progress:'In Progress',under_review:'Under Review',completed:'Completed',disputed:'Disputed'}[s]||s;}
 
-  // ── Available Orders ──────────────────────────────────────
   async function renderAvailable() {
     const el = document.getElementById('available-list');
     el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -399,9 +368,13 @@
       const hrs = Math.ceil((new Date(o.deadline)-Date.now())/3600000);
       return `<div class="order-card" style="margin-bottom:12px" onclick="openDetail(${o.id},'available')">
         <div class="flex-between" style="margin-bottom:6px"><span class="order-num">${o.order_number}</span><div class="flex-gap">${o.is_urgent?'<span class="badge badge-warning">⚡ Urgent</span>':''}<span class="badge badge-success">$${p} payout</span></div></div>
-        <div style="font-weight:600;margin-bottom:10px;color:var(--navy)">${o.subject} → ${o.sub_level||'General'} · ${o.academic_level}</div>
-        <div class="flex-gap" style="flex-wrap:wrap"><span class="tag">${o.page_count} pages</span><span class="text-sm" style="color:${hrs<=24?'var(--danger)':'var(--muted)'};margin-left:auto">⏱ ${hrs<48?hrs+'h':Math.ceil(hrs/24)+'d'} left</span></div>
-        <div style="margin-top:12px"><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openReqModal(${o.id},'${o.order_number}',${o.page_count})">Request Order</button></div>
+        <div style="font-weight:600;margin-bottom:6px;color:var(--navy)">${o.subject} → ${o.sub_level||'General'} · ${o.academic_level}</div>
+        <div class="flex-gap" style="flex-wrap:wrap;margin-bottom:8px">
+          <span class="tag">${o.page_count} pages</span>
+          ${o.citation_style?`<span class="tag">${o.citation_style}</span>`:''}
+          <span class="text-sm" style="color:${hrs<=24?'var(--danger)':'var(--muted)'};margin-left:auto">⏱ ${hrs<48?hrs+'h':Math.ceil(hrs/24)+'d'} left</span>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openReqModal(${o.id},'${o.order_number}',${o.page_count})">Request Order</button>
       </div>`;
     }).join('');
     updateAvailBadge();
@@ -414,7 +387,6 @@
   }
   function clearFilters(){document.getElementById('f-subj').value='';document.getElementById('f-level').value='';document.getElementById('f-urg').value='';renderAvailable();}
 
-  // ── My Orders ─────────────────────────────────────────────
   async function renderMyOrders() {
     const el = document.getElementById('my-orders-list');
     el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -425,7 +397,6 @@
     el.innerHTML = orders.map(o=>`<div onclick="openDetail(${o.id},'my-orders')">${miniCard(o)}</div>`).join('');
   }
 
-  // ── Order Detail ──────────────────────────────────────────
   async function openDetail(ordId, from='my-orders') {
     curOrdId = ordId; detFrom = from;
     const { data: o } = await SC.orders.getOne(ordId);
@@ -445,6 +416,7 @@
         <div><div class="form-label">Subject</div><div>${o.subject} → ${o.sub_level||'General'}</div></div>
         <div><div class="form-label">Level</div><div>${o.academic_level}</div></div>
         <div><div class="form-label">Pages</div><div>${o.page_count}</div></div>
+        <div><div class="form-label">Citation Style</div><div><strong>${o.citation_style||'APA'}</strong></div></div>
         <div><div class="form-label">Deadline</div><div style="color:${hrs<=24?'var(--danger)':'inherit'}">${new Date(o.deadline).toLocaleString()} (${hrs}h)</div></div>
         <div><div class="form-label">Your Payout</div><div class="fw-700 text-success">$${p}</div></div>
         <div><div class="form-label">Revisions</div><div>${o.revisions_used}/2</div></div>
@@ -460,13 +432,13 @@
     if (!isMine && o.status === 'pending_writer') {
       actions = `<div class="card card-sm"><h4 style="margin-bottom:12px">Available</h4><div class="price-display" style="margin-bottom:12px"><div style="font-size:0.78rem;color:var(--muted);margin-bottom:4px">Your Payout</div><div style="font-family:var(--font-display);font-size:2rem;font-weight:700;color:var(--success)">$${p}</div><div style="font-size:0.78rem;color:var(--muted)">$${settings.writer_payout||4} × ${o.page_count} pages</div></div><button class="btn btn-primary btn-full" onclick="openReqModal(${o.id},'${o.order_number}',${o.page_count})">Request This Order</button></div>`;
     } else if (isMine && o.status === 'in_progress') {
-      actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">Submit Work</h4><p class="text-sm text-muted" style="margin-bottom:12px">Files are auto virus-scanned and plagiarism-checked before client notification.</p><button class="btn btn-primary btn-full" onclick="openM('m-submit')">Upload &amp; Submit</button></div>`;
+      actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">Submit Work</h4><div class="alert alert-info" style="margin-bottom:10px"><span>📋</span><span>Required style: <strong>${o.citation_style||'APA'}</strong></span></div><p class="text-sm text-muted" style="margin-bottom:12px">Files are auto virus-scanned and plagiarism-checked before client notification.</p><button class="btn btn-primary btn-full" onclick="openM('m-submit')">Upload &amp; Submit</button></div>`;
     } else if (isMine && o.status === 'under_review') {
       actions = `<div class="card card-sm"><h4>⏳ Under Review</h4><p class="text-sm text-muted" style="margin-top:6px">Client is reviewing. Auto-approves in ${o.auto_approve_at?Math.max(0,Math.ceil((new Date(o.auto_approve_at)-Date.now())/3600000)):72}h if no action.</p></div>`;
     } else if (isMine && o.status === 'completed') {
       actions = `<div class="card card-sm"><h4>✅ Completed</h4><div class="alert alert-success" style="margin-top:8px">$${p} released to your account.</div>${o.rating?`<div style="margin-top:8px">${'⭐'.repeat(o.rating)} <span class="text-sm">${o.review_text||''}</span></div>`:''}</div>`;
     }
-    document.getElementById('det-actions').innerHTML = actions + `<div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Order Info</div><div style="font-size:0.82rem;color:var(--muted);line-height:2.2"><div class="flex-between"><span>Pages:</span><strong>${o.page_count}</strong></div><div class="flex-between"><span>Rate:</span><strong>$${settings.writer_payout||4}/page</strong></div><div class="flex-between"><span>Payout:</span><strong style="color:var(--success)">$${p}</strong></div><div class="flex-between"><span>Type:</span><strong>${o.is_urgent?'⚡ Urgent':'Standard'}</strong></div></div></div>`;
+    document.getElementById('det-actions').innerHTML = actions + `<div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Order Info</div><div style="font-size:0.82rem;color:var(--muted);line-height:2.2"><div class="flex-between"><span>Pages:</span><strong>${o.page_count}</strong></div><div class="flex-between"><span>Rate:</span><strong>$${settings.writer_payout||4}/page</strong></div><div class="flex-between"><span>Payout:</span><strong style="color:var(--success)">$${p}</strong></div><div class="flex-between"><span>Type:</span><strong>${o.is_urgent?'⚡ Urgent':'Standard'}</strong></div><div class="flex-between"><span>Citation:</span><strong>${o.citation_style||'APA'}</strong></div></div></div>`;
 
     showPage('order-detail');
     loadMessages();
@@ -474,7 +446,6 @@
     chatSub = SC.messages.subscribe(ordId, msg => appendMsg(msg));
   }
 
-  // ── Chat ──────────────────────────────────────────────────
   async function loadMessages() {
     const { data: msgs } = await SC.messages.getForOrder(curOrdId);
     const el = document.getElementById('chat-msgs');
@@ -501,7 +472,6 @@
   }
   document.getElementById('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}});
 
-  // ── Request Order ─────────────────────────────────────────
   function openReqModal(id, num, pages) {
     reqOrdId = id;
     const p = (parseFloat(settings.writer_payout||4)*pages).toFixed(0);
@@ -515,7 +485,6 @@
     renderAvailable(); renderOverview();
   }
 
-  // ── Submit Work ───────────────────────────────────────────
   async function doSubmitWork() {
     const fi = document.getElementById('sub-file');
     const notes = document.getElementById('sub-notes').value;
@@ -535,22 +504,17 @@
     setTimeout(()=>openDetail(curOrdId,detFrom),500);
   }
 
-  // ── Qualifications ────────────────────────────────────────
   async function renderQualifications() {
     testResults = await SC.tests.getResultsForWriter(profile.id);
     const engTest = testResults.find(r=>r.test_type==='english');
     const essays  = testResults.filter(r=>r.test_type==='essay');
     const approved = essays.filter(r=>r.admin_approved);
-
-    // Populate essay subject select
     const sel = document.getElementById('e-subject');
     if (!sel.options.length || sel.options[0].value==='') {
       sel.innerHTML = '<option value="">Select subject…</option>';
       Object.keys(SUBJECTS).forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
     }
-
     const rows = essays.map(e=>`<tr><td><strong>${e.subject}</strong></td><td>${e.sub_level||'General'}</td><td><span class="badge ${e.admin_approved?'badge-success':e.admin_note?'badge-danger':'badge-warning'}">${e.admin_approved?'Approved':e.admin_note?'Rejected':'Pending'}</span></td><td style="font-size:0.82rem;color:var(--muted)">${e.admin_note||'—'}</td><td style="font-size:0.8rem;color:var(--muted)">${new Date(e.completed_at).toLocaleDateString()}</td></tr>`).join('');
-
     document.getElementById('qual-content').innerHTML = `
       <div class="card" style="margin-bottom:18px">
         <div class="flex-between" style="margin-bottom:14px">
@@ -576,7 +540,6 @@
       </div>`;
   }
 
-  // ── Essay Modal ───────────────────────────────────────────
   function openEssayModal() {
     document.getElementById('essay-text').value='';
     document.getElementById('essay-err').style.display='none';
@@ -593,11 +556,7 @@
     const { data: eq } = await SC.tests.getEssayPrompt(subj);
     if (eq) {
       const reqs = Array.isArray(eq.requirements) ? eq.requirements : JSON.parse(eq.requirements||'[]');
-      document.getElementById('essay-prompt').innerHTML = `
-        <h4>${eq.title}</h4>
-        <p style="margin:8px 0;font-size:0.875rem;color:var(--ink)">${eq.prompt}</p>
-        <div style="margin-top:10px"><strong style="font-size:0.82rem">Required format: ${eq.format}</strong></div>
-        <ul style="margin-top:8px">${reqs.map(r=>`<li>${r}</li>`).join('')}</ul>`;
+      document.getElementById('essay-prompt').innerHTML = `<h4>${eq.title}</h4><p style="margin:8px 0;font-size:0.875rem;color:var(--ink)">${eq.prompt}</p><div style="margin-top:10px"><strong style="font-size:0.82rem">Required format: ${eq.format}</strong></div><ul style="margin-top:8px">${reqs.map(r=>`<li>${r}</li>`).join('')}</ul>`;
     }
   }
 
@@ -615,8 +574,6 @@
     const fi   = document.getElementById('essay-file');
     const err  = document.getElementById('essay-err'); err.style.display='none';
     if (!subj) { err.textContent='Please select a subject.'; err.style.display='flex'; return; }
-    const hasFile = fi.files.length > 0;
-    if (!subj) { err.textContent='Please select a subject.'; err.style.display='flex'; return; }
     const btn = document.getElementById('essay-btn'); btn.disabled=true; btn.textContent='Submitting…';
     let fileUrl = '';
     if (fi.files.length) {
@@ -631,26 +588,21 @@
     renderQualifications();
   }
 
-  // ── Earnings ──────────────────────────────────────────────
   function checkWithdrawalWindow() {
     const today = new Date().getDate();
     const isWindow = (today >= 12 && today <= 15) || (today >= 26 && today <= 29);
     const alert = document.getElementById('w-window-alert');
     const btn = document.getElementById('w-btn');
     if (!isWindow) {
-      const next14 = new Date(); next14.setDate(14);
-      const next28 = new Date(); next28.setDate(28);
-      const nextDate = today < 14 ? next14 : today < 28 ? next28 : new Date(next14.getFullYear(), next14.getMonth()+1, 14);
       alert.innerHTML = `<div class="alert alert-warning" style="margin-bottom:12px">⏳ <strong>Withdrawal window closed.</strong> Next window opens on the 14th or 28th of the month.</div>`;
-      btn.disabled = true;
-      btn.style.opacity = '0.5';
+      btn.disabled = true; btn.style.opacity = '0.5';
     } else {
       alert.innerHTML = `<div class="alert alert-success" style="margin-bottom:12px">✅ <strong>Withdrawal window is open!</strong> You can request a withdrawal now.</div>`;
-      btn.disabled = false;
-      btn.style.opacity = '1';
+      btn.disabled = false; btn.style.opacity = '1';
     }
   }
 
+  // ── Inbox ─────────────────────────────────────────────────
   let activeConversation = null;
 
   async function loadInbox() {
@@ -659,15 +611,12 @@
     if (!list) return;
     list.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
-    // Get all messages for this writer (received + sent)
     const [received, sent] = await Promise.all([
       sb.from('direct_messages').select('*').eq('recipient_id', profile.id).order('created_at', { ascending: false }),
       sb.from('direct_messages').select('*').eq('sender_id', profile.id).order('created_at', { ascending: false })
     ]);
 
     const allMsgs = [...(received.data || []), ...(sent.data || [])];
-
-    // Group by conversation_id
     const conversations = {};
     allMsgs.forEach(m => {
       const convId = m.conversation_id || m.id;
@@ -675,19 +624,14 @@
       conversations[convId].push(m);
     });
 
-    // Sort each conversation by date and get latest message
     const convList = Object.entries(conversations).map(([id, msgs]) => {
       msgs.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
       return { id, msgs, latest: msgs[msgs.length-1] };
     }).sort((a,b) => new Date(b.latest.created_at) - new Date(a.latest.created_at));
 
     const unreadCount = (received.data || []).filter(m => !m.is_read).length;
-    if (unreadCount > 0) {
-      badge.textContent = unreadCount;
-      badge.style.display = 'inline-flex';
-    } else {
-      badge.style.display = 'none';
-    }
+    if (unreadCount > 0) { badge.textContent = unreadCount; badge.style.display = 'inline-flex'; }
+    else { badge.style.display = 'none'; }
 
     if (!convList.length) {
       list.innerHTML = '<div class="card"><p class="text-muted text-sm">No messages yet.</p></div>';
@@ -701,7 +645,7 @@
             const latest = c.latest;
             const isUnread = (received.data||[]).some(m => m.conversation_id === c.id && !m.is_read);
             const isMine = latest.sender_id === profile.id;
-            return `<div onclick="openConversation('${c.id}')" id="conv-${c.id}" style="padding:14px;border-bottom:1px solid var(--border);cursor:pointer;background:${isUnread?'var(--parch)':'transparent'};${activeConversation===c.id?'border-left:3px solid var(--gold)':''}">
+            return `<div onclick="openConversation('${c.id}')" id="conv-${c.id}" style="padding:14px;border-bottom:1px solid var(--border);cursor:pointer;background:${isUnread?'var(--parch)':'transparent'}">
               <div class="flex-between" style="margin-bottom:4px">
                 <strong style="font-size:0.875rem">${latest.subject||'Message'}</strong>
                 <span class="text-xs text-muted">${new Date(latest.created_at).toLocaleDateString()}</span>
@@ -712,17 +656,13 @@
           }).join('')}
         </div>
         <div style="border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column" id="chat-panel">
-          <div style="padding:20px;text-align:center;color:var(--muted);margin:auto">
-            <p>Select a conversation to view messages</p>
-          </div>
+          <div style="padding:20px;text-align:center;color:var(--muted);margin:auto"><p>Select a conversation to view messages</p></div>
         </div>
       </div>`;
   }
 
   async function openConversation(convId) {
     activeConversation = convId;
-
-    // Highlight selected conversation
     document.querySelectorAll('[id^="conv-"]').forEach(el => el.style.borderLeft = '');
     const convEl = document.getElementById('conv-'+convId);
     if (convEl) convEl.style.borderLeft = '3px solid var(--gold)';
@@ -730,15 +670,8 @@
     const panel = document.getElementById('chat-panel');
     panel.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
 
-    // Get all messages in this conversation
-    const [received, sent] = await Promise.all([
-      sb.from('direct_messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true }),
-      sb.from('direct_messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true })
-    ]);
-
-    const allMsgs = [...new Map([...(received.data||[]), ...(sent.data||[])].map(m => [m.id, m])).values()];
-    allMsgs.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
-
+    const result = await sb.from('direct_messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
+    const allMsgs = result.data || [];
     const subject = allMsgs[0]?.subject || 'Conversation';
 
     panel.innerHTML = `
@@ -757,45 +690,26 @@
         <button class="btn btn-primary" onclick="sendConvReply('${convId}','${subject.replace(/'/g,"\\'")}')">Send</button>
       </div>`;
 
-    // Scroll to bottom
     const msgs = document.getElementById('conv-messages');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
-
-    // Mark as read
-    await sb.from('direct_messages')
-      .update({ is_read: true })
-      .eq('recipient_id', profile.id)
-      .eq('conversation_id', convId);
+    await sb.from('direct_messages').update({ is_read: true }).eq('recipient_id', profile.id).eq('conversation_id', convId);
   }
 
   async function sendConvReply(convId, subject) {
     const input = document.getElementById('conv-reply-input');
     const content = input.value.trim();
     if (!content) return;
-
     const { data: adminProf } = await sb.from('profiles').select('id').eq('user_type','admin').single();
     if (!adminProf) { showGlobalToast('Could not find admin.','error'); return; }
-
     const { error } = await sb.from('direct_messages').insert({
-      sender_id: profile.id,
-      recipient_id: adminProf.id,
-      sender_role: 'writer',
-      sender_name: profile.full_name,
+      sender_id: profile.id, recipient_id: adminProf.id,
+      sender_role: 'writer', sender_name: profile.full_name,
       subject: subject.startsWith('Re:') ? subject : 'Re: ' + subject,
-      content,
-      conversation_id: convId,
-      is_read: false,
+      content, conversation_id: convId, is_read: false,
     });
-
     if (error) { showGlobalToast(error.message,'error'); return; }
     input.value = '';
     openConversation(convId);
-    // Refresh conversation list
-    const convEl = document.getElementById('conv-'+convId);
-    if (convEl) {
-      const preview = convEl.querySelector('div:last-child');
-      if (preview) preview.textContent = 'You: ' + content;
-    }
   }
 
   async function renderEarnings() {
@@ -815,8 +729,8 @@
 
   function updateWLabel() {
     const m = document.getElementById('w-method').value;
-    const labels = {paypal:'PayPal Email *', mpesa:'M-Pesa Number *', bank:'Bank Account / IBAN *'};
-    const phs    = {paypal:'your@paypal.com', mpesa:'+254700000000', bank:'GB29 NWBK 6016 1331 9268 19'};
+    const labels = {paypal:'PayPal Email *', mpesa:'M-Pesa Number *', bank:'Bank Account / IBAN *', payoneer:'Payoneer Email *'};
+    const phs    = {paypal:'your@paypal.com', mpesa:'+254700000000', bank:'GB29 NWBK 6016 1331 9268 19', payoneer:'your@payoneer.com'};
     document.getElementById('w-label').textContent = labels[m]||'Account Details *';
     document.getElementById('w-details').placeholder = phs[m]||'Account details';
   }
