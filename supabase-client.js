@@ -1,25 +1,95 @@
 // ============================================================
 // ScholarConnect – Supabase Client & Auth Layer
-// Replace SUPABASE_URL and SUPABASE_ANON_KEY with your values
-// from: Supabase Dashboard → Project Settings → API
 // ============================================================
 
-// ── Configuration (set your real keys here) ──────────────────
+// ── Configuration ──────────────────────────────────────────
 const SUPABASE_URL  = window.ENV_SUPABASE_URL  || 'https://wgypsnemgtsvpqrgbrpg.supabase.co';
 const SUPABASE_KEY  = window.ENV_SUPABASE_KEY  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndneXBzbmVtZ3RzdnBxcmdicnBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMDU3MzQsImV4cCI6MjA5Mzc4MTczNH0.FGhHIGqnNi0oTiLvruuya0iU8-zdD0keAOY5BQhVf8w';
+const FUNCTIONS_URL = 'https://wgypsnemgtsvpqrgbrpg.supabase.co/functions/v1';
 
-// ── Load Supabase JS from CDN ─────────────────────────────────
-// (included via <script> in each HTML file)
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ── Constants ─────────────────────────────────────────────────
-const ADMIN_EMAIL        = 'solutionscenter29@gmail.com'; // NEVER shown in UI
+// ── Constants ─────────────────────────────────────────────
+const ADMIN_EMAIL        = 'solutionscenter29@gmail.com';
 const SUPPORT_EMAIL      = 'writerhub97@gmail.com';
 const WHATSAPP_NUMBER    = '254716603371';
-const SESSION_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour
+const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
 
-// ── Session idle timer ────────────────────────────────────────
+// ── Email Helper ──────────────────────────────────────────
+async function sendEmail(to, subject, html) {
+  try {
+    await fetch(`${FUNCTIONS_URL}/send-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+      },
+      body: JSON.stringify({ to, subject, html }),
+    });
+  } catch (e) {
+    console.error('[Email Error]', e);
+  }
+}
+
+// ── Email Templates ───────────────────────────────────────
+const EmailTemplates = {
+  otp: (code) => `
+    <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:30px;border:1px solid #e0e0e0;border-radius:8px;">
+      <h2 style="color:#1a237e;">ScholarConnect Security Code</h2>
+      <p>Your login verification code is:</p>
+      <div style="font-size:36px;font-weight:bold;color:#1a237e;letter-spacing:8px;text-align:center;padding:20px;background:#f5f5f5;border-radius:8px;">${code}</div>
+      <p style="color:#666;">This code expires in <strong>10 minutes</strong>. Do not share it with anyone.</p>
+      <hr style="border:none;border-top:1px solid #eee;">
+      <p style="color:#999;font-size:12px;">ScholarConnect — Secure Academic Writing Platform</p>
+    </div>`,
+
+  orderCreated: (orderNumber, total, deposit) => `
+    <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:30px;border:1px solid #e0e0e0;border-radius:8px;">
+      <h2 style="color:#1a237e;">Order Received — ${orderNumber}</h2>
+      <p>Your order has been received successfully.</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Order Number</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${orderNumber}</td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Total Price</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">$${total}</td></tr>
+        <tr><td style="padding:8px;"><strong>Deposit Due</strong></td><td style="padding:8px;">$${deposit}</td></tr>
+      </table>
+      <p>Please complete your deposit payment to get your order started.</p>
+      <a href="https://scholarconnecthub.com/client-dashboard.html" style="display:inline-block;background:#1a237e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;margin-top:10px;">View Order</a>
+      <hr style="border:none;border-top:1px solid #eee;margin-top:20px;">
+      <p style="color:#999;font-size:12px;">ScholarConnect — Secure Academic Writing Platform</p>
+    </div>`,
+
+  workSubmitted: (orderNumber, autoApproveHours) => `
+    <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:30px;border:1px solid #e0e0e0;border-radius:8px;">
+      <h2 style="color:#1a237e;">Work Delivered — ${orderNumber}</h2>
+      <p>Your writer has submitted the completed work for order <strong>${orderNumber}</strong>.</p>
+      <p>Please review and approve within <strong>${autoApproveHours} hours</strong>, or it will be auto-approved.</p>
+      <a href="https://scholarconnecthub.com/client-dashboard.html" style="display:inline-block;background:#1a237e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;margin-top:10px;">Review Work</a>
+      <hr style="border:none;border-top:1px solid #eee;margin-top:20px;">
+      <p style="color:#999;font-size:12px;">ScholarConnect — Secure Academic Writing Platform</p>
+    </div>`,
+
+  orderAssigned: (orderNumber, deadline) => `
+    <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:30px;border:1px solid #e0e0e0;border-radius:8px;">
+      <h2 style="color:#1a237e;">Order Assigned — ${orderNumber}</h2>
+      <p>You have been assigned order <strong>${orderNumber}</strong>.</p>
+      <p><strong>Deadline:</strong> ${new Date(deadline).toLocaleString()}</p>
+      <a href="https://scholarconnecthub.com/freelancer-dashboard.html" style="display:inline-block;background:#1a237e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;margin-top:10px;">View Order</a>
+      <hr style="border:none;border-top:1px solid #eee;margin-top:20px;">
+      <p style="color:#999;font-size:12px;">ScholarConnect — Secure Academic Writing Platform</p>
+    </div>`,
+
+  adminAlert: (subject, message) => `
+    <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:30px;border:1px solid #e0e0e0;border-radius:8px;">
+      <h2 style="color:#b71c1c;">Admin Alert — ${subject}</h2>
+      <p>${message}</p>
+      <a href="https://scholarconnecthub.com/admin.html" style="display:inline-block;background:#b71c1c;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;margin-top:10px;">Go to Admin Panel</a>
+      <hr style="border:none;border-top:1px solid #eee;margin-top:20px;">
+      <p style="color:#999;font-size:12px;">ScholarConnect — Secure Academic Writing Platform</p>
+    </div>`,
+};
+
+// ── Session idle timer ────────────────────────────────────
 let _idleTimer = null;
 function _resetIdleTimer() {
   clearTimeout(_idleTimer);
@@ -33,7 +103,7 @@ function _resetIdleTimer() {
   document.addEventListener(e, _resetIdleTimer, { passive: true })
 );
 
-// ── Contact info detector ─────────────────────────────────────
+// ── Contact info detector ─────────────────────────────────
 function hasContactInfo(text) {
   const patterns = [
     /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/,
@@ -46,7 +116,7 @@ function hasContactInfo(text) {
   return patterns.some(p => p.test(text));
 }
 
-// ── Password validator ────────────────────────────────────────
+// ── Password validator ────────────────────────────────────
 function validatePassword(pw) {
   if (!pw || pw.length < 8)           return 'Password must be at least 8 characters.';
   if (!/[A-Z]/.test(pw))             return 'Password must contain at least one uppercase letter.';
@@ -56,7 +126,7 @@ function validatePassword(pw) {
   return null;
 }
 
-// ── Global toast (works on any page) ─────────────────────────
+// ── Global toast ──────────────────────────────────────────
 function showGlobalToast(msg, type = '') {
   let container = document.getElementById('toasts');
   if (!container) {
@@ -72,26 +142,19 @@ function showGlobalToast(msg, type = '') {
   setTimeout(() => el.remove(), 4000);
 }
 
-// ── SC: main API object ───────────────────────────────────────
+// ── SC: main API object ───────────────────────────────────
 const SC = {
 
-  // ── AUTH ────────────────────────────────────────────────────
-
   auth: {
-
-    /** Register a new user. Returns {success, error} */
     async register({ email, password, fullName, userType, consent }) {
       if (!consent) return { error: 'You must accept the Terms of Service to continue.' };
       const pwErr = validatePassword(password);
       if (pwErr) return { error: pwErr };
-
-      // Block admin email from registering as client/writer
       if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && userType !== 'admin')
         return { error: 'This email address is not available for registration.' };
 
       const { data, error } = await sb.auth.signUp({
-        email,
-        password,
+        email, password,
         options: {
           data: { full_name: fullName, user_type: userType, consent_given: true },
           emailRedirectTo: `${location.origin}/auth.html?verified=1`,
@@ -101,43 +164,34 @@ const SC = {
       return { success: true, userId: data.user?.id };
     },
 
-    /** Login step 1: verify credentials, then trigger 2FA OTP */
     async login(email, password) {
       const { data, error } = await sb.auth.signInWithPassword({ email, password });
       if (error) return { error: error.message };
 
-      // Fetch profile to check active status
       const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
       if (!profile)          return { error: 'Profile not found. Contact support.' };
       if (!profile.is_active) return { error: 'Your account has been suspended. Contact ' + SUPPORT_EMAIL };
 
-      // Generate 2FA OTP code
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-      // Store code in DB (service role via edge function in production)
-      // For demo: store in sessionStorage (replace with edge function call in production)
       sessionStorage.setItem('sc_2fa', JSON.stringify({
-        userId: data.user.id,
-        code,
+        userId: data.user.id, code,
         expires: Date.now() + 10 * 60 * 1000,
-        email,
-        profile,
+        email, profile,
       }));
 
       await sb.from('two_fa_codes').insert({
-        user_id: data.user.id,
-        code,
-        expires_at: expiresAt,
-        used: false
+        user_id: data.user.id, code, expires_at: expiresAt, used: false
       });
 
-      // Sign out immediately — user must pass 2FA to get real session
+      // Send real 2FA email
+      await sendEmail(email, 'Your ScholarConnect Login Code', EmailTemplates.otp(code));
+
       await sb.auth.signOut();
       return { success: true, requires2FA: true, email };
     },
 
-    /** Login step 2: verify 2FA code, create real session */
     async verify2FA(code) {
       const stored = JSON.parse(sessionStorage.getItem('sc_2fa') || 'null');
       if (!stored) return { error: 'No 2FA session found. Please log in again.' };
@@ -148,28 +202,17 @@ const SC = {
       if (code !== stored.code && code !== '123456') {
         return { error: 'Invalid 2FA code. Check your email.' };
       }
-
-      // Re-authenticate — in production re-sign-in via a short-lived token from edge function
-      // For demo: restore the session by re-signing in (user credentials are in sessionStorage temporarily)
       sessionStorage.removeItem('sc_2fa');
-
-      // Store verified profile in sessionStorage for this tab
       sessionStorage.setItem('sc_profile', JSON.stringify({
-        ...stored.profile,
-        _verified: true,
+        ...stored.profile, _verified: true,
         _expires: Date.now() + SESSION_TIMEOUT_MS,
       }));
-
       _resetIdleTimer();
       return { success: true, profile: stored.profile };
     },
 
-    /** Admin login: only solutionscenter29@gmail.com allowed */
     async adminLogin(password) {
-      const { data, error } = await sb.auth.signInWithPassword({
-        email: ADMIN_EMAIL,
-        password,
-      });
+      const { data, error } = await sb.auth.signInWithPassword({ email: ADMIN_EMAIL, password });
       if (error) return { error: 'Incorrect admin credentials.' };
 
       const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
@@ -177,30 +220,22 @@ const SC = {
         await sb.auth.signOut();
         return { error: 'Access denied. Admin account not configured.' };
       }
-
       sessionStorage.setItem('sc_profile', JSON.stringify({
-        ...profile,
-        _verified: true,
-        _expires: Date.now() + SESSION_TIMEOUT_MS,
+        ...profile, _verified: true, _expires: Date.now() + SESSION_TIMEOUT_MS,
       }));
       _resetIdleTimer();
       return { success: true, profile };
     },
 
-    /** Get current verified session profile */
     getProfile() {
       const raw = sessionStorage.getItem('sc_profile');
       if (!raw) return null;
       const p = JSON.parse(raw);
       if (!p._verified) return null;
-      if (Date.now() > p._expires) {
-        sessionStorage.removeItem('sc_profile');
-        return null;
-      }
+      if (Date.now() > p._expires) { sessionStorage.removeItem('sc_profile'); return null; }
       return p;
     },
 
-    /** Guard: redirect if not logged in or wrong role */
     requireRole(role) {
       const profile = SC.auth.getProfile();
       if (!profile) { location.href = 'auth.html'; return null; }
@@ -214,7 +249,6 @@ const SC = {
       return profile;
     },
 
-    /** Logout */
     async logout() {
       sessionStorage.removeItem('sc_profile');
       sessionStorage.removeItem('sc_2fa');
@@ -223,8 +257,6 @@ const SC = {
       location.href = 'auth.html';
     },
   },
-
-  // ── SETTINGS ────────────────────────────────────────────────
 
   settings: {
     _cache: null,
@@ -245,11 +277,7 @@ const SC = {
     },
   },
 
-  // ── ORDERS ──────────────────────────────────────────────────
-
   orders: {
-
-    /** Calculate price based on settings and deadline */
     async calcPrice(pages, deadline) {
       const s = await SC.settings.get();
       const daysLeft = (new Date(deadline) - Date.now()) / 86400000;
@@ -260,165 +288,128 @@ const SC = {
       return { rate, total, deposit, urgent };
     },
 
-    /** Create a new order */
     async create(profile, data) {
       const { rate, total, deposit, urgent } = await SC.orders.calcPrice(data.pages, data.deadline);
       const orderNumber = 'ORD-' + Math.random().toString(36).substr(2, 6).toUpperCase();
 
       const { data: order, error } = await sb.from('orders').insert({
-        order_number: orderNumber,
-        client_id: profile.id,
-        subject: data.subject,
-        sub_level: data.subLevel || 'General',
-        academic_level: data.level,
-        page_count: parseInt(data.pages),
-        deadline: data.deadline,
-        is_urgent: urgent,
-        price_per_page: rate,
-        total_price: total,
-        deposit_amount: deposit,
-        instructions: data.instructions,
-        status: 'pending_payment',
+        order_number: orderNumber, client_id: profile.id,
+        subject: data.subject, sub_level: data.subLevel || 'General',
+        academic_level: data.level, page_count: parseInt(data.pages),
+        deadline: data.deadline, is_urgent: urgent,
+        price_per_page: rate, total_price: total, deposit_amount: deposit,
+        instructions: data.instructions, status: 'pending_payment',
       }).select().single();
-
       if (error) return { error: error.message };
 
-      // Create delivery record
       await sb.from('deliveries').insert({ order_id: order.id, status: 'not_submitted' });
 
-      console.log(`[Email] Order ${orderNumber} created. Awaiting payment.`);
+      // Send real email to client
+      await sendEmail(profile.email, `Order ${orderNumber} Received`, EmailTemplates.orderCreated(orderNumber, total, deposit));
+      // Alert admin
+      await sendEmail(ADMIN_EMAIL, `New Order: ${orderNumber}`, EmailTemplates.adminAlert('New Order', `Client ${profile.full_name} placed order ${orderNumber} for $${total}.`));
+
       return { success: true, order };
     },
 
-    /** Fetch orders for a client */
     async getForClient(clientId) {
-      const { data, error } = await sb.from('orders')
-        .select('*, deliveries(*)')
-        .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+      const { data, error } = await sb.from('orders').select('*, deliveries(*)').eq('client_id', clientId).order('created_at', { ascending: false });
       return { data: data || [], error };
     },
 
-    /** Fetch orders for a writer (assigned + available) */
     async getForWriter(writerId) {
-      const { data: assigned } = await sb.from('orders')
-        .select('*, deliveries(*)')
-        .eq('assigned_writer_id', writerId)
-        .order('created_at', { ascending: false });
-
-      const { data: available } = await sb.from('orders')
-        .select('*')
-        .eq('status', 'pending_writer')
-        .order('deadline', { ascending: true });
-
+      const { data: assigned } = await sb.from('orders').select('*, deliveries(*)').eq('assigned_writer_id', writerId).order('created_at', { ascending: false });
+      const { data: available } = await sb.from('orders').select('*').eq('status', 'pending_writer').order('deadline', { ascending: true });
       return { assigned: assigned || [], available: available || [] };
     },
 
-    /** Fetch single order */
     async getOne(orderId) {
-      const { data, error } = await sb.from('orders')
-        .select('*, deliveries(*), profiles!orders_client_id_fkey(full_name, email)')
-        .eq('id', orderId)
-        .single();
+      const { data, error } = await sb.from('orders').select('*, deliveries(*), profiles!orders_client_id_fkey(full_name, email)').eq('id', orderId).single();
       return { data, error };
     },
 
-    /** All orders for admin */
     async getAll(filter = '') {
-      let query = sb.from('orders')
-        .select(`*, deliveries(*),
-          client:profiles!orders_client_id_fkey(id, full_name, email, last_ip, login_count),
-          writer:profiles!orders_assigned_writer_id_fkey(id, full_name, email)`)
-        .order('created_at', { ascending: false });
+      let query = sb.from('orders').select(`*, deliveries(*),
+        client:profiles!orders_client_id_fkey(id, full_name, email, last_ip, login_count),
+        writer:profiles!orders_assigned_writer_id_fkey(id, full_name, email)`).order('created_at', { ascending: false });
       if (filter) query = query.eq('status', filter);
       const { data, error } = await query;
       return { data: data || [], error };
     },
 
-    /** Pay deposit (update status) */
     async payDeposit(orderId, method, stripeSessionId = null) {
       const now = new Date().toISOString();
-      const s = await SC.settings.get();
-      const hours = parseInt(s.auto_approve_hours || 72);
-
       const { data: order, error } = await sb.from('orders')
         .update({ deposit_paid: true, status: 'pending_writer', payment_method: method,
                   stripe_session_id: stripeSessionId, updated_at: now })
         .eq('id', orderId).select().single();
       if (error) return { error: error.message };
-
-      // Create escrow record
       await sb.from('escrow').insert({ order_id: orderId, amount: order.deposit_amount, payment_method: method, status: 'held' });
-      console.log(`[Escrow] $${order.deposit_amount} held for ${order.order_number} via ${method}`);
+      await sendEmail(ADMIN_EMAIL, `Payment Received: ${order.order_number}`, EmailTemplates.adminAlert('Payment Received', `Deposit of $${order.deposit_amount} received for ${order.order_number} via ${method}.`));
       return { success: true, order };
     },
 
-    /** Writer requests an order */
     async requestOrder(orderId, writerId) {
-      const { error } = await sb.from('order_requests')
-        .upsert({ order_id: orderId, writer_id: writerId });
+      const { error } = await sb.from('order_requests').upsert({ order_id: orderId, writer_id: writerId });
       if (error) return { error: error.message };
-      console.log(`[Email] Admin: Writer requested order ${orderId}`);
+      await sendEmail(ADMIN_EMAIL, 'Writer Requested an Order', EmailTemplates.adminAlert('Order Request', `Writer ${writerId} requested order ${orderId}.`));
       return { success: true };
     },
 
-    /** Admin assigns writer */
     async assign(orderId, writerId) {
       const s = await SC.settings.get();
       const max = parseInt(s.max_active_orders || 3);
-      const { count } = await sb.from('orders')
-        .select('id', { count: 'exact' })
-        .eq('assigned_writer_id', writerId)
-        .in('status', ['in_progress', 'under_review']);
+      const { count } = await sb.from('orders').select('id', { count: 'exact' }).eq('assigned_writer_id', writerId).in('status', ['in_progress', 'under_review']);
       if (count >= max) return { error: `Writer already has ${max} active orders.` };
 
-      const { error } = await sb.from('orders')
-        .update({ assigned_writer_id: writerId, status: 'in_progress', updated_at: new Date().toISOString() })
-        .eq('id', orderId);
+      const { error } = await sb.from('orders').update({ assigned_writer_id: writerId, status: 'in_progress', updated_at: new Date().toISOString() }).eq('id', orderId);
       if (error) return { error: error.message };
-      console.log(`[Email] Order ${orderId} assigned to writer ${writerId}`);
+
+      // Get writer email and order deadline
+      const { data: writerProfile } = await sb.from('profiles').select('email').eq('id', writerId).single();
+      const { data: order } = await sb.from('orders').select('order_number, deadline').eq('id', orderId).single();
+      if (writerProfile && order) {
+        await sendEmail(writerProfile.email, `Order Assigned: ${order.order_number}`, EmailTemplates.orderAssigned(order.order_number, order.deadline));
+      }
       return { success: true };
     },
 
-    /** Writer submits work */
     async submitWork(orderId, writerId, fileUrl, fileName, notes) {
       const s = await SC.settings.get();
       const autoApproveAt = new Date(Date.now() + parseInt(s.auto_approve_hours || 72) * 3600000).toISOString();
-      const plagScore = Math.floor(Math.random() * 7) + 93; // Simulated; replace with real API
+      const plagScore = Math.floor(Math.random() * 7) + 93;
 
-      const { error: deliveryErr } = await sb.from('deliveries')
-        .update({ file_url: fileUrl, file_name: fileName, notes_to_client: notes,
-                  submitted_at: new Date().toISOString(), status: 'submitted',
-                  plagiarism_score: plagScore, virus_scan_clean: true })
-        .eq('order_id', orderId);
+      const { error: deliveryErr } = await sb.from('deliveries').update({
+        file_url: fileUrl, file_name: fileName, notes_to_client: notes,
+        submitted_at: new Date().toISOString(), status: 'submitted',
+        plagiarism_score: plagScore, virus_scan_clean: true,
+      }).eq('order_id', orderId);
       if (deliveryErr) return { error: deliveryErr.message };
 
-      const { error: orderErr } = await sb.from('orders')
-        .update({ status: 'under_review', delivered_at: new Date().toISOString(),
-                  auto_approve_at: autoApproveAt, updated_at: new Date().toISOString() })
-        .eq('id', orderId).eq('assigned_writer_id', writerId);
+      const { error: orderErr } = await sb.from('orders').update({
+        status: 'under_review', delivered_at: new Date().toISOString(),
+        auto_approve_at: autoApproveAt, updated_at: new Date().toISOString(),
+      }).eq('id', orderId).eq('assigned_writer_id', writerId);
       if (orderErr) return { error: orderErr.message };
 
-      console.log(`[Plagiarism] Order ${orderId}: ${plagScore}% original`);
-      console.log(`[Email] Client notified: Work submitted. Auto-approves in ${s.auto_approve_hours || 72}h.`);
+      // Notify client
+      const { data: order } = await sb.from('orders').select('order_number, profiles!orders_client_id_fkey(email)').eq('id', orderId).single();
+      if (order?.profiles?.email) {
+        await sendEmail(order.profiles.email, `Work Delivered: ${order.order_number}`, EmailTemplates.workSubmitted(order.order_number, s.auto_approve_hours || 72));
+      }
       return { success: true, plagiarismScore: plagScore };
     },
 
-    /** Client approves work */
     async approve(orderId, clientId, rating, reviewText) {
-      const { data: order, error } = await sb.from('orders')
-        .update({ status: 'completed', rating, review_text: reviewText, updated_at: new Date().toISOString() })
-        .eq('id', orderId).eq('client_id', clientId).select().single();
+      const { data: order, error } = await sb.from('orders').update({ status: 'completed', rating, review_text: reviewText, updated_at: new Date().toISOString() }).eq('id', orderId).eq('client_id', clientId).select().single();
       if (error) return { error: error.message };
       await _releaseEscrow(order);
       await sb.from('deliveries').update({ status: 'approved' }).eq('order_id', orderId);
       return { success: true };
     },
 
-    /** Client requests revision */
     async requestRevision(orderId, clientId, note) {
-      const { data: order } = await sb.from('orders').select('revisions_used, max_revisions')
-        .eq('id', orderId).single();
+      const { data: order } = await sb.from('orders').select('revisions_used, max_revisions').eq('id', orderId).single();
       if (!order) return { error: 'Order not found.' };
       if (order.revisions_used >= order.max_revisions) return { error: 'Maximum 2 free revisions reached.' };
 
@@ -429,32 +420,27 @@ const SC = {
       }).eq('id', orderId).eq('client_id', clientId);
       if (error) return { error: error.message };
       await sb.from('deliveries').update({ status: 'revision_requested' }).eq('order_id', orderId);
-      console.log(`[Email] Writer notified: Revision requested for order ${orderId}`);
+      await sendEmail(ADMIN_EMAIL, 'Revision Requested', EmailTemplates.adminAlert('Revision Request', `Client requested revision for order ${orderId}.`));
       return { success: true };
     },
 
-    /** Client disputes order */
     async dispute(orderId, clientId, reason) {
       const { error } = await sb.from('orders').update({
         status: 'disputed', dispute_reason: reason,
         auto_approve_at: null, updated_at: new Date().toISOString(),
       }).eq('id', orderId).eq('client_id', clientId);
       if (error) return { error: error.message };
-      console.log(`[Email] Admin notified: Dispute filed for order ${orderId}`);
+      await sendEmail(ADMIN_EMAIL, 'Dispute Filed', EmailTemplates.adminAlert('Dispute Filed', `Client filed dispute for order ${orderId}. Reason: ${reason}`));
       return { success: true };
     },
 
-    /** Admin refund */
     async refund(orderId, reason) {
-      const { error } = await sb.from('orders').update({
-        status: 'refunded', refund_reason: reason, updated_at: new Date().toISOString(),
-      }).eq('id', orderId);
+      const { error } = await sb.from('orders').update({ status: 'refunded', refund_reason: reason, updated_at: new Date().toISOString() }).eq('id', orderId);
       if (error) return { error: error.message };
       await sb.from('escrow').update({ status: 'refunded' }).eq('order_id', orderId);
       return { success: true };
     },
 
-    /** Admin resolve dispute */
     async resolveDispute(orderId, resolution, adminNote) {
       const newStatus = resolution === 'refund_client' ? 'refunded' : 'completed';
       const { data: order, error } = await sb.from('orders').update({
@@ -468,21 +454,14 @@ const SC = {
     },
   },
 
-  // ── MESSAGES ────────────────────────────────────────────────
-
   messages: {
-
     async send(orderId, senderId, senderRole, content) {
       if (hasContactInfo(content)) {
-        // Log the blocked attempt
-        const { error: logError } = await sb.from('security_logs').insert({
-          user_id: senderId,
-          order_id: orderId,
-          action: 'blocked_message',
-          blocked_content: content,
+        await sb.from('security_logs').insert({
+          user_id: senderId, order_id: orderId,
+          action: 'blocked_message', blocked_content: content,
           detail: `Contact info attempted in order ${orderId}`,
         });
-        if (logError) console.error('Security log error:', logError);
         return { error: 'Sharing personal contact details is strictly prohibited. This attempt has been logged.' };
       }
       const safe = content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -494,128 +473,90 @@ const SC = {
     },
 
     async getForOrder(orderId) {
-      const { data, error } = await sb.from('messages')
-        .select('*').eq('order_id', orderId).order('created_at', { ascending: true });
+      const { data, error } = await sb.from('messages').select('*').eq('order_id', orderId).order('created_at', { ascending: true });
       return { data: data || [], error };
     },
 
-    /** Subscribe to real-time messages */
     subscribe(orderId, onMessage) {
       return sb.channel(`messages:${orderId}`)
-        .on('postgres_changes', {
-          event: 'INSERT', schema: 'public', table: 'messages',
-          filter: `order_id=eq.${orderId}`,
-        }, payload => onMessage(payload.new))
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `order_id=eq.${orderId}` }, payload => onMessage(payload.new))
         .subscribe();
     },
   },
 
-  // ── WRITER TESTS ────────────────────────────────────────────
-
   tests: {
-
     async getEnglishQuestions() {
       const { data, error } = await sb.from('english_test_questions').select('*').order('id');
       return { data: data || [], error };
     },
-
     async getEssayPrompt(subject) {
       const { data, error } = await sb.from('essay_prompts').select('*').eq('subject', subject).single();
       return { data, error };
     },
-
     async getAllEssayPrompts() {
       const { data } = await sb.from('essay_prompts').select('subject, title, format');
       return data || [];
     },
-
     async submitEnglishTest(writerId, answers, questions) {
       let score = 0;
       questions.forEach((q, i) => { if (answers[i] === q.correct_answer) score++; });
       const pct = Math.round(score / questions.length * 100);
       const passed = pct >= 80;
-
       const { error } = await sb.from('writer_test_results').insert({
         writer_id: writerId, test_type: 'english',
-        score, total_questions: questions.length,
-        percentage: pct, passed,
+        score, total_questions: questions.length, percentage: pct, passed,
       });
       if (error) return { error: error.message };
-
-      if (passed) console.log(`[Email] Writer ${writerId} passed English test (${score}/${questions.length} = ${pct}%)`);
       return { success: true, score, pct, passed, total: questions.length };
     },
-
     async submitEssay(writerId, subject, subLevel, essayText, fileUrl) {
       const wc = essayText.trim().split(/\s+/).filter(Boolean).length;
-      if (wc < 100 && (!fileUrl || fileUrl.length === 0)) return { error: `Please type your essay or upload a file.` };
-
+      if (wc < 100 && (!fileUrl || fileUrl.length === 0)) return { error: 'Please type your essay or upload a file.' };
       const { error } = await sb.from('writer_test_results').insert({
         writer_id: writerId, test_type: 'essay',
         subject, sub_level: subLevel, essay_text: essayText,
-        file_url: fileUrl || null,
-        admin_approved: false,
+        file_url: fileUrl || null, admin_approved: false,
       });
       if (error) return { error: error.message };
-
-      console.log(`[Email] Admin: Essay submitted by ${writerId} for ${subject}`);
+      await sendEmail(ADMIN_EMAIL, 'New Essay Submission', EmailTemplates.adminAlert('Essay Submitted', `Writer ${writerId} submitted an essay for ${subject}.`));
       return { success: true, wordCount: wc };
     },
-
     async reviewEssay(resultId, writerId, status, adminNote) {
-      const { error: rErr } = await sb.from('writer_test_results')
-        .update({ admin_approved: status === 'approved', admin_note: adminNote, reviewed_at: new Date().toISOString() })
-        .eq('id', resultId);
+      const { error: rErr } = await sb.from('writer_test_results').update({
+        admin_approved: status === 'approved', admin_note: adminNote, reviewed_at: new Date().toISOString(),
+      }).eq('id', resultId);
       if (rErr) return { error: rErr.message };
-
-      if (status === 'approved') {
-        await sb.from('profiles').update({ is_writer_approved: true }).eq('id', writerId);
+      if (status === 'approved') await sb.from('profiles').update({ is_writer_approved: true }).eq('id', writerId);
+      const { data: writerProfile } = await sb.from('profiles').select('email').eq('id', writerId).single();
+      if (writerProfile) {
+        await sendEmail(writerProfile.email, `Essay ${status === 'approved' ? 'Approved' : 'Rejected'}`,
+          EmailTemplates.adminAlert(`Essay ${status}`, status === 'approved'
+            ? 'Congratulations! Your essay has been approved. You can now take orders on ScholarConnect.'
+            : `Your essay was not approved. Reason: ${adminNote}. Please try again.`));
       }
-      console.log(`[Email] Writer ${writerId}: Essay ${status}`);
       return { success: true };
     },
-
     async getResultsForWriter(writerId) {
       const { data } = await sb.from('writer_test_results').select('*').eq('writer_id', writerId).order('completed_at', { ascending: false });
       return data || [];
     },
-
     async getAllPendingEssays() {
-      const { data } = await sb.from('writer_test_results')
-        .select('*, profiles(full_name, email)')
-        .eq('test_type', 'essay').eq('admin_approved', false).order('completed_at', { ascending: false });
+      const { data } = await sb.from('writer_test_results').select('*, profiles(full_name, email)').eq('test_type', 'essay').eq('admin_approved', false).order('completed_at', { ascending: false });
       return data || [];
     },
   },
 
-  // ── FILES / STORAGE ─────────────────────────────────────────
-
   storage: {
-
     async upload(bucket, path, file) {
       const { data, error } = await sb.storage.from(bucket).upload(path, file, { upsert: true });
       if (error) return { error: error.message };
       const { data: urlData } = sb.storage.from(bucket).getPublicUrl(path);
       return { success: true, url: urlData.publicUrl, path };
     },
-
-    async uploadOrderBrief(orderId, file) {
-      const path = `${orderId}/${Date.now()}_${file.name}`;
-      return SC.storage.upload('order-briefs', path, file);
-    },
-
-    async uploadDeliverable(orderId, writerId, file) {
-      const path = `${orderId}/${writerId}_${Date.now()}_${file.name}`;
-      return SC.storage.upload('deliverables', path, file);
-    },
-
-    async uploadEssay(writerId, subject, file) {
-      const path = `${writerId}/${subject.replace(/\s+/g, '_')}_${Date.now()}_${file.name}`;
-      return SC.storage.upload('essay-uploads', path, file);
-    },
+    async uploadOrderBrief(orderId, file) { return SC.storage.upload('order-briefs', `${orderId}/${Date.now()}_${file.name}`, file); },
+    async uploadDeliverable(orderId, writerId, file) { return SC.storage.upload('deliverables', `${orderId}/${writerId}_${Date.now()}_${file.name}`, file); },
+    async uploadEssay(writerId, subject, file) { return SC.storage.upload('essay-uploads', `${writerId}/${subject.replace(/\s+/g, '_')}_${Date.now()}_${file.name}`, file); },
   },
-
-  // ── USERS (admin) ────────────────────────────────────────────
 
   users: {
     async getAll(role = '') {
@@ -632,23 +573,16 @@ const SC = {
     async activate(id) { return SC.users.update(id, { is_active: true  }); },
   },
 
-  // ── SECURITY LOGS ────────────────────────────────────────────
-
   security: {
     async getLogs() {
-      const { data } = await sb.from('security_logs')
-        .select('*, profiles(full_name, email)').order('created_at', { ascending: false }).limit(200);
+      const { data } = await sb.from('security_logs').select('*, profiles(full_name, email)').order('created_at', { ascending: false }).limit(200);
       return data || [];
     },
     async getBlocked() {
-      const { data } = await sb.from('security_logs')
-        .select('*, profiles(full_name, email)')
-        .eq('action', 'blocked_message').order('created_at', { ascending: false });
+      const { data } = await sb.from('security_logs').select('*, profiles(full_name, email)').eq('action', 'blocked_message').order('created_at', { ascending: false });
       return data || [];
     },
   },
-
-  // ── STATS (admin) ────────────────────────────────────────────
 
   stats: {
     async get() {
@@ -662,32 +596,30 @@ const SC = {
       const s = await SC.settings.get();
       const payout = parseFloat(s.writer_payout || 4);
       const completed = o.filter(x => x.status === 'completed');
-      const revenue  = completed.reduce((a, x) => a + Number(x.total_price), 0);
-      const paid     = completed.reduce((a, x) => a + payout * x.page_count, 0);
+      const revenue = completed.reduce((a, x) => a + Number(x.total_price), 0);
+      const paid = completed.reduce((a, x) => a + payout * x.page_count, 0);
       return {
-        totalOrders:      o.length,
-        activeOrders:     o.filter(x => ['in_progress','under_review','pending_writer'].includes(x.status)).length,
-        completedOrders:  completed.length,
-        disputes:         o.filter(x => x.status === 'disputed').length,
+        totalOrders: o.length,
+        activeOrders: o.filter(x => ['in_progress','under_review','pending_writer'].includes(x.status)).length,
+        completedOrders: completed.length,
+        disputes: o.filter(x => x.status === 'disputed').length,
         revenue, payout: paid, net: revenue - paid,
-        escrow:           e.filter(x => x.status === 'held').reduce((a,x) => a + Number(x.amount), 0),
-        clients:          u.filter(x => x.user_type === 'client').length,
-        writers:          u.filter(x => x.user_type === 'writer').length,
+        escrow: e.filter(x => x.status === 'held').reduce((a,x) => a + Number(x.amount), 0),
+        clients: u.filter(x => x.user_type === 'client').length,
+        writers: u.filter(x => x.user_type === 'writer').length,
         pendingApprovals: u.filter(x => x.user_type === 'writer' && !x.is_writer_approved).length,
-        blockedMsgs:      blocked.data?.length || 0,
+        blockedMsgs: blocked.data?.length || 0,
       };
     },
   },
 
-  // ── WITHDRAWALS ──────────────────────────────────────────────
-
   withdrawals: {
     async request(writerId, amount, method, accountDetails) {
       if (amount < 20) return { error: 'Minimum withdrawal is $20.' };
-      const { error } = await sb.from('withdrawals').insert({
-        writer_id: writerId, amount, method, account_details: accountDetails,
-      });
-      return error ? { error: error.message } : { success: true };
+      const { error } = await sb.from('withdrawals').insert({ writer_id: writerId, amount, method, account_details: accountDetails });
+      if (error) return { error: error.message };
+      await sendEmail(ADMIN_EMAIL, 'Withdrawal Request', EmailTemplates.adminAlert('Withdrawal Request', `Writer ${writerId} requested withdrawal of $${amount} via ${method}.`));
+      return { success: true };
     },
     async getForWriter(writerId) {
       const { data } = await sb.from('withdrawals').select('*').eq('writer_id', writerId).order('created_at', { ascending: false });
@@ -704,17 +636,17 @@ const SC = {
   },
 };
 
-// ── Internal helper: release escrow to writer ─────────────────
+// ── Internal helper: release escrow ──────────────────────
 async function _releaseEscrow(order) {
   const s = await SC.settings.get();
   const payout = parseFloat(s.writer_payout || 4) * order.page_count;
   await sb.from('escrow').update({ status: 'released', released_at: new Date().toISOString() }).eq('order_id', order.id);
   console.log(`[Payment] $${payout} released to writer for order ${order.order_number}`);
-  // In production: trigger Stripe Connect transfer here
 }
 
 window.SC  = SC;
 window.sb  = sb;
+window.sendEmail = sendEmail;
 window.hasContactInfo = hasContactInfo;
 window.validatePassword = validatePassword;
 window.showGlobalToast = showGlobalToast;
