@@ -293,6 +293,20 @@
 <script src="supabase-client.js"></script>
 <script>
   // Theme
+  async function do2FA() {
+    const code = document.getElementById('tfa-code').value.trim();
+    const err = document.getElementById('tfa-err');
+    err.style.display = 'none';
+    if (!code || code.length !== 6) { err.textContent = 'Please enter the 6-digit code.'; err.style.display = 'flex'; return; }
+    const res = await SC.auth.verify2FA(code);
+    if (res.error) { err.textContent = res.error; err.style.display = 'flex'; return; }
+    if (res.profile.user_type !== 'admin') { err.textContent = 'Access denied. Admin only.'; err.style.display = 'flex'; return; }
+    adminProfile = res.profile;
+    showDashboard();
+  }
+
+  // Theme
+  if(localStorage.getItem('sc_theme')==='dark') document.documentElement.setAttribute('data-theme','dark');
   if(localStorage.getItem('sc_theme')==='dark') document.documentElement.setAttribute('data-theme','dark');
   const tb=document.getElementById('theme-btn');
   if(localStorage.getItem('sc_theme')==='dark') tb.classList.add('on');
@@ -335,15 +349,39 @@
   document.getElementById('a-pass')?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
   async function doLogin() {
-    const pass=document.getElementById('a-pass').value;
-    const err=document.getElementById('login-err');err.style.display='none';
-    const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='Verifying…';
-    const res=await SC.auth.adminLogin(pass);
-    btn.disabled=false;btn.textContent='Access Admin Panel →';
-    if(res.error){err.textContent=res.error;err.style.display='flex';return;}
-    adminProfile = res.profile;
-    showDashboard();
+    const email = document.getElementById('a-email').value.trim();
+    const pass = document.getElementById('a-pass').value;
+    const err = document.getElementById('login-err');
+    err.style.display = 'none';
+    if (!email || !pass) { err.textContent = 'Please fill in all fields.'; err.style.display = 'flex'; return; }
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true; btn.textContent = 'Verifying…';
+    const res = await SC.auth.login(email, pass);
+    btn.disabled = false; btn.textContent = 'Access Admin Panel →';
+    if (res.error) { err.textContent = res.error; err.style.display = 'flex'; return; }
+    // Show 2FA step
+    document.getElementById('page-login').style.display = 'none';
+    document.getElementById('page-2fa').style.display = 'flex';
+    document.getElementById('tfa-email-display').textContent = email;
   }
+
+  <!-- ADMIN 2FA -->
+<div id="page-2fa" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:40px">
+  <div style="max-width:440px;width:100%;margin:0 auto">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="width:64px;height:64px;background:linear-gradient(135deg,var(--navy2),var(--slate));border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div>
+      <h1 style="font-family:var(--font-display);font-size:1.8rem;margin-bottom:8px">Verify Identity</h1>
+      <p class="text-muted">A 6-digit code was sent to <strong id="tfa-email-display"></strong></p>
+    </div>
+    <div id="tfa-err" class="alert alert-danger" style="display:none"></div>
+    <div class="form-group">
+      <label class="form-label">6-Digit Security Code</label>
+      <input type="text" class="form-input" id="tfa-code" placeholder="000000" maxlength="6" inputmode="numeric" style="font-size:1.5rem;letter-spacing:10px;text-align:center" autocomplete="one-time-code">
+    </div>
+    <button class="btn btn-primary btn-full btn-lg" onclick="do2FA()">Verify & Enter →</button>
+    <p style="text-align:center;margin-top:16px;font-size:0.875rem"><a onclick="document.getElementById('page-2fa').style.display='none';document.getElementById('page-login').style.display='flex';" style="cursor:pointer;color:var(--muted)">← Back</a></p>
+  </div>
+</div>
 
   // ── First-time setup ───────────────────────────────────────
   async function doSetup() {
