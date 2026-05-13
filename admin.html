@@ -319,6 +319,7 @@
     const res = await SC.auth.verify2FA(code);
     if (res.error) { err.textContent = res.error; err.style.display = 'flex'; return; }
     if (res.profile.user_type !== 'admin') { err.textContent = 'Access denied. Admin only.'; err.style.display = 'flex'; return; }
+    document.getElementById('page-2fa').style.display = 'none';
     adminProfile = res.profile;
     showDashboard();
   }
