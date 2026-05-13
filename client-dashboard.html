@@ -47,15 +47,28 @@
       <div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start">
         <div class="card">
           <div class="form-group"><label class="form-label">Assignment Title *</label><input type="text" class="form-input" id="o-title" placeholder="e.g. Impact of Social Media on Mental Health"></div>
-          <div class="form-group"><label class="form-label">Detailed Instructions *</label><textarea class="form-textarea" id="o-instructions" style="min-height:130px" placeholder="Describe exactly what you need — formatting style (APA, MLA…), sources required, rubric, etc."></textarea></div>
+          <div class="form-group"><label class="form-label">Detailed Instructions *</label><textarea class="form-textarea" id="o-instructions" style="min-height:130px" placeholder="Describe exactly what you need — formatting style, sources required, rubric, etc."></textarea></div>
           <div class="grid-2">
             <div class="form-group"><label class="form-label">Subject *</label><select class="form-select" id="o-subject" onchange="populateSub()"><option value="">Select…</option></select></div>
             <div class="form-group"><label class="form-label">Sub-Specialisation</label><select class="form-select" id="o-sublevel"><option value="General">General</option></select></div>
           </div>
           <div class="grid-2">
             <div class="form-group"><label class="form-label">Academic Level *</label><select class="form-select" id="o-level"><option value="">Select…</option><option>High School</option><option>College (Freshman/Sophomore)</option><option>University (Junior/Senior)</option><option>Master's</option><option>PhD</option></select></div>
-            <div class="form-group"><label class="form-label">Pages * <span class="text-muted text-xs">(1–100)</span></label><input type="number" class="form-input" id="o-pages" min="1" max="100" value="5" oninput="calcPrice()"><span class="form-hint">1 page ≈ 275 words</span></div>
+            <div class="form-group"><label class="form-label">Citation / Essay Style *</label>
+              <select class="form-select" id="o-citation">
+                <option value="APA">APA (7th Edition)</option>
+                <option value="MLA">MLA (9th Edition)</option>
+                <option value="Chicago">Chicago / Turabian</option>
+                <option value="Harvard">Harvard</option>
+                <option value="Vancouver">Vancouver</option>
+                <option value="IEEE">IEEE</option>
+                <option value="AMA">AMA</option>
+                <option value="Oxford">Oxford</option>
+                <option value="None">No citation required</option>
+              </select>
+            </div>
           </div>
+          <div class="form-group"><label class="form-label">Pages * <span class="text-muted text-xs">(1–100)</span></label><input type="number" class="form-input" id="o-pages" min="1" max="100" value="5" oninput="calcPrice()"><span class="form-hint">1 page ≈ 275 words</span></div>
           <div class="form-group"><label class="form-label">Deadline *</label><input type="datetime-local" class="form-input" id="o-deadline" onchange="calcPrice()"><span class="form-hint" id="deadline-hint">≥5 days = $10/page · &lt;5 days = $15/page (urgent)</span></div>
           <div class="form-group"><label class="form-label">Upload Files <span class="text-muted">(optional — rubric, notes, references)</span></label><input type="file" class="form-input" id="o-files" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg"></div>
           <div class="consent-box" style="margin-bottom:18px"><input type="checkbox" id="o-consent"><label for="o-consent">I agree to the <a href="terms.html" target="_blank">Terms of Service</a>. I understand the 50% deposit is held in escrow and released only upon my approval.</label></div>
@@ -80,7 +93,7 @@
             <div style="display:flex;flex-direction:column;gap:7px;font-size:0.82rem;color:var(--muted)">
               <span class="flex-gap"><span>💳</span>Card (Stripe)</span>
               <span class="flex-gap"><span>🅿️</span>PayPal</span>
-              <span class="flex-gap"><span>🏦</span>Bank Transfer (Visa)</span>
+              <span class="flex-gap"><span>🏦</span>Bank Transfer</span>
             </div>
           </div>
         </div>
@@ -128,7 +141,7 @@
       </div>
     </div>
 
-  <!-- INBOX -->
+    <!-- INBOX -->
     <div class="page" id="page-inbox">
       <div class="page-header"><div class="page-title">Inbox</div><div class="page-subtitle">Direct messages from ScholarConnect admin</div></div>
       <div id="inbox-list"><div class="loading"><div class="spinner"></div></div></div>
@@ -185,7 +198,8 @@
   </div>
 </div>
 
-<!-- AI Support Chat -->
+<!-- AI Support Chat — single clean instance -->
+<div id="ai-chat-bubble" onclick="toggleAIChat()" style="position:fixed;bottom:90px;right:24px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--steel));color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:998;font-weight:bold;font-size:0.75rem" title="AI Support">AI</div>
 
 <div id="ai-chat-window" style="display:none;position:fixed;bottom:155px;right:24px;width:360px;height:480px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.15);z-index:997;flex-direction:column;overflow:hidden">
   <div style="padding:14px 16px;background:linear-gradient(135deg,var(--navy),var(--steel));color:white;display:flex;justify-content:space-between;align-items:center">
@@ -201,54 +215,35 @@
   </div>
 </div>
 
-<div id="ai-chat-window" style="display:none;position:fixed;bottom:155px;right:24px;width:360px;height:480px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.15);z-index:997;flex-direction:column;overflow:hidden"><div style="padding:14px 16px;background:linear-gradient(135deg,var(--navy),var(--steel));color:white;display:flex;justify-content:space-between;align-items:center"><div><strong>ScholarConnect AI</strong><div style="font-size:0.75rem;opacity:0.8">Ask me anything</div></div><button onclick="toggleAIChat()" style="background:none;border:none;color:white;font-size:1.2rem;cursor:pointer">x</button></div><div id="ai-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px"><div style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%">Hi! I am your ScholarConnect AI assistant. How can I help you?</div></div><div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px"><input type="text" id="ai-input" class="form-input" placeholder="Ask a question..." style="flex:1;font-size:0.875rem" onkeydown="if(event.key==='Enter')sendAIMessage()"><button class="btn btn-primary btn-sm" onclick="sendAIMessage()">Send</button></div></div>
-  <div id="ai-chat-window" style="display:none;position:fixed;bottom:155px;right:24px;width:360px;height:480px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.15);z-index:997;flex-direction:column;overflow:hidden"><div style="padding:14px 16px;background:linear-gradient(135deg,var(--navy),var(--steel));color:white;display:flex;justify-content:space-between;align-items:center"><div><strong>ScholarConnect AI</strong><div style="font-size:0.75rem;opacity:0.8">Ask me anything about your order</div></div><button onclick="toggleAIChat()" style="background:none;border:none;color:white;font-size:1.2rem;cursor:pointer">x</button></div><div id="ai-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px"><div style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%">Hi! I am your ScholarConnect AI assistant. How can I help you?</div></div><div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px"><input type="text" id="ai-input" class="form-input" placeholder="Ask a question..." style="flex:1;font-size:0.875rem" onkeydown="if(event.key==='Enter')sendAIMessage()"><button class="btn btn-primary btn-sm" onclick="sendAIMessage()">Send</button></div></div>
-<div id="ai-chat-window" style="display:none;position:fixed;bottom:155px;right:24px;width:340px;height:460px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.15);z-index:997;flex-direction:column;overflow:hidden"><div style="padding:12px 16px;background:linear-gradient(135deg,var(--navy),var(--steel));color:white;display:flex;justify-content:space-between;align-items:center"><strong>ScholarConnect AI</strong><button onclick="toggleAIChat()" style="background:none;border:none;color:white;font-size:1.2rem;cursor:pointer">x</button></div><div id="ai-messages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px"><div style="background:var(--parch);padding:10px 12px;border-radius:10px;font-size:0.82rem;max-width:85%">Hi! I am your ScholarConnect AI. How can I help?</div></div><div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px"><input type="text" id="ai-input" class="form-input" placeholder="Ask anything..." style="flex:1;font-size:0.82rem" onkeydown="if(event.key==='Enter')sendAIMessage()"><button class="btn btn-primary btn-sm" onclick="sendAIMessage()">Send</button></div></div>
-  <div id="ai-chat-bubble" onclick="toggleAIChat()" style="position:fixed;bottom:90px;right:24px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--steel));color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:998;font-weight:bold;font-size:0.75rem" title="AI Support">AI</div>
-<div id="ai-chat-window" style="display:none;position:fixed;bottom:155px;right:24px;width:340px;height:460px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.15);z-index:997;flex-direction:column;overflow:hidden">
-  <div style="padding:12px 16px;background:linear-gradient(135deg,var(--navy),var(--steel));color:white;display:flex;justify-content:space-between;align-items:center"><strong>ScholarConnect AI</strong><button onclick="toggleAIChat()" style="background:none;border:none;color:white;font-size:1.2rem;cursor:pointer">x</button></div>
-  <div id="ai-messages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px"><div style="background:var(--parch);padding:10px 12px;border-radius:10px;font-size:0.82rem;max-width:85%">Hi! I am your ScholarConnect AI. How can I help?</div></div>
-  <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px"><input type="text" id="ai-input" class="form-input" placeholder="Ask anything..." style="flex:1;font-size:0.82rem" onkeydown="if(event.key==='Enter')sendAIMessage()"><button class="btn btn-primary btn-sm" onclick="sendAIMessage()">Send</button></div>
-</div>
 <a href="https://wa.me/254716603371" target="_blank" class="whatsapp-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg><span class="whatsapp-tooltip">WhatsApp Support</span></a>
 <div class="toast-container" id="toasts"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase-client.js"></script>
 <script>
-  // ── Auth guard ──────────────────────────────────────────
   const profile = SC.auth.requireRole('client');
   if (!profile) throw new Error('redirect');
 
-  // ── Theme ───────────────────────────────────────────────
   if (localStorage.getItem('sc_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
   const tb = document.getElementById('theme-btn');
   if (localStorage.getItem('sc_theme') === 'dark') tb.classList.add('on');
   tb.addEventListener('click', () => { const d = document.documentElement.getAttribute('data-theme') === 'dark'; document.documentElement.setAttribute('data-theme', d?'':'dark'); localStorage.setItem('sc_theme', d?'':'dark'); tb.classList.toggle('on',!d); });
 
-  // ── Subjects ────────────────────────────────────────────
   const SUBJECTS = {'Business & Management':['General','Strategy','Marketing','Finance','Accounting','HR Management','Entrepreneurship'],'Nursing & Medicine':['General','Clinical','Pharmacology','Pediatrics','Mental Health Nursing','Community Health'],'Computer Science & IT':['General','Programming','Algorithms','AI & Machine Learning','Cybersecurity','Web Development'],'Psychology':['General','Clinical Psychology','Developmental Psychology','Social Psychology','Cognitive Psychology'],'Education':['General','Curriculum Design','Special Education','Educational Psychology','Early Childhood'],'Law':['General','Criminal Law','Constitutional Law','Corporate Law','International Law','Human Rights'],'History':['General','World History','African History','American History','European History','Ancient History'],'English Literature':['General','British Literature','American Literature','African Literature','Poetry','Drama'],'Mathematics':['General','Calculus','Statistics','Linear Algebra','Discrete Mathematics'],'Biology & Life Sciences':['General','Molecular Biology','Ecology','Genetics','Microbiology','Anatomy'],'Chemistry':['General','Organic','Inorganic','Physical Chemistry','Analytical Chemistry'],'Political Science':['General','International Relations','Comparative Politics','Public Policy'],'Sociology':['General','Urban Sociology','Cultural Studies','Gender Studies'],'Economics':['General','Microeconomics','Macroeconomics','Econometrics','Development Economics'],'Engineering':['General','Civil','Mechanical','Electrical','Chemical Engineering']};
 
-  // ── State ───────────────────────────────────────────────
   let currentOrdId = null, currentOrd = null, currentRat = 5;
   let payMethod = 'stripe', payingOrdId = null;
   let chatSub = null, settings = {};
 
-  // ── Init ────────────────────────────────────────────────
   document.getElementById('welcome-msg').textContent = `Welcome back, ${profile.full_name.split(' ')[0]}!`;
   const minDL = new Date(); minDL.setHours(minDL.getHours()+2);
   document.getElementById('o-deadline').min = minDL.toISOString().slice(0,16);
   document.getElementById('o-deadline').value = new Date(Date.now()+7*86400000).toISOString().slice(0,16);
 
-  // Populate subject dropdown
   const subSel = document.getElementById('o-subject');
   Object.keys(SUBJECTS).forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; subSel.appendChild(o); });
 
-  async function init() {
-    settings = await SC.settings.get();
-    calcPrice();
-    renderOverview();
-  }
+  async function init() { settings = await SC.settings.get(); calcPrice(); renderOverview(); }
   init();
 
   function populateSub() {
@@ -274,7 +269,6 @@
     document.getElementById('pr-type').className = 'badge ' + (urgent ? 'badge-warning' : 'badge-navy');
   }
 
-  // ── Navigation ──────────────────────────────────────────
   function showPage(name) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
@@ -286,7 +280,6 @@
     if (chatSub && name !== 'order-detail') { chatSub.unsubscribe(); chatSub = null; }
   }
 
-  // ── Overview ────────────────────────────────────────────
   async function renderOverview() {
     const { data: orders } = await SC.orders.getForClient(profile.id);
     document.getElementById('st-total').textContent = orders.length;
@@ -299,7 +292,6 @@
     el.innerHTML = recent.map(o => `<div class="order-card" style="margin-bottom:10px" onclick="openDetail(${o.id})">${orderRow(o)}</div>`).join('');
   }
 
-  // ── My Orders ───────────────────────────────────────────
   async function renderMyOrders() {
     const el = document.getElementById('my-orders-list');
     el.innerHTML = '<div class="loading"><div class="spinner"></div><span>Loading…</span></div>';
@@ -314,18 +306,18 @@
     const dl = new Date(o.deadline), days = Math.ceil((dl-Date.now())/86400000);
     return `<div class="flex-between" style="margin-bottom:6px"><span class="order-num">${o.order_number}</span><span class="badge status-${o.status}">${statusLabel(o.status)}</span></div>
       <div style="font-weight:600;margin-bottom:10px;color:var(--navy)">${o.instructions?.slice(0,80) || 'Order'}</div>
-      <div class="flex-gap" style="flex-wrap:wrap"><span class="tag">${o.subject}</span><span class="tag">${o.academic_level}</span><span class="tag">${o.page_count}p</span>${o.is_urgent?'<span class="badge badge-warning">⚡ Urgent</span>':''}<span class="text-sm text-muted" style="margin-left:auto">${days>0?days+'d left':'<span style=color:var(--danger)>Overdue</span>'} · $${o.total_price}</span></div>`;
+      <div class="flex-gap" style="flex-wrap:wrap"><span class="tag">${o.subject}</span><span class="tag">${o.academic_level}</span><span class="tag">${o.page_count}p</span>${o.citation_style?`<span class="tag">${o.citation_style}</span>`:''} ${o.is_urgent?'<span class="badge badge-warning">⚡ Urgent</span>':''}<span class="text-sm text-muted" style="margin-left:auto">${days>0?days+'d left':'<span style=color:var(--danger)>Overdue</span>'} · $${o.total_price}</span></div>`;
   }
 
   function statusLabel(s) { return {pending_payment:'Pending Payment',pending_writer:'Finding Writer',in_progress:'In Progress',under_review:'Under Review',completed:'Completed',disputed:'Disputed',refunded:'Refunded'}[s]||s; }
 
-  // ── Create Order ────────────────────────────────────────
   async function createOrder() {
     const title = document.getElementById('o-title').value.trim();
     const instr = document.getElementById('o-instructions').value.trim();
     const subj  = document.getElementById('o-subject').value;
     const subl  = document.getElementById('o-sublevel').value;
     const level = document.getElementById('o-level').value;
+    const citation = document.getElementById('o-citation').value;
     const pages = parseInt(document.getElementById('o-pages').value);
     const dl    = document.getElementById('o-deadline').value;
     const consent = document.getElementById('o-consent').checked;
@@ -335,24 +327,12 @@
     if (!consent) { err.textContent='Please accept the Terms of Service to proceed.'; err.style.display='flex'; return; }
     if (pages<1||pages>100) { err.textContent='Pages must be between 1 and 100.'; err.style.display='flex'; return; }
     const btn = document.getElementById('order-btn'); btn.disabled=true; btn.textContent='Creating…';
-
-    // Upload files first if any
-    const fileInput = document.getElementById('o-files');
-    const fileUrls = [];
-    if (fileInput.files.length) {
-      for (const f of fileInput.files) {
-        const r = await SC.storage.uploadOrderBrief('temp', f);
-        if (r.url) fileUrls.push({ name: f.name, url: r.url });
-      }
-    }
-
-    const res = await SC.orders.create(profile, { title, instructions: instr, subject: subj, subLevel: subl, level, pages, deadline: dl });
+    const res = await SC.orders.create(profile, { title, instructions: instr, subject: subj, subLevel: subl, level, pages, deadline: dl, citationStyle: citation });
     btn.disabled=false; btn.textContent='Proceed to Payment →';
     if (res.error) { err.textContent=res.error; err.style.display='flex'; return; }
     openPayModal(res.order);
   }
 
-  // ── Payment ─────────────────────────────────────────────
   function openPayModal(order) {
     payingOrdId = order.id;
     document.getElementById('pay-summary').innerHTML = `<strong>${order.order_number}</strong><br>${order.page_count} pages · ${order.subject} · ${order.academic_level}<br><span class="badge ${order.is_urgent?'badge-warning':'badge-navy'}">${order.is_urgent?'⚡ Urgent':'Standard'}</span> &nbsp; Total: <strong>$${order.total_price}</strong> &nbsp; Deposit: <strong style="color:var(--success)">$${order.deposit_amount}</strong>`;
@@ -389,7 +369,6 @@
     setTimeout(() => showPage('my-orders'), 600);
   }
 
-  // ── Order Detail ────────────────────────────────────────
   async function openDetail(ordId) {
     currentOrdId = ordId;
     const { data: o } = await SC.orders.getOne(ordId);
@@ -400,7 +379,6 @@
     document.getElementById('det-badge').innerHTML = `<span class="badge status-${o.status}">${statusLabel(o.status)}</span>`;
     document.getElementById('chat-label').textContent = o.order_number;
 
-    // Progress track
     const steps = ['Order Placed','Payment','Writer Assigned','In Progress','Under Review','Completed'];
     const stepMap = {pending_payment:1,pending_writer:2,in_progress:3,under_review:4,completed:5};
     const cur = stepMap[o.status]||0;
@@ -417,6 +395,7 @@
         <div><div class="form-label">Subject</div><div>${o.subject} → ${o.sub_level||'General'}</div></div>
         <div><div class="form-label">Level</div><div>${o.academic_level}</div></div>
         <div><div class="form-label">Pages</div><div>${o.page_count}</div></div>
+        <div><div class="form-label">Citation Style</div><div>${o.citation_style||'APA'}</div></div>
         <div><div class="form-label">Deadline</div><div>${dl.toLocaleString()}</div></div>
         <div><div class="form-label">Total Price</div><div class="fw-700">$${o.total_price}</div></div>
         <div><div class="form-label">Deposit</div><div>${o.deposit_paid?`<span class="text-success">✓ $${o.deposit_amount} via ${o.payment_method}</span>`:'<span class="text-danger">Not paid</span>'}</div></div>
@@ -433,24 +412,18 @@
       actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">Complete Payment</h4><p class="text-sm text-muted" style="margin-bottom:12px">Pay the $${o.deposit_amount} deposit to make your order visible to writers.</p><button class="btn btn-gold btn-full" onclick="openPayModal(currentOrd)">Pay $${o.deposit_amount} Deposit</button></div>`;
     } else if (o.status === 'under_review') {
       actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">Review Submitted Work</h4>
-        <div class="alert alert-warning" style="margin-bottom:10px">⚠️ <strong>Please review and approve or dispute before accessing the file.</strong> Approving releases payment to the writer. File will be available after approval.</div>
+        <div class="alert alert-warning" style="margin-bottom:10px">⚠️ <strong>Please review before accessing the file.</strong> Approving releases payment to the writer.</div>
         <button class="btn btn-success btn-full" style="margin-bottom:8px" onclick="openM('m-review')">✓ Approve Work</button>
         ${o.revisions_used<2?`<button class="btn btn-outline btn-full" style="margin-bottom:8px" onclick="openM('m-revision')">Request Revision (${2-o.revisions_used} left)</button>`:''}
         <button class="btn btn-danger btn-full btn-sm" onclick="openM('m-dispute')">Open Dispute</button></div>`;
     } else if (o.status === 'in_progress') {
       actions = `<div class="card card-sm"><h4>In Progress</h4><p class="text-sm text-muted" style="margin-top:6px">Your writer is working on the assignment. You'll be notified when submitted.</p></div>`;
     } else if (o.status === 'pending_writer') {
-      // Load writer requests for this order
-      const { data: requests } = await sb.from('order_requests')
-        .select('*, profiles(full_name, is_writer_approved)')
-        .eq('order_id', o.id);
+      const { data: requests } = await sb.from('order_requests').select('*, profiles(full_name, is_writer_approved)').eq('order_id', o.id);
       const reqs = requests || [];
       const reqHTML = reqs.length ? reqs.map(r => `
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--parch);border-radius:8px;margin-bottom:8px">
-          <div>
-            <strong style="font-size:0.875rem">✍️ ${r.profiles?.full_name || 'Writer'}</strong>
-            <div class="text-xs text-muted">${new Date(r.created_at).toLocaleDateString()}</div>
-          </div>
+          <div><strong style="font-size:0.875rem">✍️ ${r.profiles?.full_name || 'Writer'}</strong><div class="text-xs text-muted">${new Date(r.created_at).toLocaleDateString()}</div></div>
           <button class="btn btn-primary btn-sm" onclick="assignWriter('${o.id}','${r.writer_id}')">Assign</button>
         </div>`).join('') : '<p class="text-sm text-muted">No writer requests yet. Check back soon.</p>';
       actions = `<div class="card card-sm"><h4 style="margin-bottom:12px">Writer Requests (${reqs.length})</h4>${reqHTML}</div>`;
@@ -460,17 +433,14 @@
       actions = `<div class="card card-sm"><h4 style="color:var(--danger)">⚖️ Dispute Open</h4><p class="text-sm text-muted" style="margin-top:6px">Admin is reviewing your dispute. Response within 24–48h.</p></div>`;
     }
 
-    document.getElementById('det-actions').innerHTML = actions + `<div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Order Summary</div><div style="font-size:0.82rem;color:var(--muted);line-height:2.2"><div class="flex-between"><span>Pages:</span><strong>${o.page_count}</strong></div><div class="flex-between"><span>Rate:</span><strong>$${o.price_per_page}/page</strong></div><div class="flex-between"><span>Total:</span><strong>$${o.total_price}</strong></div><div class="flex-between"><span>Deposit paid:</span><strong style="color:var(--success)">$${o.deposit_amount}</strong></div><div class="flex-between"><span>Type:</span><strong>${o.is_urgent?'⚡ Urgent':'Standard'}</strong></div></div></div><div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Need Help?</div><a href="mailto:writerhub97@gmail.com" class="btn btn-outline btn-full btn-sm" style="margin-bottom:8px">📧 Email Support</a><a href="https://wa.me/254716603371" target="_blank" class="btn btn-green btn-full btn-sm">💬 WhatsApp</a></div>`;
+    document.getElementById('det-actions').innerHTML = actions + `<div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Order Summary</div><div style="font-size:0.82rem;color:var(--muted);line-height:2.2"><div class="flex-between"><span>Pages:</span><strong>${o.page_count}</strong></div><div class="flex-between"><span>Rate:</span><strong>$${o.price_per_page}/page</strong></div><div class="flex-between"><span>Total:</span><strong>$${o.total_price}</strong></div><div class="flex-between"><span>Deposit paid:</span><strong style="color:var(--success)">$${o.deposit_amount}</strong></div><div class="flex-between"><span>Type:</span><strong>${o.is_urgent?'⚡ Urgent':'Standard'}</strong></div><div class="flex-between"><span>Citation:</span><strong>${o.citation_style||'APA'}</strong></div></div></div><div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Need Help?</div><a href="mailto:writerhub97@gmail.com" class="btn btn-outline btn-full btn-sm" style="margin-bottom:8px">📧 Email Support</a><a href="https://wa.me/254716603371" target="_blank" class="btn btn-green btn-full btn-sm">💬 WhatsApp</a></div>`;
 
     showPage('order-detail');
     loadMessages();
-
-    // Real-time subscription
     if (chatSub) chatSub.unsubscribe();
     chatSub = SC.messages.subscribe(ordId, msg => appendMsg(msg));
   }
 
-  // ── Chat ────────────────────────────────────────────────
   async function loadMessages() {
     const { data: msgs } = await SC.messages.getForOrder(currentOrdId);
     const el = document.getElementById('chat-msgs');
@@ -501,10 +471,8 @@
   }
   document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();} });
 
-  // ── Modals ───────────────────────────────────────────────
   function openM(id) { document.getElementById(id).classList.add('open'); }
   function closeM(id) { document.getElementById(id).classList.remove('open'); }
-
   function setRating(r) { currentRat=r; document.querySelectorAll('#star-rating span').forEach((s,i)=>s.textContent=i<r?'⭐':'☆'); }
 
   async function submitReview() {
@@ -521,6 +489,22 @@
     if (res.error) { showGlobalToast(res.error,'error'); return; }
     closeM('m-revision'); showGlobalToast('Revision requested.','success');
     setTimeout(() => openDetail(currentOrdId), 500);
+  }
+
+  async function submitDispute() {
+    const reason = document.getElementById('dispute-reason').value.trim();
+    if (!reason) { showGlobalToast('Please provide a reason.','error'); return; }
+    const res = await SC.orders.dispute(currentOrdId, profile.id, reason);
+    if (res.error) { showGlobalToast(res.error,'error'); return; }
+    closeM('m-dispute'); showGlobalToast('Dispute filed. Admin will review within 24–48h.','warning');
+    setTimeout(() => openDetail(currentOrdId), 500);
+  }
+
+  async function assignWriter(orderId, writerId) {
+    const res = await SC.orders.assign(orderId, writerId);
+    if (res.error) { showGlobalToast(res.error, 'error'); return; }
+    showGlobalToast('Writer assigned successfully!', 'success');
+    setTimeout(() => openDetail(orderId), 500);
   }
 
   // ── Client Inbox ────────────────────────────────────────
@@ -587,14 +571,11 @@
     document.querySelectorAll('[id^="cconv-"]').forEach(el => el.style.borderLeft = '');
     const convEl = document.getElementById('cconv-'+convId);
     if (convEl) convEl.style.borderLeft = '3px solid var(--gold)';
-
     const panel = document.getElementById('client-chat-panel');
     panel.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-
     const result = await sb.from('direct_messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
     const allMsgs = result.data || [];
     const subject = allMsgs[0]?.subject || 'Conversation';
-
     panel.innerHTML = `
       <div style="padding:14px;border-bottom:1px solid var(--border);font-weight:600">${subject}</div>
       <div id="client-conv-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
@@ -610,10 +591,8 @@
         <input type="text" class="form-input" id="client-reply-input" placeholder="Type your reply..." style="flex:1" onkeydown="if(event.key==='Enter')sendClientReply('${convId}','${subject.replace(/'/g,"\\'")}')">
         <button class="btn btn-primary" onclick="sendClientReply('${convId}','${subject.replace(/'/g,"\\'")}')">Send</button>
       </div>`;
-
     const msgs = document.getElementById('client-conv-msgs');
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
-
     await sb.from('direct_messages').update({ is_read: true }).eq('recipient_id', profile.id).eq('conversation_id', convId);
   }
 
@@ -621,50 +600,37 @@
     const input = document.getElementById('client-reply-input');
     const content = input.value.trim();
     if (!content) return;
-
     const { data: adminProf } = await sb.from('profiles').select('id').eq('user_type','admin').single();
     if (!adminProf) { showGlobalToast('Could not find admin.','error'); return; }
-
     const { error } = await sb.from('direct_messages').insert({
-      sender_id: profile.id,
-      recipient_id: adminProf.id,
-      sender_role: 'client',
-      sender_name: profile.full_name,
+      sender_id: profile.id, recipient_id: adminProf.id,
+      sender_role: 'client', sender_name: profile.full_name,
       subject: subject.startsWith('Re:') ? subject : 'Re: ' + subject,
-      content,
-      conversation_id: convId,
-      is_read: false,
+      content, conversation_id: convId, is_read: false,
     });
-
     if (error) { showGlobalToast(error.message,'error'); return; }
     input.value = '';
     openClientConv(convId);
   }
 
-  async function assignWriter(orderId, writerId) {
-    const res = await SC.orders.assign(orderId, writerId);
-    if (res.error) { showGlobalToast(res.error, 'error'); return; }
-    showGlobalToast('Writer assigned successfully!', 'success');
-    setTimeout(() => openDetail(orderId), 500);
-  }
-
   // ── AI Support Chat ─────────────────────────────────────
-  
   let aiChatOpen = false;
   let aiHistory = [];
+
   function toggleAIChat() {
     aiChatOpen = !aiChatOpen;
     const w = document.getElementById('ai-chat-window');
     w.style.display = aiChatOpen ? 'flex' : 'none';
     if (aiChatOpen) setTimeout(() => document.getElementById('ai-input')?.focus(), 100);
   }
+
   async function sendAIMessage() {
     const input = document.getElementById('ai-input');
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
     const msgs = document.getElementById('ai-messages');
-    msgs.insertAdjacentHTML('beforeend', '<div style="background:var(--navy);color:white;padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%;align-self:flex-end">' + text + '</div>');
+    msgs.insertAdjacentHTML('beforeend', `<div style="background:var(--navy);color:white;padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%;align-self:flex-end">${text}</div>`);
     msgs.insertAdjacentHTML('beforeend', '<div id="ai-typing" style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;color:var(--muted)">Typing...</div>');
     msgs.scrollTop = msgs.scrollHeight;
     aiHistory.push({ role: 'user', content: text });
@@ -672,26 +638,23 @@
       const r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 1000, system: 'You are ScholarConnect AI support. Help clients with orders, pricing ($10/page standard, $15/page urgent), payments (50% deposit escrow), 2 free revisions. For complex issues: WhatsApp +254716603371', messages: aiHistory })
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: 'You are ScholarConnect AI support assistant. Help clients with: orders, pricing ($10/page standard, $15/page urgent, <5 days = urgent), payments (50% deposit held in escrow, released on approval), 2 free revisions per order, citation styles (APA, MLA, Chicago, Harvard, etc.), deadlines, and platform features. Be concise and helpful. For complex account issues redirect to WhatsApp +254716603371 or email writerhub97@gmail.com.',
+          messages: aiHistory
+        })
       });
       const d = await r.json();
-      const reply = d.content?.[0]?.text || 'Please contact support.';
+      const reply = d.content?.[0]?.text || 'Please contact support for help.';
       aiHistory.push({ role: 'assistant', content: reply });
       document.getElementById('ai-typing')?.remove();
-      msgs.insertAdjacentHTML('beforeend', '<div style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%">' + reply.replace(/\n/g, '<br>') + '</div>');
+      msgs.insertAdjacentHTML('beforeend', `<div style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%">${reply.replace(/\n/g, '<br>')}</div>`);
       msgs.scrollTop = msgs.scrollHeight;
     } catch(e) {
       document.getElementById('ai-typing')?.remove();
-      msgs.insertAdjacentHTML('beforeend', '<div style="color:var(--danger);font-size:0.85rem">Sorry, contact: +254716603371</div>');
+      msgs.insertAdjacentHTML('beforeend', '<div style="color:var(--danger);font-size:0.85rem">Sorry, please contact: +254716603371</div>');
     }
-  }
-  async function submitDispute() {
-    const reason = document.getElementById('dispute-reason').value.trim();
-    if (!reason) { showGlobalToast('Please provide a reason.','error'); return; }
-    const res = await SC.orders.dispute(currentOrdId, profile.id, reason);
-    if (res.error) { showGlobalToast(res.error,'error'); return; }
-    closeM('m-dispute'); showGlobalToast('Dispute filed. Admin will review within 24–48h.','warning');
-    setTimeout(() => openDetail(currentOrdId), 500);
   }
 </script>
 </body>
