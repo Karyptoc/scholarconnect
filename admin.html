@@ -326,7 +326,6 @@
 
   // Theme
   if(localStorage.getItem('sc_theme')==='dark') document.documentElement.setAttribute('data-theme','dark');
-  if(localStorage.getItem('sc_theme')==='dark') document.documentElement.setAttribute('data-theme','dark');
   const tb=document.getElementById('theme-btn');
   if(localStorage.getItem('sc_theme')==='dark') tb.classList.add('on');
   tb.addEventListener('click',()=>{const d=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',d?'':'dark');localStorage.setItem('sc_theme',d?'':'dark');tb.classList.toggle('on',!d);});
