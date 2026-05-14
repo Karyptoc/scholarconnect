@@ -17,6 +17,7 @@
       <button class="sidebar-link" id="nav-qualifications" onclick="showPage('qualifications')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>Qualifications</button>
       <button class="sidebar-link" id="nav-earnings" onclick="showPage('earnings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Earnings</button>
       <button class="sidebar-link" id="nav-inbox" onclick="showPage('inbox')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>Inbox <span id="inbox-badge" class="badge badge-warning" style="display:none;margin-left:3px">0</span></button>
+      <button class="sidebar-link" id="nav-profile" onclick="showPage('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>My Profile</button>
       <div class="sidebar-section">Support</div>
       <a class="sidebar-link" href="mailto:writerhub97@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Support</a>
       <a class="sidebar-link" href="https://wa.me/254716603371" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>WhatsApp</a>
@@ -138,6 +139,47 @@
           <button class="btn btn-gold btn-full" id="w-btn" onclick="requestWithdrawal()">Request Withdrawal</button>
         </div>
         <div class="card"><h3 style="font-family:var(--font-display);margin-bottom:16px">Withdrawal History</h3><div id="w-history"><div class="loading"><div class="spinner"></div></div></div></div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="page-profile">
+      <div class="page-header"><div class="page-title">My Profile</div><div class="page-subtitle">Your public writer profile and account settings</div></div>
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start">
+        <div class="card" style="text-align:center;padding:32px 20px">
+          <div style="position:relative;width:100px;height:100px;margin:0 auto 16px">
+            <div id="writer-avatar" style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--gold));display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:white;font-weight:700;overflow:hidden"></div>
+            <label for="writer-photo-input" style="position:absolute;bottom:0;right:0;width:30px;height:30px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.9rem" title="Change photo">📷</label>
+            <input type="file" id="writer-photo-input" accept="image/*" style="display:none" onchange="uploadWriterPhoto(this)">
+          </div>
+          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700" id="wp-name"></div>
+          <div class="badge badge-success" style="margin-top:8px">✓ Verified Writer</div>
+          <div id="wp-rating" style="font-size:1.2rem;margin-top:10px"></div>
+          <div style="margin-top:8px;font-size:0.82rem;color:var(--muted)" id="wp-stats"></div>
+          <div style="margin-top:6px;font-size:0.78rem;color:var(--muted)" id="wp-joined"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <h3 style="font-family:var(--font-display);margin-bottom:16px">Personal Information</h3>
+            <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="wp-fullname"></div>
+            <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-input" id="wp-email" disabled style="opacity:0.6"></div>
+            <div class="form-group"><label class="form-label">Phone Number</label><input type="text" class="form-input" id="wp-phone" placeholder="+254700000000"></div>
+            <div class="form-group"><label class="form-label">Short Bio <span class="text-muted">(visible to clients)</span></label><textarea class="form-textarea" id="wp-bio" placeholder="e.g. Experienced academic writer specialising in Business, Psychology and Law…" style="min-height:80px"></textarea></div>
+            <div id="wp-save-msg" class="alert alert-success" style="display:none">Profile updated!</div>
+            <button class="btn btn-primary" onclick="saveWriterProfile()">Save Changes</button>
+          </div>
+          <div class="card">
+            <h3 style="font-family:var(--font-display);margin-bottom:16px">Approved Subjects</h3>
+            <div id="wp-subjects"></div>
+          </div>
+          <div class="card">
+            <h3 style="font-family:var(--font-display);margin-bottom:16px">Change Password</h3>
+            <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" id="wp-newpass" placeholder="Min 8 characters"></div>
+            <div class="form-group"><label class="form-label">Confirm Password</label><input type="password" class="form-input" id="wp-confpass"></div>
+            <div id="wp-pass-msg" class="alert" style="display:none"></div>
+            <button class="btn btn-outline" onclick="changeWriterPassword()">Update Password</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -315,6 +357,7 @@
     document.getElementById('page-'+name).classList.add('active');
     const n=document.getElementById('nav-'+name); if(n)n.classList.add('active');
     if(name==='available')renderAvailable();
+    if(name==='profile')loadWriterProfile();
     if(name==='my-orders')renderMyOrders();
     if(name==='overview')renderOverview();
     if(name==='earnings')renderEarnings();
@@ -423,7 +466,7 @@
       </div>
       <div class="form-label">Instructions</div>
       <div style="background:var(--parch);border-radius:8px;padding:14px;margin-top:6px;font-size:0.875rem;line-height:1.7">${o.instructions}</div>
-      ${o.brief_url?`<div style="margin-top:12px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Client Brief File</a></div>`:''}
+${o.brief_files && o.brief_files.length ? `<div style="margin-top:12px"><div class="form-label">Client Brief Files</div><div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${o.brief_files.map(f=>`<a href="${f.url}" target="_blank" class="btn btn-outline btn-sm" style="justify-content:flex-start;gap:8px">📎 ${f.name}</a>`).join('')}</div></div>` : o.brief_url ? `<div style="margin-top:12px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Client Brief File</a></div>` : ''}
       ${o.revision_note?`<div class="alert alert-warning" style="margin-top:12px">📝 <strong>Revision note:</strong> ${o.revision_note}</div>`:''}
       ${delivery?.plagiarism_score?`<div class="badge badge-success" style="margin-top:12px">✓ Plagiarism: ${delivery.plagiarism_score}% original</div>`:''}`;
 
@@ -745,6 +788,70 @@
     if (res.error) { showGlobalToast(res.error,'error'); return; }
     showGlobalToast(`Withdrawal of $${amount} requested!`,'success');
     renderEarnings();
+  }
+
+  // ── Writer Profile ────────────────────────────────────────
+  async function loadWriterProfile() {
+    document.getElementById('wp-name').textContent = profile.full_name;
+    document.getElementById('wp-fullname').value = profile.full_name || '';
+    document.getElementById('wp-email').value = profile.email || '';
+    document.getElementById('wp-phone').value = profile.phone || '';
+    document.getElementById('wp-bio').value = profile.bio || '';
+    document.getElementById('wp-joined').textContent = 'Member since ' + new Date(profile.created_at).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    const av = document.getElementById('writer-avatar');
+    av.innerHTML = profile.avatar_url ? `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : (profile.full_name||'W').charAt(0).toUpperCase();
+    // Ratings
+    const { data: orders } = await sb.from('orders').select('rating').eq('assigned_writer_id', profile.id).eq('status','completed').not('rating','is',null);
+    const rats = (orders||[]).map(o=>o.rating);
+    const avg = rats.length ? (rats.reduce((a,b)=>a+b,0)/rats.length).toFixed(1) : null;
+    document.getElementById('wp-rating').innerHTML = avg ? `${'⭐'.repeat(Math.round(avg))} <span style="font-size:0.9rem;color:var(--muted)">${avg}/5 (${rats.length} reviews)</span>` : '<span class="text-muted text-sm">No reviews yet</span>';
+    const { data: completed } = await sb.from('orders').select('id,page_count').eq('assigned_writer_id',profile.id).eq('status','completed');
+    const pages = (completed||[]).reduce((a,o)=>a+o.page_count,0);
+    document.getElementById('wp-stats').textContent = `${(completed||[]).length} completed orders · ${pages} pages written`;
+    // Approved subjects
+    const results = await SC.tests.getResultsForWriter(profile.id);
+    const approved = results.filter(r=>r.test_type==='essay'&&r.admin_approved);
+    const subjEl = document.getElementById('wp-subjects');
+    subjEl.innerHTML = approved.length ? `<div class="flex-gap" style="flex-wrap:wrap">${[...new Set(approved.map(r=>r.subject))].map(s=>`<span class="badge badge-success">✓ ${s}</span>`).join('')}</div>` : '<p class="text-muted text-sm">No approved subjects yet. Submit essays in Qualifications tab.</p>';
+  }
+
+  async function uploadWriterPhoto(input) {
+    if (!input.files.length) return;
+    const file = input.files[0];
+    showGlobalToast('Uploading photo…','success');
+    const { data, error } = await sb.storage.from('avatars').upload(`${profile.id}/avatar.${file.name.split('.').pop()}`, file, { upsert: true });
+    if (error) { showGlobalToast('Upload failed: '+error.message,'error'); return; }
+    const { data: urlData } = sb.storage.from('avatars').getPublicUrl(data.path);
+    await sb.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', profile.id);
+    profile.avatar_url = urlData.publicUrl;
+    document.getElementById('writer-avatar').innerHTML = `<img src="${urlData.publicUrl}" style="width:100%;height:100%;object-fit:cover">`;
+    showGlobalToast('Profile photo updated!','success');
+  }
+
+  async function saveWriterProfile() {
+    const name = document.getElementById('wp-fullname').value.trim();
+    const phone = document.getElementById('wp-phone').value.trim();
+    const bio = document.getElementById('wp-bio').value.trim();
+    if (!name) { showGlobalToast('Name cannot be empty.','error'); return; }
+    await sb.from('profiles').update({ full_name: name, phone, bio }).eq('id', profile.id);
+    profile.full_name = name; profile.bio = bio;
+    document.getElementById('wp-name').textContent = name;
+    document.getElementById('welcome-msg').textContent = `Welcome, ${name.split(' ')[0]}!`;
+    const msg = document.getElementById('wp-save-msg');
+    msg.style.display='flex'; setTimeout(()=>msg.style.display='none',3000);
+  }
+
+  async function changeWriterPassword() {
+    const np = document.getElementById('wp-newpass').value;
+    const cp = document.getElementById('wp-confpass').value;
+    const msg = document.getElementById('wp-pass-msg'); msg.style.display='none';
+    if (np !== cp) { msg.textContent='Passwords do not match.'; msg.className='alert alert-danger'; msg.style.display='flex'; return; }
+    if (np.length < 8) { msg.textContent='Min 8 characters required.'; msg.className='alert alert-danger'; msg.style.display='flex'; return; }
+    const { error } = await sb.auth.updateUser({ password: np });
+    if (error) { msg.textContent=error.message; msg.className='alert alert-danger'; msg.style.display='flex'; return; }
+    msg.textContent='Password updated!'; msg.className='alert alert-success'; msg.style.display='flex';
+    document.getElementById('wp-newpass').value=''; document.getElementById('wp-confpass').value='';
+    setTimeout(()=>msg.style.display='none',3000);
   }
 
   function openM(id) { document.getElementById(id).classList.add('open'); }
