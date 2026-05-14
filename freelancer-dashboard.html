@@ -818,8 +818,10 @@ ${o.brief_files && o.brief_files.length ? `<div style="margin-top:12px"><div cla
   async function uploadWriterPhoto(input) {
     if (!input.files.length) return;
     const file = input.files[0];
+    if (file.size > 2 * 1024 * 1024) { showGlobalToast('Photo must be under 2MB.','error'); return; }
     showGlobalToast('Uploading photo…','success');
-    const { data, error } = await sb.storage.from('avatars').upload(`${profile.id}/avatar.${file.name.split('.').pop()}`, file, { upsert: true });
+    const ext = file.name.split('.').pop();
+    const { data, error } = await sb.storage.from('avatars').upload(profile.id + '/avatar.' + ext, file, { upsert: true });
     if (error) { showGlobalToast('Upload failed: '+error.message,'error'); return; }
     const { data: urlData } = sb.storage.from('avatars').getPublicUrl(data.path);
     await sb.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', profile.id);
