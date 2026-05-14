@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Pricing – ScholarConnect</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav style="background:var(--navy);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100">
+  <a href="index.html" style="font-family:var(--font-display);font-size:1.2rem;font-weight:900;color:white;text-decoration:none">Scholar<span style="color:var(--gold)">Connect</span></a>
+  <div style="display:flex;gap:16px">
+    <a href="auth.html" style="color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.9rem">Log In</a>
+    <a href="auth.html?mode=register" class="btn btn-gold btn-sm">Get Started</a>
+  </div>
+</nav>
+
+<div style="max-width:900px;margin:0 auto;padding:60px 24px">
+  <div style="text-align:center;margin-bottom:48px">
+    <h1 style="font-family:var(--font-display);font-size:2.5rem;margin-bottom:12px">Simple, Transparent Pricing</h1>
+    <p style="color:var(--muted);font-size:1.1rem">Pay only for what you need. No subscriptions, no hidden fees.</p>
+  </div>
+
+  <!-- Pricing Cards -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:48px">
+    <div class="card" style="border:2px solid var(--border);text-align:center;padding:36px">
+      <div style="font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px">Standard</div>
+      <div style="font-family:var(--font-display);font-size:3.5rem;font-weight:900;color:var(--navy)">$10</div>
+      <div style="color:var(--muted);margin-bottom:4px">per page</div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:24px">Deadline 5+ days away</div>
+      <ul style="list-style:none;padding:0;text-align:left;margin-bottom:28px;display:flex;flex-direction:column;gap:10px;font-size:0.9rem">
+        <li>✅ 275 words per page</li>
+        <li>✅ Your chosen citation style</li>
+        <li>✅ 2 free revisions</li>
+        <li>✅ Plagiarism check included</li>
+        <li>✅ 50% deposit, 50% on delivery</li>
+        <li>✅ Escrow protection</li>
+      </ul>
+      <a href="auth.html?mode=register" class="btn btn-primary btn-full">Place Order</a>
+    </div>
+    <div class="card" style="border:2px solid var(--gold);text-align:center;padding:36px;position:relative">
+      <div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--gold);color:white;font-size:0.75rem;font-weight:700;padding:3px 14px;border-radius:20px">URGENT</div>
+      <div style="font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px">Urgent</div>
+      <div style="font-family:var(--font-display);font-size:3.5rem;font-weight:900;color:var(--navy)">$15</div>
+      <div style="color:var(--muted);margin-bottom:4px">per page</div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:24px">Deadline under 5 days</div>
+      <ul style="list-style:none;padding:0;text-align:left;margin-bottom:28px;display:flex;flex-direction:column;gap:10px;font-size:0.9rem">
+        <li>⚡ Priority writer assignment</li>
+        <li>✅ 275 words per page</li>
+        <li>✅ Your chosen citation style</li>
+        <li>✅ 2 free revisions</li>
+        <li>✅ Plagiarism check included</li>
+        <li>✅ Escrow protection</li>
+      </ul>
+      <a href="auth.html?mode=register" class="btn btn-gold btn-full">Place Urgent Order</a>
+    </div>
+  </div>
+
+  <!-- How payment works -->
+  <div class="card" style="margin-bottom:32px">
+    <h2 style="font-family:var(--font-display);font-size:1.4rem;margin-bottom:20px">How Payment Works</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center">
+      <div><div style="font-size:2rem;margin-bottom:8px">1️⃣</div><strong>Pay 50% Deposit</strong><p style="color:var(--muted);font-size:0.875rem;margin-top:4px">Held securely in escrow when you place your order</p></div>
+      <div><div style="font-size:2rem;margin-bottom:8px">2️⃣</div><strong>Work Delivered</strong><p style="color:var(--muted);font-size:0.875rem;margin-top:4px">Writer submits completed work before your deadline</p></div>
+      <div><div style="font-size:2rem;margin-bottom:8px">3️⃣</div><strong>Approve &amp; Pay Balance</strong><p style="color:var(--muted);font-size:0.875rem;margin-top:4px">Pay remaining 50% only when you're satisfied</p></div>
+    </div>
+  </div>
+
+  <!-- Accepted payments -->
+  <div class="card" style="margin-bottom:32px">
+    <h2 style="font-family:var(--font-display);font-size:1.4rem;margin-bottom:16px">Accepted Payment Methods</h2>
+    <div style="display:flex;gap:20px;flex-wrap:wrap">
+      <span style="background:var(--parch);padding:10px 20px;border-radius:8px;font-weight:600">💳 Visa / Mastercard</span>
+      <span style="background:var(--parch);padding:10px 20px;border-radius:8px;font-weight:600">🅿️ PayPal</span>
+      <span style="background:var(--parch);padding:10px 20px;border-radius:8px;font-weight:600">🏦 Bank Transfer</span>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <h2 style="font-family:var(--font-display);font-size:1.4rem;margin-bottom:20px">Pricing FAQ</h2>
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div class="card card-sm"><strong>Is the deposit refundable?</strong><p style="color:var(--muted);font-size:0.875rem;margin-top:6px">Yes — if no writer is assigned within 24 hours, your deposit is fully refunded. See our <a href="refund.html">Refund Policy</a>.</p></div>
+    <div class="card card-sm"><strong>What counts as one page?</strong><p style="color:var(--muted);font-size:0.875rem;margin-top:6px">One page = 275 words, double-spaced, 12pt Times New Roman (standard academic format).</p></div>
+    <div class="card card-sm"><strong>Are revisions free?</strong><p style="color:var(--muted);font-size:0.875rem;margin-top:6px">Yes — every order includes 2 free revisions within 7 days of delivery.</p></div>
+    <div class="card card-sm"><strong>When is my work auto-approved?</strong><p style="color:var(--muted);font-size:0.875rem;margin-top:6px">If you don't approve or request a revision within 72 hours of delivery, the order is auto-approved and payment released.</p></div>
+  </div>
+</div>
+
+<footer style="text-align:center;padding:32px;color:var(--muted);font-size:0.875rem;border-top:1px solid var(--border);margin-top:40px">
+  <div style="margin-bottom:10px">
+    <a href="terms.html" style="color:var(--muted);margin:0 12px">Terms of Service</a>
+    <a href="privacy.html" style="color:var(--muted);margin:0 12px">Privacy Policy</a>
+    <a href="refund.html" style="color:var(--muted);margin:0 12px">Refund Policy</a>
+  </div>
+  © 2025 ScholarConnect by Karyptoc Solutions. All rights reserved.
+</footer>
+</body>
+</html>
