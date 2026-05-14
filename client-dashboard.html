@@ -10,7 +10,824 @@
   <aside class="sidebar">
     <div class="sidebar-brand"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><path d="M14 3L3 9v10l11 6 11-6V9L14 3z" fill="var(--navy2)"/><path d="M14 8l6 3.5v7L14 22l-6-3.5v-7L14 8z" fill="var(--gold)"/></svg>Scholar<span>Connect</span></div>
     <nav class="sidebar-nav">
+      <div class="sidebar-section">Main</div><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>ScholarConnect – Client Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><path d="M14 3L3 9v10l11 6 11-6V9L14 3z" fill="var(--navy2)"/><path d="M14 8l6 3.5v7L14 22l-6-3.5v-7L14 8z" fill="var(--gold)"/></svg>Scholar<span>Connect</span></div>
+    <nav class="sidebar-nav">
       <div class="sidebar-section">Main</div>
+      <button class="sidebar-link active" id="nav-overview" onclick="showPage('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</button>
+      <button class="sidebar-link" id="nav-new-order" onclick="showPage('new-order')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>New Order</button>
+      <button class="sidebar-link" id="nav-my-orders" onclick="showPage('my-orders')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>My Orders</button>
+      <button class="sidebar-link" id="nav-inbox" onclick="showPage('inbox')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>Inbox <span id="inbox-badge" class="badge badge-warning" style="display:none;margin-left:3px">0</span></button>
+      <button class="sidebar-link" id="nav-writers" onclick="showPage('writers')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Our Writers</button>
+      <button class="sidebar-link" id="nav-profile" onclick="showPage('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>My Profile</button>
+      <div class="sidebar-section">Support</div>
+      <a class="sidebar-link" href="mailto:writerhub97@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Support</a>
+      <a class="sidebar-link" href="https://wa.me/254716603371" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>WhatsApp Support</a>
+      <div class="sidebar-section">Account</div>
+      <button class="sidebar-link" onclick="SC.auth.logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Log Out</button>
+    </nav>
+    <div style="margin-top:auto;padding-top:20px;padding-left:12px"><button class="theme-toggle" id="theme-btn"></button></div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- OVERVIEW -->
+    <div class="page active" id="page-overview">
+      <div class="page-header flex-between">
+        <div><div class="page-title" id="welcome-msg">Welcome back!</div><div class="page-subtitle">Your academic writing dashboard</div></div>
+        <button class="btn btn-gold" onclick="showPage('new-order')">+ New Order</button>
+      </div>
+      <div class="grid-4" style="margin-bottom:24px">
+        <div class="stat-card"><div class="stat-value" id="st-total">—</div><div class="stat-label">Total Orders</div></div>
+        <div class="stat-card"><div class="stat-value" id="st-active">—</div><div class="stat-label">Active</div></div>
+        <div class="stat-card"><div class="stat-value" id="st-done">—</div><div class="stat-label">Completed</div></div>
+        <div class="stat-card"><div class="stat-value" id="st-spent">—</div><div class="stat-label">Total Spent</div></div>
+      </div>
+      <div class="card"><div class="flex-between" style="margin-bottom:18px"><h3 style="font-family:var(--font-display)">Recent Orders</h3><button class="btn btn-ghost btn-sm" onclick="showPage('my-orders')">View all →</button></div><div id="recent-list"><div class="loading"><div class="spinner"></div><span>Loading orders…</span></div></div></div>
+    </div>
+
+    <!-- NEW ORDER -->
+    <div class="page" id="page-new-order">
+      <div class="page-header"><div class="page-title">New Order</div><div class="page-subtitle">Fill in your assignment details</div></div>
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start">
+        <div class="card">
+          <div class="form-group"><label class="form-label">Assignment Title *</label><input type="text" class="form-input" id="o-title" placeholder="e.g. Impact of Social Media on Mental Health"></div>
+          <div class="form-group"><label class="form-label">Detailed Instructions *</label><textarea class="form-textarea" id="o-instructions" style="min-height:130px" placeholder="Describe exactly what you need — formatting style, sources required, rubric, etc."></textarea></div>
+          <div class="grid-2">
+            <div class="form-group"><label class="form-label">Subject *</label><select class="form-select" id="o-subject" onchange="populateSub()"><option value="">Select…</option></select></div>
+            <div class="form-group"><label class="form-label">Sub-Specialisation</label><select class="form-select" id="o-sublevel"><option value="General">General</option></select></div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group"><label class="form-label">Academic Level *</label><select class="form-select" id="o-level"><option value="">Select…</option><option>High School</option><option>College (Freshman/Sophomore)</option><option>University (Junior/Senior)</option><option>Master's</option><option>PhD</option></select></div>
+            <div class="form-group"><label class="form-label">Citation / Essay Style *</label>
+              <select class="form-select" id="o-citation">
+                <option value="APA">APA (7th Edition)</option>
+                <option value="MLA">MLA (9th Edition)</option>
+                <option value="Chicago">Chicago / Turabian</option>
+                <option value="Harvard">Harvard</option>
+                <option value="Vancouver">Vancouver</option>
+                <option value="IEEE">IEEE</option>
+                <option value="AMA">AMA</option>
+                <option value="Oxford">Oxford</option>
+                <option value="None">No citation required</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Pages * <span class="text-muted text-xs">(1–100)</span></label><input type="number" class="form-input" id="o-pages" min="1" max="100" value="5" oninput="calcPrice()"><span class="form-hint">1 page ≈ 275 words</span></div>
+          <div class="form-group"><label class="form-label">Deadline *</label><input type="datetime-local" class="form-input" id="o-deadline" onchange="calcPrice()"><span class="form-hint" id="deadline-hint">≥5 days = $10/page · &lt;5 days = $15/page (urgent)</span></div>
+          <div class="form-group"><label class="form-label">Upload Files <span class="text-muted">(optional — rubric, notes, references)</span></label><input type="file" class="form-input" id="o-files" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg"></div>
+          <div class="consent-box" style="margin-bottom:18px"><input type="checkbox" id="o-consent"><label for="o-consent">I agree to the <a href="terms.html" target="_blank">Terms of Service</a>. I understand the 50% deposit is held in escrow and released only upon my approval.</label></div>
+          <div id="order-err" class="alert alert-danger" style="display:none"></div>
+          <button class="btn btn-primary btn-lg" id="order-btn" onclick="createOrder()">Proceed to Payment →</button>
+        </div>
+        <div>
+          <div class="price-display">
+            <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px">Price Estimate</div>
+            <div class="price-big" id="price-total">$50.00</div>
+            <div style="color:var(--muted);font-size:0.875rem;margin-top:4px">Deposit due now: <strong id="price-dep">$25.00</strong></div>
+            <hr class="divider">
+            <div style="font-size:0.82rem;color:var(--muted);display:flex;flex-direction:column;gap:8px">
+              <div class="flex-between"><span>Pages:</span><span id="pr-pages">5</span></div>
+              <div class="flex-between"><span>Rate:</span><span id="pr-rate">$10/page</span></div>
+              <div class="flex-between"><span>Type:</span><span id="pr-type" class="badge badge-navy">Standard</span></div>
+              <div class="flex-between"><span>Balance on delivery:</span><span id="pr-balance">$25.00</span></div>
+            </div>
+          </div>
+          <div class="card card-sm" style="margin-top:14px">
+            <div style="font-size:0.8rem;font-weight:600;margin-bottom:10px">Accepted Payments</div>
+            <div style="display:flex;flex-direction:column;gap:7px;font-size:0.82rem;color:var(--muted)">
+              <span class="flex-gap"><span>💳</span>Card (Stripe)</span>
+              <span class="flex-gap"><span>🅿️</span>PayPal</span>
+              <span class="flex-gap"><span>🏦</span>Bank Transfer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MY ORDERS -->
+    <div class="page" id="page-my-orders">
+      <div class="page-header flex-between">
+        <div><div class="page-title">My Orders</div><div class="page-subtitle">Track and manage your assignments</div></div>
+        <select class="form-select" id="ord-filter" style="width:180px" onchange="renderMyOrders()">
+          <option value="">All statuses</option>
+          <option value="pending_payment">Pending Payment</option>
+          <option value="pending_writer">Pending Writer</option>
+          <option value="in_progress">In Progress</option>
+          <option value="under_review">Under Review</option>
+          <option value="completed">Completed</option>
+          <option value="disputed">Disputed</option>
+        </select>
+      </div>
+      <div id="my-orders-list"><div class="loading"><div class="spinner"></div><span>Loading…</span></div></div>
+    </div>
+
+    <!-- ORDER DETAIL -->
+    <div class="page" id="page-order-detail">
+      <div class="page-header">
+        <button class="btn btn-ghost btn-sm" onclick="showPage('my-orders')" style="margin-bottom:8px">← Back to Orders</button>
+        <div class="flex-between"><div><div class="page-title" id="det-title"></div><div id="det-num" class="text-muted text-sm"></div></div><div id="det-badge"></div></div>
+      </div>
+      <div class="card card-sm" style="margin-bottom:20px" id="det-progress-wrap"></div>
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div class="card" id="det-info"></div>
+          <div class="card">
+            <h3 style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:14px">Order Messages</h3>
+            <div class="alert alert-warning" style="margin-bottom:12px">🛡️ <strong>Privacy enforced.</strong> No contact info allowed. Violations are logged and reviewed by admin.</div>
+            <div class="chat-wrap">
+              <div class="chat-header"><div class="dot dot-success"></div><span style="font-weight:600;font-size:0.875rem" id="chat-label">Order Chat</span><span class="text-xs text-muted" style="margin-left:auto">Real-time · Anonymous</span></div>
+              <div class="chat-messages" id="chat-msgs"></div>
+              <div class="chat-input-area"><input type="text" class="form-input" id="chat-input" placeholder="Type message… (no contact info)" style="flex:1"><button class="btn btn-primary" onclick="sendMsg()">Send</button></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px" id="det-actions"></div>
+      </div>
+    </div>
+
+    <!-- WRITERS -->
+    <div class="page" id="page-writers">
+      <div class="page-header"><div class="page-title">Our Writers</div><div class="page-subtitle">Browse our verified academic writers</div></div>
+      <div class="grid-3" id="writers-grid"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="page-profile">
+      <div class="page-header"><div class="page-title">My Profile</div><div class="page-subtitle">Manage your account details</div></div>
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start">
+        <div class="card" style="text-align:center;padding:32px 20px">
+          <div id="client-avatar-wrap" style="position:relative;width:100px;height:100px;margin:0 auto 16px">
+            <div id="client-avatar-img" style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--steel));display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:white;font-weight:700;overflow:hidden" id="client-avatar"></div>
+            <label for="client-photo-input" style="position:absolute;bottom:0;right:0;width:30px;height:30px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.9rem" title="Change photo">📷</label>
+            <input type="file" id="client-photo-input" accept="image/*" style="display:none" onchange="uploadClientPhoto(this)">
+          </div>
+          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700" id="cp-name"></div>
+          <div class="badge badge-navy" style="margin-top:8px">Client</div>
+          <div style="margin-top:12px;font-size:0.82rem;color:var(--muted)" id="cp-joined"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <h3 style="font-family:var(--font-display);margin-bottom:16px">Personal Information</h3>
+            <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="cp-fullname" placeholder="Your full name"></div>
+            <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-input" id="cp-email" disabled style="opacity:0.6"></div>
+            <div class="form-group"><label class="form-label">Phone Number</label><input type="text" class="form-input" id="cp-phone" placeholder="e.g. +254700000000"></div>
+            <div id="cp-save-msg" class="alert alert-success" style="display:none">Profile updated successfully!</div>
+            <button class="btn btn-primary" onclick="saveClientProfile()">Save Changes</button>
+          </div>
+          <div class="card">
+            <h3 style="font-family:var(--font-display);margin-bottom:16px">Change Password</h3>
+            <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" id="cp-newpass" placeholder="Min 8 characters"></div>
+            <div class="form-group"><label class="form-label">Confirm Password</label><input type="password" class="form-input" id="cp-confpass" placeholder="Repeat new password"></div>
+            <div id="cp-pass-msg" class="alert" style="display:none"></div>
+            <button class="btn btn-outline" onclick="changeClientPassword()">Update Password</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INBOX -->
+    <div class="page" id="page-inbox">
+      <div class="page-header"><div class="page-title">Inbox</div><div class="page-subtitle">Direct messages from ScholarConnect admin</div></div>
+      <div id="inbox-list"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-overlay" id="m-pay">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header"><div class="modal-title">Complete Deposit Payment</div><button class="modal-close" onclick="closeM('m-pay')">×</button></div>
+    <div id="pay-summary" style="background:var(--parch);border-radius:8px;padding:14px;margin-bottom:16px;font-size:0.875rem;line-height:1.9"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px">
+      <div class="card card-compact" id="pm-stripe" onclick="selPM('stripe')" style="cursor:pointer;text-align:center;border:2px solid var(--steel);background:rgba(107,159,212,0.08)"><div style="font-size:1.4rem">💳</div><div style="font-size:0.78rem;font-weight:600;margin-top:4px">Card</div></div>
+      <div class="card card-compact" id="pm-paypal" onclick="selPM('paypal')" style="cursor:pointer;text-align:center;border:2px solid var(--border)"><div style="font-size:1.4rem">🅿️</div><div style="font-size:0.78rem;font-weight:600;margin-top:4px">PayPal</div></div>
+      <div class="card card-compact" id="pm-bank" onclick="selPM('bank')" style="cursor:pointer;text-align:center;border:2px solid var(--border)"><div style="font-size:1.4rem">🏦</div><div style="font-size:0.78rem;font-weight:600;margin-top:4px">Bank</div></div>
+    </div>
+    <div id="pay-stripe"><div class="alert alert-info" style="margin-bottom:12px"><span>💳</span><span>Test: card <strong>4242 4242 4242 4242</strong>, any future date, any CVC</span></div><div style="border:1.5px solid var(--border);border-radius:8px;padding:14px"><div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px">Card Number</div><input class="form-input" value="4242 4242 4242 4242" style="font-family:monospace"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px"><div><div style="font-size:0.8rem;color:var(--muted);margin-bottom:5px">Expiry</div><input class="form-input" value="12/28"></div><div><div style="font-size:0.8rem;color:var(--muted);margin-bottom:5px">CVC</div><input class="form-input" value="123"></div></div></div></div>
+    <div id="pay-paypal" style="display:none"><div class="alert alert-info"><span>🅿️</span><span>Send payment to: <strong id="pp-email"></strong></span></div><div style="background:var(--parch);border-radius:8px;padding:14px;font-size:0.875rem"><div class="flex-between" style="margin-bottom:6px"><span>PayPal email:</span><strong id="pp-addr"></strong></div><div class="flex-between" style="margin-bottom:6px"><span>Amount:</span><strong id="pp-amt"></strong></div><div class="flex-between"><span>Reference:</span><strong id="pp-ref"></strong></div></div><div class="alert alert-warning" style="margin-top:10px"><span>⚠️</span><span>Include the reference in the PayPal note. Admin confirms and activates your order.</span></div></div>
+    <div id="pay-bank" style="display:none"><div class="alert alert-info"><span>🏦</span><span>Transfer the deposit to our bank account below.</span></div><div style="background:var(--parch);border-radius:8px;padding:14px;font-size:0.875rem;line-height:2.1"><div class="flex-between"><span>Bank:</span><strong id="bk-name"></strong></div><div class="flex-between"><span>Account Name:</span><strong>ScholarConnect</strong></div><div class="flex-between"><span>Account No:</span><strong id="bk-acc"></strong></div><div class="flex-between"><span>Sort Code:</span><strong id="bk-sort"></strong></div><div class="flex-between"><span>SWIFT:</span><strong id="bk-swift"></strong></div><div class="flex-between"><span>Amount:</span><strong id="bk-amt"></strong></div><div class="flex-between"><span>Reference:</span><strong id="bk-ref"></strong></div></div><div class="alert alert-warning" style="margin-top:10px"><span>⚠️</span><span>Use the exact reference. Admin confirms after transfer.</span></div></div>
+    <div id="pay-err" class="alert alert-danger" style="display:none;margin-top:12px"></div>
+    <button class="btn btn-gold btn-full btn-lg" id="pay-btn" onclick="processPayment()" style="margin-top:16px"><span id="pay-btn-text">Pay Deposit</span></button>
+  </div>
+</div>
+
+<!-- REVIEW MODAL -->
+<div class="modal-overlay" id="m-review">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Approve Work &amp; Rate</div><button class="modal-close" onclick="closeM('m-review')">×</button></div>
+    <div class="form-group"><label class="form-label">Rating</label><div id="star-rating" style="display:flex;gap:8px;font-size:2rem;cursor:pointer"><span onclick="setRating(1)">☆</span><span onclick="setRating(2)">☆</span><span onclick="setRating(3)">☆</span><span onclick="setRating(4)">☆</span><span onclick="setRating(5)">☆</span></div></div>
+    <div class="form-group"><label class="form-label">Review <span class="text-muted">(optional)</span></label><textarea class="form-textarea" id="review-text" placeholder="Share your experience…"></textarea></div>
+    <div class="alert alert-info"><span>💡</span><span>Approving releases the writer's payment from escrow. Cannot be undone.</span></div>
+    <button class="btn btn-success btn-full" onclick="submitReview()">✓ Approve &amp; Release Payment</button>
+  </div>
+</div>
+
+<!-- REVISION MODAL -->
+<div class="modal-overlay" id="m-revision">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Request Revision</div><button class="modal-close" onclick="closeM('m-revision')">×</button></div>
+    <div class="form-group"><label class="form-label">What needs to be revised? *</label><textarea class="form-textarea" id="revision-note" placeholder="Be specific about the changes needed…"></textarea></div>
+    <button class="btn btn-full" style="background:var(--warning);color:var(--navy)" onclick="submitRevision()">Request Revision</button>
+  </div>
+</div>
+
+<!-- DISPUTE MODAL -->
+<div class="modal-overlay" id="m-dispute">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Open Dispute</div><button class="modal-close" onclick="closeM('m-dispute')">×</button></div>
+    <div class="alert alert-warning">Admin will review all evidence and mediate within 24–48 hours.</div>
+    <div class="form-group"><label class="form-label">Reason for Dispute *</label><textarea class="form-textarea" id="dispute-reason" placeholder="Clearly describe why you are disputing this order…"></textarea></div>
+    <button class="btn btn-danger btn-full" onclick="submitDispute()">Open Dispute</button>
+  </div>
+</div>
+
+<!-- AI Support Chat — single clean instance -->
+<div id="ai-chat-bubble" onclick="toggleAIChat()" style="position:fixed;bottom:90px;right:24px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--steel));color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:998;font-weight:bold;font-size:0.75rem" title="AI Support">AI</div>
+
+<div id="ai-chat-window" style="display:none;position:fixed;bottom:155px;right:24px;width:360px;height:480px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.15);z-index:997;flex-direction:column;overflow:hidden">
+  <div style="padding:14px 16px;background:linear-gradient(135deg,var(--navy),var(--steel));color:white;display:flex;justify-content:space-between;align-items:center">
+    <div><strong>🤖 ScholarConnect AI</strong><div style="font-size:0.75rem;opacity:0.8">Ask me anything about your order</div></div>
+    <button onclick="toggleAIChat()" style="background:none;border:none;color:white;font-size:1.2rem;cursor:pointer">×</button>
+  </div>
+  <div id="ai-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+    <div style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%">👋 Hi! I'm your ScholarConnect AI assistant. I can help with questions about orders, payments, revisions, and more. How can I help you?</div>
+  </div>
+  <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px">
+    <input type="text" id="ai-input" class="form-input" placeholder="Ask a question..." style="flex:1;font-size:0.875rem" onkeydown="if(event.key==='Enter')sendAIMessage()">
+    <button class="btn btn-primary btn-sm" onclick="sendAIMessage()">Send</button>
+  </div>
+</div>
+
+<a href="https://wa.me/254716603371" target="_blank" class="whatsapp-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg><span class="whatsapp-tooltip">WhatsApp Support</span></a>
+<div class="toast-container" id="toasts"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-client.js"></script>
+<script>
+  const profile = SC.auth.requireRole('client');
+  if (!profile) throw new Error('redirect');
+
+  if (localStorage.getItem('sc_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  const tb = document.getElementById('theme-btn');
+  if (localStorage.getItem('sc_theme') === 'dark') tb.classList.add('on');
+  tb.addEventListener('click', () => { const d = document.documentElement.getAttribute('data-theme') === 'dark'; document.documentElement.setAttribute('data-theme', d?'':'dark'); localStorage.setItem('sc_theme', d?'':'dark'); tb.classList.toggle('on',!d); });
+
+  const SUBJECTS = {'Business & Management':['General','Strategy','Marketing','Finance','Accounting','HR Management','Entrepreneurship'],'Nursing & Medicine':['General','Clinical','Pharmacology','Pediatrics','Mental Health Nursing','Community Health'],'Computer Science & IT':['General','Programming','Algorithms','AI & Machine Learning','Cybersecurity','Web Development'],'Psychology':['General','Clinical Psychology','Developmental Psychology','Social Psychology','Cognitive Psychology'],'Education':['General','Curriculum Design','Special Education','Educational Psychology','Early Childhood'],'Law':['General','Criminal Law','Constitutional Law','Corporate Law','International Law','Human Rights'],'History':['General','World History','African History','American History','European History','Ancient History'],'English Literature':['General','British Literature','American Literature','African Literature','Poetry','Drama'],'Mathematics':['General','Calculus','Statistics','Linear Algebra','Discrete Mathematics'],'Biology & Life Sciences':['General','Molecular Biology','Ecology','Genetics','Microbiology','Anatomy'],'Chemistry':['General','Organic','Inorganic','Physical Chemistry','Analytical Chemistry'],'Political Science':['General','International Relations','Comparative Politics','Public Policy'],'Sociology':['General','Urban Sociology','Cultural Studies','Gender Studies'],'Economics':['General','Microeconomics','Macroeconomics','Econometrics','Development Economics'],'Engineering':['General','Civil','Mechanical','Electrical','Chemical Engineering']};
+
+  let currentOrdId = null, currentOrd = null, currentRat = 5;
+  let payMethod = 'stripe', payingOrdId = null;
+  let chatSub = null, settings = {};
+
+  document.getElementById('welcome-msg').textContent = `Welcome back, ${profile.full_name.split(' ')[0]}!`;
+  const minDL = new Date(); minDL.setHours(minDL.getHours()+2);
+  document.getElementById('o-deadline').min = minDL.toISOString().slice(0,16);
+  document.getElementById('o-deadline').value = new Date(Date.now()+7*86400000).toISOString().slice(0,16);
+
+  const subSel = document.getElementById('o-subject');
+  Object.keys(SUBJECTS).forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; subSel.appendChild(o); });
+
+  async function init() { settings = await SC.settings.get(); calcPrice(); renderOverview(); }
+  init();
+
+  function populateSub() {
+    const subj = document.getElementById('o-subject').value;
+    const sl = document.getElementById('o-sublevel');
+    sl.innerHTML = '';
+    (SUBJECTS[subj]||['General']).forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sl.appendChild(o); });
+    calcPrice();
+  }
+
+  function calcPrice() {
+    const pages = parseInt(document.getElementById('o-pages').value)||1;
+    const dl = document.getElementById('o-deadline').value;
+    let urgent = false, rate = parseFloat(settings.standard_rate||10);
+    if (dl) { const days = (new Date(dl)-Date.now())/86400000; urgent = days < parseFloat(settings.urgent_threshold_days||5); rate = urgent ? parseFloat(settings.urgent_rate||15) : parseFloat(settings.standard_rate||10); }
+    const total = pages*rate, dep = total*0.5;
+    document.getElementById('price-total').textContent = `$${total.toFixed(2)}`;
+    document.getElementById('price-dep').textContent = `$${dep.toFixed(2)}`;
+    document.getElementById('pr-balance').textContent = `$${dep.toFixed(2)}`;
+    document.getElementById('pr-pages').textContent = pages;
+    document.getElementById('pr-rate').textContent = `$${rate}/page`;
+    document.getElementById('pr-type').textContent = urgent ? '⚡ Urgent (<5 days)' : 'Standard (≥5 days)';
+    document.getElementById('pr-type').className = 'badge ' + (urgent ? 'badge-warning' : 'badge-navy');
+  }
+
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    document.getElementById('page-'+name).classList.add('active');
+    const n = document.getElementById('nav-'+name); if (n) n.classList.add('active');
+    if (name === 'my-orders') renderMyOrders();
+    if (name === 'overview') renderOverview();
+    if (name === 'inbox') loadClientInbox();
+    if (name === 'writers') renderWriters();
+    if (name === 'profile') loadClientProfile();
+    if (chatSub && name !== 'order-detail') { chatSub.unsubscribe(); chatSub = null; }
+  }
+
+  async function renderOverview() {
+    const { data: orders } = await SC.orders.getForClient(profile.id);
+    document.getElementById('st-total').textContent = orders.length;
+    document.getElementById('st-active').textContent = orders.filter(o => ['pending_writer','in_progress','under_review'].includes(o.status)).length;
+    document.getElementById('st-done').textContent = orders.filter(o => o.status === 'completed').length;
+    document.getElementById('st-spent').textContent = '$' + orders.filter(o => o.deposit_paid).reduce((a,o) => a+Number(o.total_price),0).toFixed(0);
+    const recent = orders.slice(0,5);
+    const el = document.getElementById('recent-list');
+    if (!recent.length) { el.innerHTML = '<div class="empty-state"><p>No orders yet. <a onclick="showPage(\'new-order\')" style="cursor:pointer;color:var(--steel)">Create your first order →</a></p></div>'; return; }
+    el.innerHTML = recent.map(o => `<div class="order-card" style="margin-bottom:10px" onclick="openDetail(${o.id})">${orderRow(o)}</div>`).join('');
+  }
+
+  async function renderMyOrders() {
+    const el = document.getElementById('my-orders-list');
+    el.innerHTML = '<div class="loading"><div class="spinner"></div><span>Loading…</span></div>';
+    const { data: allOrders } = await SC.orders.getForClient(profile.id);
+    const filter = document.getElementById('ord-filter').value;
+    const orders = filter ? allOrders.filter(o => o.status === filter) : allOrders;
+    if (!orders.length) { el.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg><h3>No orders found</h3><p>Try adjusting the filter or create a new order.</p></div>'; return; }
+    el.innerHTML = orders.map(o => `<div class="order-card" style="margin-bottom:12px" onclick="openDetail(${o.id})">${orderRow(o)}</div>`).join('');
+  }
+
+  function orderRow(o) {
+    const dl = new Date(o.deadline), days = Math.ceil((dl-Date.now())/86400000);
+    return `<div class="flex-between" style="margin-bottom:6px"><span class="order-num">${o.order_number}</span><span class="badge status-${o.status}">${statusLabel(o.status)}</span></div>
+      <div style="font-weight:600;margin-bottom:10px;color:var(--navy)">${o.instructions?.slice(0,80) || 'Order'}</div>
+      <div class="flex-gap" style="flex-wrap:wrap"><span class="tag">${o.subject}</span><span class="tag">${o.academic_level}</span><span class="tag">${o.page_count}p</span>${o.citation_style?`<span class="tag">${o.citation_style}</span>`:''} ${o.is_urgent?'<span class="badge badge-warning">⚡ Urgent</span>':''}<span class="text-sm text-muted" style="margin-left:auto">${days>0?days+'d left':'<span style=color:var(--danger)>Overdue</span>'} · $${o.total_price}</span></div>`;
+  }
+
+  function statusLabel(s) { return {pending_payment:'Pending Payment',pending_writer:'Finding Writer',in_progress:'In Progress',under_review:'Under Review',completed:'Completed',disputed:'Disputed',refunded:'Refunded'}[s]||s; }
+
+  async function createOrder() {
+    const title = document.getElementById('o-title').value.trim();
+    const instr = document.getElementById('o-instructions').value.trim();
+    const subj  = document.getElementById('o-subject').value;
+    const subl  = document.getElementById('o-sublevel').value;
+    const level = document.getElementById('o-level').value;
+    const citation = document.getElementById('o-citation').value;
+    const pages = parseInt(document.getElementById('o-pages').value);
+    const dl    = document.getElementById('o-deadline').value;
+    const consent = document.getElementById('o-consent').checked;
+    const err   = document.getElementById('order-err');
+    err.style.display = 'none';
+    if (!title||!instr||!subj||!level||!dl) { err.textContent='Please fill in all required fields.'; err.style.display='flex'; return; }
+    if (!consent) { err.textContent='Please accept the Terms of Service to proceed.'; err.style.display='flex'; return; }
+    if (pages<1||pages>100) { err.textContent='Pages must be between 1 and 100.'; err.style.display='flex'; return; }
+    const btn = document.getElementById('order-btn'); btn.disabled=true; btn.textContent='Creating order…';
+    // Upload brief files if any — non-blocking, order creates even if upload fails
+    let briefUrls = [];
+    const filesInput = document.getElementById('o-files');
+    if (filesInput.files.length) {
+      btn.textContent = 'Uploading files…';
+      for (const file of filesInput.files) {
+        try {
+          // Upload directly to Supabase storage
+          const ext = file.name.split('.').pop();
+          const path = profile.id + '/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+          const { data, error } = await sb.storage.from('briefs').upload(path, file, { upsert: true });
+          if (!error && data) {
+            const { data: urlData } = sb.storage.from('briefs').getPublicUrl(data.path);
+            briefUrls.push({ name: file.name, url: urlData.publicUrl });
+          }
+        } catch(e) { console.warn('File upload skipped:', e); }
+      }
+      btn.textContent = 'Creating order…';
+    }
+    const res = await SC.orders.create(profile, { title, instructions: instr, subject: subj, subLevel: subl, level, pages, deadline: dl, citationStyle: citation, briefFiles: briefUrls });
+    btn.disabled=false; btn.textContent='Proceed to Payment →';
+    if (res.error) { err.textContent=res.error; err.style.display='flex'; return; }
+    openPayModal(res.order);
+  }
+
+  function openPayModal(order) {
+    payingOrdId = order.id;
+    document.getElementById('pay-summary').innerHTML = `<strong>${order.order_number}</strong><br>${order.page_count} pages · ${order.subject} · ${order.academic_level}<br><span class="badge ${order.is_urgent?'badge-warning':'badge-navy'}">${order.is_urgent?'⚡ Urgent':'Standard'}</span> &nbsp; Total: <strong>$${order.total_price}</strong> &nbsp; Deposit: <strong style="color:var(--success)">$${order.deposit_amount}</strong>`;
+    document.getElementById('pay-btn-text').textContent = `Pay $${order.deposit_amount} Deposit`;
+    document.getElementById('pp-email').textContent = settings.paypal_email;
+    document.getElementById('pp-addr').textContent = settings.paypal_email;
+    document.getElementById('pp-amt').textContent = `$${order.deposit_amount}`;
+    document.getElementById('pp-ref').textContent = order.order_number;
+    document.getElementById('bk-name').textContent = settings.bank_name;
+    document.getElementById('bk-acc').textContent = settings.bank_account;
+    document.getElementById('bk-sort').textContent = settings.bank_sort;
+    document.getElementById('bk-swift').textContent = settings.bank_swift;
+    document.getElementById('bk-amt').textContent = `$${order.deposit_amount}`;
+    document.getElementById('bk-ref').textContent = order.order_number;
+    selPM('stripe');
+    openM('m-pay');
+  }
+
+  function selPM(m) {
+    payMethod = m;
+    ['stripe','paypal','bank'].forEach(x => { document.getElementById('pm-'+x).style.borderColor=x===m?'var(--steel)':'var(--border)'; document.getElementById('pm-'+x).style.background=x===m?'rgba(107,159,212,0.08)':'var(--surface)'; document.getElementById('pay-'+x).style.display=x===m?'block':'none'; });
+  }
+
+  async function processPayment() {
+    const btn = document.getElementById('pay-btn'); btn.disabled=true; document.getElementById('pay-btn-text').textContent='Processing…';
+    await new Promise(r => setTimeout(r, payMethod==='stripe'?1600:400));
+    const res = await SC.orders.payDeposit(payingOrdId, payMethod);
+    btn.disabled=false;
+    if (res.error) { document.getElementById('pay-err').textContent=res.error; document.getElementById('pay-err').style.display='flex'; return; }
+    closeM('m-pay');
+    if (payMethod==='paypal') showGlobalToast('PayPal payment noted. Admin will confirm and activate your order.','warning');
+    else if (payMethod==='bank') showGlobalToast('Bank transfer noted. Admin will activate after confirmation.','warning');
+    else showGlobalToast('Payment successful! Your order is now live.','success');
+    setTimeout(() => showPage('my-orders'), 600);
+  }
+
+  async function openDetail(ordId) {
+    currentOrdId = ordId;
+    const { data: o } = await SC.orders.getOne(ordId);
+    if (!o) return;
+    currentOrd = o;
+    document.getElementById('det-title').textContent = o.instructions?.slice(0,60) || o.order_number;
+    document.getElementById('det-num').textContent = o.order_number + ' · ' + new Date(o.created_at).toLocaleDateString();
+    document.getElementById('det-badge').innerHTML = `<span class="badge status-${o.status}">${statusLabel(o.status)}</span>`;
+    document.getElementById('chat-label').textContent = o.order_number;
+
+    const steps = ['Order Placed','Payment','Writer Assigned','In Progress','Under Review','Completed'];
+    const stepMap = {pending_payment:1,pending_writer:2,in_progress:3,under_review:4,completed:5};
+    const cur = stepMap[o.status]||0;
+    document.getElementById('det-progress-wrap').innerHTML = `<div class="progress-track">${steps.map((s,i) => `<div class="progress-step ${i<cur?'done':i===cur?'active':''}"><div class="ps-dot">${i<cur?'✓':i+1}</div><div class="ps-label">${s}</div></div>${i<steps.length-1?`<div class="step-line ${i<cur?'done':''}"></div>`:''}`).join('')}</div>`;
+
+    const dl = new Date(o.deadline);
+    const delivery = o.deliveries;
+    let autoInfo = '';
+    if (o.auto_approve_at) { const h = Math.ceil((new Date(o.auto_approve_at)-Date.now())/3600000); if (h>0) autoInfo = `<div class="alert alert-info" style="margin-top:12px">⏱ Auto-approves in <strong>${h}h</strong> if no action</div>`; }
+
+    document.getElementById('det-info').innerHTML = `
+      <h3 style="font-family:var(--font-display);margin-bottom:16px">Assignment Details</h3>
+      <div class="grid-2" style="gap:14px;margin-bottom:16px">
+        <div><div class="form-label">Subject</div><div>${o.subject} → ${o.sub_level||'General'}</div></div>
+        <div><div class="form-label">Level</div><div>${o.academic_level}</div></div>
+        <div><div class="form-label">Pages</div><div>${o.page_count}</div></div>
+        <div><div class="form-label">Citation Style</div><div>${o.citation_style||'APA'}</div></div>
+        <div><div class="form-label">Deadline</div><div>${dl.toLocaleString()}</div></div>
+        <div><div class="form-label">Total Price</div><div class="fw-700">$${o.total_price}</div></div>
+        <div><div class="form-label">Deposit</div><div>${o.deposit_paid?`<span class="text-success">✓ $${o.deposit_amount} via ${o.payment_method}</span>`:'<span class="text-danger">Not paid</span>'}</div></div>
+      </div>
+      <div class="form-label">Instructions</div>
+      <div style="background:var(--parch);border-radius:8px;padding:14px;margin-top:6px;font-size:0.875rem;line-height:1.7">${o.instructions}</div>
+      ${o.brief_files && o.brief_files.length ? `<div style="margin-top:12px"><div class="form-label">Uploaded Brief Files</div><div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${o.brief_files.map(f=>`<a href="${f.url}" target="_blank" class="btn btn-outline btn-sm" style="justify-content:flex-start;gap:8px">📎 ${f.name}</a>`).join('')}</div></div>` : o.brief_url ? `<div style="margin-top:12px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Brief File</a></div>` : ''}
+      ${delivery?.plagiarism_score?`<div class="flex-gap" style="margin-top:12px"><span class="badge badge-success">✓ Plagiarism: ${delivery.plagiarism_score}% original</span><span class="badge badge-success">✓ Virus scan: Clean</span></div>`:''}
+      ${o.revisions_used>0?`<div class="alert alert-info" style="margin-top:12px">Revisions used: ${o.revisions_used}/2</div>`:''}
+      ${o.rating?`<div style="margin-top:12px;font-size:1.1rem">${'⭐'.repeat(o.rating)} <span class="text-sm text-muted">${o.review_text||''}</span></div>`:''}
+      ${autoInfo}`;
+
+    let actions = '';
+    if (o.status === 'pending_payment') {
+      actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">Complete Payment</h4><p class="text-sm text-muted" style="margin-bottom:12px">Pay the $${o.deposit_amount} deposit to make your order visible to writers.</p><button class="btn btn-gold btn-full" onclick="openPayModal(currentOrd)">Pay $${o.deposit_amount} Deposit</button></div>`;
+    } else if (o.status === 'under_review') {
+      actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">Review Submitted Work</h4>
+        <div class="alert alert-warning" style="margin-bottom:10px">⚠️ <strong>Please review before accessing the file.</strong> Approving releases payment to the writer.</div>
+        <button class="btn btn-success btn-full" style="margin-bottom:8px" onclick="openM('m-review')">✓ Approve Work</button>
+        ${o.revisions_used<2?`<button class="btn btn-outline btn-full" style="margin-bottom:8px" onclick="openM('m-revision')">Request Revision (${2-o.revisions_used} left)</button>`:''}
+        <button class="btn btn-danger btn-full btn-sm" onclick="openM('m-dispute')">Open Dispute</button></div>`;
+    } else if (o.status === 'in_progress') {
+      actions = `<div class="card card-sm"><h4>In Progress</h4><p class="text-sm text-muted" style="margin-top:6px">Your writer is working on the assignment. You'll be notified when submitted.</p></div>`;
+    } else if (o.status === 'pending_writer') {
+      const { data: requests } = await sb.from('order_requests').select('*, profiles(full_name, is_writer_approved)').eq('order_id', o.id);
+      const reqs = requests || [];
+      const reqHTML = reqs.length ? reqs.map(r => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--parch);border-radius:8px;margin-bottom:8px">
+          <div><strong style="font-size:0.875rem">✍️ ${r.profiles?.full_name || 'Writer'}</strong><div class="text-xs text-muted">${new Date(r.created_at).toLocaleDateString()}</div></div>
+          <button class="btn btn-primary btn-sm" onclick="assignWriter('${o.id}','${r.writer_id}')">Assign</button>
+        </div>`).join('') : '<p class="text-sm text-muted">No writer requests yet. Check back soon.</p>';
+      actions = `<div class="card card-sm"><h4 style="margin-bottom:12px">Writer Requests (${reqs.length})</h4>${reqHTML}</div>`;
+    } else if (o.status === 'completed') {
+      actions = `<div class="card card-sm"><h4>✅ Completed</h4><div class="alert alert-success" style="margin-top:8px">Order complete. Writer has been paid.</div>${delivery?.file_url?`<a href="${delivery.file_url}" target="_blank" class="btn btn-outline btn-full btn-sm" style="margin-top:10px">📄 Download Work</a>`:''}</div>`;
+    } else if (o.status === 'disputed') {
+      actions = `<div class="card card-sm"><h4 style="color:var(--danger)">⚖️ Dispute Open</h4><p class="text-sm text-muted" style="margin-top:6px">Admin is reviewing your dispute. Response within 24–48h.</p></div>`;
+    }
+
+    document.getElementById('det-actions').innerHTML = actions + `<div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Order Summary</div><div style="font-size:0.82rem;color:var(--muted);line-height:2.2"><div class="flex-between"><span>Pages:</span><strong>${o.page_count}</strong></div><div class="flex-between"><span>Rate:</span><strong>$${o.price_per_page}/page</strong></div><div class="flex-between"><span>Total:</span><strong>$${o.total_price}</strong></div><div class="flex-between"><span>Deposit paid:</span><strong style="color:var(--success)">$${o.deposit_amount}</strong></div><div class="flex-between"><span>Type:</span><strong>${o.is_urgent?'⚡ Urgent':'Standard'}</strong></div><div class="flex-between"><span>Citation:</span><strong>${o.citation_style||'APA'}</strong></div></div></div><div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Need Help?</div><a href="mailto:writerhub97@gmail.com" class="btn btn-outline btn-full btn-sm" style="margin-bottom:8px">📧 Email Support</a><a href="https://wa.me/254716603371" target="_blank" class="btn btn-green btn-full btn-sm">💬 WhatsApp</a></div>`;
+
+    showPage('order-detail');
+    loadMessages();
+    if (chatSub) chatSub.unsubscribe();
+    chatSub = SC.messages.subscribe(ordId, msg => appendMsg(msg));
+  }
+
+  async function loadMessages() {
+    const { data: msgs } = await SC.messages.getForOrder(currentOrdId);
+    const el = document.getElementById('chat-msgs');
+    if (!msgs.length) { el.innerHTML = '<div class="text-center text-muted text-sm" style="padding:20px">No messages yet. Start the conversation.</div>'; return; }
+    el.innerHTML = msgs.map(m => msgHTML(m)).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function msgHTML(m) {
+    const mine = m.sender_id === profile.id;
+    return `<div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'}"><div class="msg-bubble ${mine?'msg-mine':'msg-theirs'}">${m.content}</div><div class="msg-meta">${mine?'You':'Writer'} · ${new Date(m.created_at).toLocaleTimeString()}</div></div>`;
+  }
+
+  function appendMsg(m) {
+    const el = document.getElementById('chat-msgs');
+    const empty = el.querySelector('.text-center');
+    if (empty) el.innerHTML = '';
+    el.insertAdjacentHTML('beforeend', msgHTML(m));
+    el.scrollTop = el.scrollHeight;
+  }
+
+  async function sendMsg() {
+    const input = document.getElementById('chat-input'), text = input.value.trim();
+    if (!text) return;
+    const res = await SC.messages.send(currentOrdId, profile.id, 'client', text);
+    if (res.error) { showGlobalToast(res.error,'error'); return; }
+    input.value = '';
+  }
+  document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();} });
+
+  function openM(id) { document.getElementById(id).classList.add('open'); }
+  function closeM(id) { document.getElementById(id).classList.remove('open'); }
+  function setRating(r) { currentRat=r; document.querySelectorAll('#star-rating span').forEach((s,i)=>s.textContent=i<r?'⭐':'☆'); }
+
+  async function submitReview() {
+    const res = await SC.orders.approve(currentOrdId, profile.id, currentRat, document.getElementById('review-text').value.trim());
+    if (res.error) { showGlobalToast(res.error,'error'); return; }
+    closeM('m-review'); showGlobalToast('Work approved! Payment released.','success');
+    setTimeout(() => openDetail(currentOrdId), 500);
+  }
+
+  async function submitRevision() {
+    const note = document.getElementById('revision-note').value.trim();
+    if (!note) { showGlobalToast('Please describe the changes needed.','error'); return; }
+    const res = await SC.orders.requestRevision(currentOrdId, profile.id, note);
+    if (res.error) { showGlobalToast(res.error,'error'); return; }
+    closeM('m-revision'); showGlobalToast('Revision requested.','success');
+    setTimeout(() => openDetail(currentOrdId), 500);
+  }
+
+  async function submitDispute() {
+    const reason = document.getElementById('dispute-reason').value.trim();
+    if (!reason) { showGlobalToast('Please provide a reason.','error'); return; }
+    const res = await SC.orders.dispute(currentOrdId, profile.id, reason);
+    if (res.error) { showGlobalToast(res.error,'error'); return; }
+    closeM('m-dispute'); showGlobalToast('Dispute filed. Admin will review within 24–48h.','warning');
+    setTimeout(() => openDetail(currentOrdId), 500);
+  }
+
+  async function assignWriter(orderId, writerId) {
+    const res = await SC.orders.assign(orderId, writerId);
+    if (res.error) { showGlobalToast(res.error, 'error'); return; }
+    showGlobalToast('Writer assigned successfully!', 'success');
+    setTimeout(() => openDetail(orderId), 500);
+  }
+
+  // ── Client Inbox ────────────────────────────────────────
+  let clientActiveConv = null;
+
+  async function loadClientInbox() {
+    const list = document.getElementById('inbox-list');
+    const badge = document.getElementById('inbox-badge');
+    if (!list) return;
+    list.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    const [received, sent] = await Promise.all([
+      sb.from('direct_messages').select('*').eq('recipient_id', profile.id).order('created_at', { ascending: false }),
+      sb.from('direct_messages').select('*').eq('sender_id', profile.id).order('created_at', { ascending: false })
+    ]);
+
+    const allMsgs = [...(received.data||[]), ...(sent.data||[])];
+    const conversations = {};
+    allMsgs.forEach(m => {
+      const convId = m.conversation_id || m.id;
+      if (!conversations[convId]) conversations[convId] = [];
+      conversations[convId].push(m);
+    });
+
+    const convList = Object.entries(conversations).map(([id, msgs]) => {
+      msgs.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+      return { id, msgs, latest: msgs[msgs.length-1] };
+    }).sort((a,b) => new Date(b.latest.created_at) - new Date(a.latest.created_at));
+
+    const unreadCount = (received.data||[]).filter(m => !m.is_read).length;
+    if (unreadCount > 0) { badge.textContent = unreadCount; badge.style.display = 'inline-flex'; }
+    else { badge.style.display = 'none'; }
+
+    if (!convList.length) {
+      list.innerHTML = '<div class="card"><p class="text-muted text-sm">No messages yet. Admin will contact you here when needed.</p></div>';
+      return;
+    }
+
+    list.innerHTML = `
+      <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;height:600px">
+        <div style="border:1px solid var(--border);border-radius:12px;overflow-y:auto">
+          ${convList.map(c => {
+            const latest = c.latest;
+            const isUnread = (received.data||[]).some(m => m.conversation_id === c.id && !m.is_read);
+            const isMine = latest.sender_id === profile.id;
+            return `<div onclick="openClientConv('${c.id}')" id="cconv-${c.id}" style="padding:14px;border-bottom:1px solid var(--border);cursor:pointer;background:${isUnread?'var(--parch)':'transparent'}">
+              <div class="flex-between" style="margin-bottom:4px">
+                <strong style="font-size:0.875rem">${latest.subject||'Message'}</strong>
+                <span class="text-xs text-muted">${new Date(latest.created_at).toLocaleDateString()}</span>
+              </div>
+              <div style="font-size:0.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${isMine?'You: ':'Admin: '}${latest.content}</div>
+              ${isUnread?'<span class="badge badge-warning" style="margin-top:4px;font-size:0.7rem">New</span>':''}
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column" id="client-chat-panel">
+          <div style="padding:20px;text-align:center;color:var(--muted);margin:auto"><p>Select a conversation</p></div>
+        </div>
+      </div>`;
+  }
+
+  async function openClientConv(convId) {
+    clientActiveConv = convId;
+    document.querySelectorAll('[id^="cconv-"]').forEach(el => el.style.borderLeft = '');
+    const convEl = document.getElementById('cconv-'+convId);
+    if (convEl) convEl.style.borderLeft = '3px solid var(--gold)';
+    const panel = document.getElementById('client-chat-panel');
+    panel.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    const result = await sb.from('direct_messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
+    const allMsgs = result.data || [];
+    const subject = allMsgs[0]?.subject || 'Conversation';
+    panel.innerHTML = `
+      <div style="padding:14px;border-bottom:1px solid var(--border);font-weight:600">${subject}</div>
+      <div id="client-conv-msgs" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+        ${allMsgs.map(m => {
+          const isMine = m.sender_id === profile.id;
+          return `<div style="display:flex;flex-direction:column;align-items:${isMine?'flex-end':'flex-start'}">
+            <div style="max-width:75%;padding:10px 14px;border-radius:${isMine?'12px 12px 2px 12px':'12px 12px 12px 2px'};background:${isMine?'var(--navy)':'var(--parch)'};color:${isMine?'white':'var(--ink)'};font-size:0.875rem">${m.content}</div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:3px">${isMine?'You':'Admin'} · ${new Date(m.created_at).toLocaleString('en-US',{dateStyle:'short',timeStyle:'short'})}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px">
+        <input type="text" class="form-input" id="client-reply-input" placeholder="Type your reply..." style="flex:1" onkeydown="if(event.key==='Enter')sendClientReply('${convId}','${subject.replace(/'/g,"\\'")}')">
+        <button class="btn btn-primary" onclick="sendClientReply('${convId}','${subject.replace(/'/g,"\\'")}')">Send</button>
+      </div>`;
+    const msgs = document.getElementById('client-conv-msgs');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    await sb.from('direct_messages').update({ is_read: true }).eq('recipient_id', profile.id).eq('conversation_id', convId);
+  }
+
+  async function sendClientReply(convId, subject) {
+    const input = document.getElementById('client-reply-input');
+    const content = input.value.trim();
+    if (!content) return;
+    const { data: adminProf } = await sb.from('profiles').select('id').eq('user_type','admin').single();
+    if (!adminProf) { showGlobalToast('Could not find admin.','error'); return; }
+    const { error } = await sb.from('direct_messages').insert({
+      sender_id: profile.id, recipient_id: adminProf.id,
+      sender_role: 'client', sender_name: profile.full_name,
+      subject: subject.startsWith('Re:') ? subject : 'Re: ' + subject,
+      content, conversation_id: convId, is_read: false,
+    });
+    if (error) { showGlobalToast(error.message,'error'); return; }
+    input.value = '';
+    openClientConv(convId);
+  }
+
+  // ── Writers Page ─────────────────────────────────────────
+  async function renderWriters() {
+    const grid = document.getElementById('writers-grid');
+    const { data: writers } = await sb.from('profiles')
+      .select('id, full_name, avatar_url, created_at, is_writer_approved')
+      .eq('user_type', 'writer')
+      .eq('is_writer_approved', true)
+      .eq('is_active', true);
+    if (!writers || !writers.length) { grid.innerHTML = '<p class="text-muted">No writers available yet.</p>'; return; }
+    // Get ratings per writer
+    const { data: ratings } = await sb.from('orders')
+      .select('assigned_writer_id, rating')
+      .eq('status', 'completed')
+      .not('rating', 'is', null);
+    const ratingMap = {};
+    (ratings || []).forEach(r => {
+      if (!ratingMap[r.assigned_writer_id]) ratingMap[r.assigned_writer_id] = [];
+      ratingMap[r.assigned_writer_id].push(r.rating);
+    });
+    grid.innerHTML = writers.map(w => {
+      const rats = ratingMap[w.id] || [];
+      const avg = rats.length ? (rats.reduce((a,b)=>a+b,0)/rats.length).toFixed(1) : null;
+      const stars = avg ? '⭐'.repeat(Math.round(avg)) : '—';
+      const initials = (w.full_name||'W').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+      return `<div class="card" style="text-align:center;padding:28px 16px">
+        <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--steel));display:flex;align-items:center;justify-content:center;margin:0 auto 12px;overflow:hidden;font-size:1.5rem;font-weight:700;color:white">${w.avatar_url ? `<img src="${w.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initials}</div>
+        <div style="font-weight:700;font-size:1rem;margin-bottom:4px">${w.full_name}</div>
+        <div class="badge badge-success" style="margin-bottom:8px">✓ Verified Writer</div>
+        <div style="font-size:1.1rem;margin-bottom:4px">${stars}</div>
+        ${avg ? `<div style="font-size:0.82rem;color:var(--muted)">${avg}/5 · ${rats.length} review${rats.length!==1?'s':''}</div>` : '<div style="font-size:0.82rem;color:var(--muted)">No reviews yet</div>'}
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:6px">Member since ${new Date(w.created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Client Profile ────────────────────────────────────────
+  async function loadClientProfile() {
+    document.getElementById('cp-name').textContent = profile.full_name;
+    document.getElementById('cp-joined').textContent = 'Member since ' + new Date(profile.created_at).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    document.getElementById('cp-fullname').value = profile.full_name || '';
+    document.getElementById('cp-email').value = profile.email || '';
+    document.getElementById('cp-phone').value = profile.phone || '';
+    const av = document.getElementById('client-avatar');
+    if (profile.avatar_url) {
+      av.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover">`;
+    } else {
+      av.textContent = (profile.full_name||'C').charAt(0).toUpperCase();
+    }
+  }
+
+  async function uploadClientPhoto(input) {
+    if (!input.files.length) return;
+    const file = input.files[0];
+    if (file.size > 2 * 1024 * 1024) { showGlobalToast('Photo must be under 2MB.','error'); return; }
+    showGlobalToast('Uploading photo…', 'success');
+    const ext = file.name.split('.').pop();
+    const { data, error } = await sb.storage.from('avatars').upload(profile.id + '/avatar.' + ext, file, { upsert: true });
+    if (error) { showGlobalToast('Upload failed: ' + error.message, 'error'); return; }
+    const { data: urlData } = sb.storage.from('avatars').getPublicUrl(data.path);
+    await sb.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', profile.id);
+    profile.avatar_url = urlData.publicUrl;
+    const av = document.getElementById('client-avatar');
+    av.innerHTML = `<img src="${urlData.publicUrl}" style="width:100%;height:100%;object-fit:cover">`;
+    showGlobalToast('Profile photo updated!', 'success');
+  }
+
+  async function saveClientProfile() {
+    const name = document.getElementById('cp-fullname').value.trim();
+    const phone = document.getElementById('cp-phone').value.trim();
+    if (!name) { showGlobalToast('Name cannot be empty.', 'error'); return; }
+    await sb.from('profiles').update({ full_name: name, phone }).eq('id', profile.id);
+    profile.full_name = name;
+    document.getElementById('cp-name').textContent = name;
+    document.getElementById('welcome-msg').textContent = `Welcome back, ${name.split(' ')[0]}!`;
+    const msg = document.getElementById('cp-save-msg');
+    msg.style.display = 'flex'; setTimeout(() => msg.style.display = 'none', 3000);
+  }
+
+  async function changeClientPassword() {
+    const np = document.getElementById('cp-newpass').value;
+    const cp = document.getElementById('cp-confpass').value;
+    const msg = document.getElementById('cp-pass-msg');
+    msg.style.display = 'none';
+    if (np !== cp) { msg.textContent = 'Passwords do not match.'; msg.className = 'alert alert-danger'; msg.style.display = 'flex'; return; }
+    if (np.length < 8) { msg.textContent = 'Password must be at least 8 characters.'; msg.className = 'alert alert-danger'; msg.style.display = 'flex'; return; }
+    const { error } = await sb.auth.updateUser({ password: np });
+    if (error) { msg.textContent = error.message; msg.className = 'alert alert-danger'; msg.style.display = 'flex'; return; }
+    msg.textContent = 'Password updated successfully!'; msg.className = 'alert alert-success'; msg.style.display = 'flex';
+    document.getElementById('cp-newpass').value = ''; document.getElementById('cp-confpass').value = '';
+    setTimeout(() => msg.style.display = 'none', 3000);
+  }
+
+  // ── AI Support Chat ─────────────────────────────────────
+  let aiChatOpen = false;
+  let aiHistory = [];
+
+  function toggleAIChat() {
+    aiChatOpen = !aiChatOpen;
+    const w = document.getElementById('ai-chat-window');
+    w.style.display = aiChatOpen ? 'flex' : 'none';
+    if (aiChatOpen) setTimeout(() => document.getElementById('ai-input')?.focus(), 100);
+  }
+
+  async function sendAIMessage() {
+    const input = document.getElementById('ai-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    const msgs = document.getElementById('ai-messages');
+    msgs.insertAdjacentHTML('beforeend', `<div style="background:var(--navy);color:white;padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%;align-self:flex-end">${text}</div>`);
+    msgs.insertAdjacentHTML('beforeend', '<div id="ai-typing" style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;color:var(--muted)">Typing...</div>');
+    msgs.scrollTop = msgs.scrollHeight;
+    aiHistory.push({ role: 'user', content: text });
+    try {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: 'You are ScholarConnect AI support assistant. Help clients with: orders, pricing ($10/page standard, $15/page urgent, <5 days = urgent), payments (50% deposit held in escrow, released on approval), 2 free revisions per order, citation styles (APA, MLA, Chicago, Harvard, etc.), deadlines, and platform features. Be concise and helpful. For complex account issues redirect to WhatsApp +254716603371 or email writerhub97@gmail.com.',
+          messages: aiHistory
+        })
+      });
+      const d = await r.json();
+      const reply = d.content?.[0]?.text || 'Please contact support for help.';
+      aiHistory.push({ role: 'assistant', content: reply });
+      document.getElementById('ai-typing')?.remove();
+      msgs.insertAdjacentHTML('beforeend', `<div style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%">${reply.replace(/\n/g, '<br>')}</div>`);
+      msgs.scrollTop = msgs.scrollHeight;
+    } catch(e) {
+      document.getElementById('ai-typing')?.remove();
+      msgs.insertAdjacentHTML('beforeend', '<div style="color:var(--danger);font-size:0.85rem">Sorry, please contact: +254716603371</div>');
+    }
+  }
+</script>
+</body>
+</html>
+
       <button class="sidebar-link active" id="nav-overview" onclick="showPage('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</button>
       <button class="sidebar-link" id="nav-new-order" onclick="showPage('new-order')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>New Order</button>
       <button class="sidebar-link" id="nav-my-orders" onclick="showPage('my-orders')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>My Orders</button>
