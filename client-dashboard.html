@@ -15,6 +15,8 @@
       <button class="sidebar-link" id="nav-new-order" onclick="showPage('new-order')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>New Order</button>
       <button class="sidebar-link" id="nav-my-orders" onclick="showPage('my-orders')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>My Orders</button>
       <button class="sidebar-link" id="nav-inbox" onclick="showPage('inbox')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>Inbox <span id="inbox-badge" class="badge badge-warning" style="display:none;margin-left:3px">0</span></button>
+      <button class="sidebar-link" id="nav-writers" onclick="showPage('writers')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Our Writers</button>
+      <button class="sidebar-link" id="nav-profile" onclick="showPage('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>My Profile</button>
       <div class="sidebar-section">Support</div>
       <a class="sidebar-link" href="mailto:writerhub97@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Support</a>
       <a class="sidebar-link" href="https://wa.me/254716603371" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>WhatsApp Support</a>
@@ -138,6 +140,46 @@
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:14px" id="det-actions"></div>
+      </div>
+    </div>
+
+    <!-- WRITERS -->
+    <div class="page" id="page-writers">
+      <div class="page-header"><div class="page-title">Our Writers</div><div class="page-subtitle">Browse our verified academic writers</div></div>
+      <div class="grid-3" id="writers-grid"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="page-profile">
+      <div class="page-header"><div class="page-title">My Profile</div><div class="page-subtitle">Manage your account details</div></div>
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start">
+        <div class="card" style="text-align:center;padding:32px 20px">
+          <div id="client-avatar-wrap" style="position:relative;width:100px;height:100px;margin:0 auto 16px">
+            <div id="client-avatar-img" style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--steel));display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:white;font-weight:700;overflow:hidden" id="client-avatar"></div>
+            <label for="client-photo-input" style="position:absolute;bottom:0;right:0;width:30px;height:30px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.9rem" title="Change photo">📷</label>
+            <input type="file" id="client-photo-input" accept="image/*" style="display:none" onchange="uploadClientPhoto(this)">
+          </div>
+          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700" id="cp-name"></div>
+          <div class="badge badge-navy" style="margin-top:8px">Client</div>
+          <div style="margin-top:12px;font-size:0.82rem;color:var(--muted)" id="cp-joined"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card">
+            <h3 style="font-family:var(--font-display);margin-bottom:16px">Personal Information</h3>
+            <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="cp-fullname" placeholder="Your full name"></div>
+            <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-input" id="cp-email" disabled style="opacity:0.6"></div>
+            <div class="form-group"><label class="form-label">Phone Number</label><input type="text" class="form-input" id="cp-phone" placeholder="e.g. +254700000000"></div>
+            <div id="cp-save-msg" class="alert alert-success" style="display:none">Profile updated successfully!</div>
+            <button class="btn btn-primary" onclick="saveClientProfile()">Save Changes</button>
+          </div>
+          <div class="card">
+            <h3 style="font-family:var(--font-display);margin-bottom:16px">Change Password</h3>
+            <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" id="cp-newpass" placeholder="Min 8 characters"></div>
+            <div class="form-group"><label class="form-label">Confirm Password</label><input type="password" class="form-input" id="cp-confpass" placeholder="Repeat new password"></div>
+            <div id="cp-pass-msg" class="alert" style="display:none"></div>
+            <button class="btn btn-outline" onclick="changeClientPassword()">Update Password</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -277,6 +319,8 @@
     if (name === 'my-orders') renderMyOrders();
     if (name === 'overview') renderOverview();
     if (name === 'inbox') loadClientInbox();
+    if (name === 'writers') renderWriters();
+    if (name === 'profile') loadClientProfile();
     if (chatSub && name !== 'order-detail') { chatSub.unsubscribe(); chatSub = null; }
   }
 
@@ -326,8 +370,18 @@
     if (!title||!instr||!subj||!level||!dl) { err.textContent='Please fill in all required fields.'; err.style.display='flex'; return; }
     if (!consent) { err.textContent='Please accept the Terms of Service to proceed.'; err.style.display='flex'; return; }
     if (pages<1||pages>100) { err.textContent='Pages must be between 1 and 100.'; err.style.display='flex'; return; }
-    const btn = document.getElementById('order-btn'); btn.disabled=true; btn.textContent='Creating…';
-    const res = await SC.orders.create(profile, { title, instructions: instr, subject: subj, subLevel: subl, level, pages, deadline: dl, citationStyle: citation });
+    const btn = document.getElementById('order-btn'); btn.disabled=true; btn.textContent='Uploading files…';
+    // Upload brief files first if any
+    let briefUrls = [];
+    const filesInput = document.getElementById('o-files');
+    if (filesInput.files.length) {
+      for (const file of filesInput.files) {
+        const r = await SC.storage.uploadBrief(profile.id, file);
+        if (r && r.url) briefUrls.push({ name: file.name, url: r.url });
+      }
+    }
+    btn.textContent = 'Creating order…';
+    const res = await SC.orders.create(profile, { title, instructions: instr, subject: subj, subLevel: subl, level, pages, deadline: dl, citationStyle: citation, briefFiles: briefUrls });
     btn.disabled=false; btn.textContent='Proceed to Payment →';
     if (res.error) { err.textContent=res.error; err.style.display='flex'; return; }
     openPayModal(res.order);
@@ -402,6 +456,7 @@
       </div>
       <div class="form-label">Instructions</div>
       <div style="background:var(--parch);border-radius:8px;padding:14px;margin-top:6px;font-size:0.875rem;line-height:1.7">${o.instructions}</div>
+      ${o.brief_files && o.brief_files.length ? `<div style="margin-top:12px"><div class="form-label">Uploaded Brief Files</div><div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${o.brief_files.map(f=>`<a href="${f.url}" target="_blank" class="btn btn-outline btn-sm" style="justify-content:flex-start;gap:8px">📎 ${f.name}</a>`).join('')}</div></div>` : o.brief_url ? `<div style="margin-top:12px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Brief File</a></div>` : ''}
       ${delivery?.plagiarism_score?`<div class="flex-gap" style="margin-top:12px"><span class="badge badge-success">✓ Plagiarism: ${delivery.plagiarism_score}% original</span><span class="badge badge-success">✓ Virus scan: Clean</span></div>`:''}
       ${o.revisions_used>0?`<div class="alert alert-info" style="margin-top:12px">Revisions used: ${o.revisions_used}/2</div>`:''}
       ${o.rating?`<div style="margin-top:12px;font-size:1.1rem">${'⭐'.repeat(o.rating)} <span class="text-sm text-muted">${o.review_text||''}</span></div>`:''}
@@ -611,6 +666,96 @@
     if (error) { showGlobalToast(error.message,'error'); return; }
     input.value = '';
     openClientConv(convId);
+  }
+
+  // ── Writers Page ─────────────────────────────────────────
+  async function renderWriters() {
+    const grid = document.getElementById('writers-grid');
+    const { data: writers } = await sb.from('profiles')
+      .select('id, full_name, avatar_url, created_at, is_writer_approved')
+      .eq('user_type', 'writer')
+      .eq('is_writer_approved', true)
+      .eq('is_active', true);
+    if (!writers || !writers.length) { grid.innerHTML = '<p class="text-muted">No writers available yet.</p>'; return; }
+    // Get ratings per writer
+    const { data: ratings } = await sb.from('orders')
+      .select('assigned_writer_id, rating')
+      .eq('status', 'completed')
+      .not('rating', 'is', null);
+    const ratingMap = {};
+    (ratings || []).forEach(r => {
+      if (!ratingMap[r.assigned_writer_id]) ratingMap[r.assigned_writer_id] = [];
+      ratingMap[r.assigned_writer_id].push(r.rating);
+    });
+    grid.innerHTML = writers.map(w => {
+      const rats = ratingMap[w.id] || [];
+      const avg = rats.length ? (rats.reduce((a,b)=>a+b,0)/rats.length).toFixed(1) : null;
+      const stars = avg ? '⭐'.repeat(Math.round(avg)) : '—';
+      const initials = (w.full_name||'W').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+      return `<div class="card" style="text-align:center;padding:28px 16px">
+        <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--steel));display:flex;align-items:center;justify-content:center;margin:0 auto 12px;overflow:hidden;font-size:1.5rem;font-weight:700;color:white">${w.avatar_url ? `<img src="${w.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : initials}</div>
+        <div style="font-weight:700;font-size:1rem;margin-bottom:4px">${w.full_name}</div>
+        <div class="badge badge-success" style="margin-bottom:8px">✓ Verified Writer</div>
+        <div style="font-size:1.1rem;margin-bottom:4px">${stars}</div>
+        ${avg ? `<div style="font-size:0.82rem;color:var(--muted)">${avg}/5 · ${rats.length} review${rats.length!==1?'s':''}</div>` : '<div style="font-size:0.82rem;color:var(--muted)">No reviews yet</div>'}
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:6px">Member since ${new Date(w.created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Client Profile ────────────────────────────────────────
+  async function loadClientProfile() {
+    document.getElementById('cp-name').textContent = profile.full_name;
+    document.getElementById('cp-joined').textContent = 'Member since ' + new Date(profile.created_at).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    document.getElementById('cp-fullname').value = profile.full_name || '';
+    document.getElementById('cp-email').value = profile.email || '';
+    document.getElementById('cp-phone').value = profile.phone || '';
+    const av = document.getElementById('client-avatar');
+    if (profile.avatar_url) {
+      av.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover">`;
+    } else {
+      av.textContent = (profile.full_name||'C').charAt(0).toUpperCase();
+    }
+  }
+
+  async function uploadClientPhoto(input) {
+    if (!input.files.length) return;
+    const file = input.files[0];
+    showGlobalToast('Uploading photo…', 'success');
+    const { data, error } = await sb.storage.from('avatars').upload(`${profile.id}/avatar.${file.name.split('.').pop()}`, file, { upsert: true });
+    if (error) { showGlobalToast('Upload failed: ' + error.message, 'error'); return; }
+    const { data: urlData } = sb.storage.from('avatars').getPublicUrl(data.path);
+    await sb.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', profile.id);
+    profile.avatar_url = urlData.publicUrl;
+    const av = document.getElementById('client-avatar');
+    av.innerHTML = `<img src="${urlData.publicUrl}" style="width:100%;height:100%;object-fit:cover">`;
+    showGlobalToast('Profile photo updated!', 'success');
+  }
+
+  async function saveClientProfile() {
+    const name = document.getElementById('cp-fullname').value.trim();
+    const phone = document.getElementById('cp-phone').value.trim();
+    if (!name) { showGlobalToast('Name cannot be empty.', 'error'); return; }
+    await sb.from('profiles').update({ full_name: name, phone }).eq('id', profile.id);
+    profile.full_name = name;
+    document.getElementById('cp-name').textContent = name;
+    document.getElementById('welcome-msg').textContent = `Welcome back, ${name.split(' ')[0]}!`;
+    const msg = document.getElementById('cp-save-msg');
+    msg.style.display = 'flex'; setTimeout(() => msg.style.display = 'none', 3000);
+  }
+
+  async function changeClientPassword() {
+    const np = document.getElementById('cp-newpass').value;
+    const cp = document.getElementById('cp-confpass').value;
+    const msg = document.getElementById('cp-pass-msg');
+    msg.style.display = 'none';
+    if (np !== cp) { msg.textContent = 'Passwords do not match.'; msg.className = 'alert alert-danger'; msg.style.display = 'flex'; return; }
+    if (np.length < 8) { msg.textContent = 'Password must be at least 8 characters.'; msg.className = 'alert alert-danger'; msg.style.display = 'flex'; return; }
+    const { error } = await sb.auth.updateUser({ password: np });
+    if (error) { msg.textContent = error.message; msg.className = 'alert alert-danger'; msg.style.display = 'flex'; return; }
+    msg.textContent = 'Password updated successfully!'; msg.className = 'alert alert-success'; msg.style.display = 'flex';
+    document.getElementById('cp-newpass').value = ''; document.getElementById('cp-confpass').value = '';
+    setTimeout(() => msg.style.display = 'none', 3000);
   }
 
   // ── AI Support Chat ─────────────────────────────────────
