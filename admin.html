@@ -683,7 +683,7 @@
 
     let essays = [];
     if (status === 'pending') {
-      essays = await SC.tests.getAllPendingEssays();
+      const { data: pd } = await sb.from('writer_test_results').select('*, profiles(full_name, email)').eq('test_type', 'essay').is('admin_approved', null).order('completed_at', { ascending: false }); essays = pd || [];
     } else if (status === 'approved') {
       const { data } = await sb.from('writer_test_results')
         .select('*, profiles(full_name, email)')
@@ -696,9 +696,9 @@
         .select('*, profiles(full_name, email)')
         .eq('test_type', 'essay')
         .eq('admin_approved', false)
-        .not('admin_note', 'is', null)
+        
         .order('completed_at', { ascending: false });
-      essays = (data || []).filter(e => e.admin_note && e.admin_note.length > 0);
+      essays = data || [];
     }
 
     if(!essays.length){el.innerHTML=`<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg><h3>No ${status} essays</h3></div>`;return;}
@@ -756,7 +756,8 @@
   // ── Writer Applications Window ─────────────────────────────
   async function renderApplications() {
     const s = await SC.settings.get();
-    const isOpen = s.applications_open === 'true';
+    // Handle both boolean true and string 'true' from DB
+    const isOpen = s.applications_open === true || s.applications_open === 'true';
     const openDate = s.applications_open_date || '';
     const closeDate = s.applications_close_date || '';
     const appMessage = s.applications_message || '';
@@ -793,13 +794,13 @@
   }
 
   async function openApplicationWindow() {
-    await SC.settings.update({ applications_open: 'true' });
+    await SC.settings.update({ applications_open: true });
     showGlobalToast('Writer applications are now OPEN!', 'success');
     renderApplications();
   }
 
   async function closeApplicationWindow() {
-    await SC.settings.update({ applications_open: 'false' });
+    await SC.settings.update({ applications_open: false });
     showGlobalToast('Writer applications are now CLOSED.', 'warning');
     renderApplications();
   }
