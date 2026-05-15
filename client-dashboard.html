@@ -261,7 +261,7 @@
 <div class="toast-container" id="toasts"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://www.paypal.com/sdk/js?client-id=AYuGUzwNFNHKTh2OLwHCMJq0Ge_f3P7MHj7B2nGl9q7f9XY5lf3KDhbTkFgqBXj4EKk5Jj0mzwc4WBem&currency=USD" data-sdk-integration-source="button-factory"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=AdKzQCqUqmXrwYqw_jQHMi6hkofJtzSvFOGw5IW6kk6xxM6kdJ9SQwMe1qooOy6yfLEN9fKMv1qi3yad&currency=USD" data-sdk-integration-source="button-factory"></script>
 <script src="supabase-client.js"></script>
 <script>
   // Global error catcher to help debug
@@ -434,8 +434,13 @@
     payMethod = m;
     paypalRendered = false;
     ['stripe','paypal','bank'].forEach(x => { document.getElementById('pm-'+x).style.borderColor=x===m?'var(--steel)':'var(--border)'; document.getElementById('pm-'+x).style.background=x===m?'rgba(107,159,212,0.08)':'var(--surface)'; document.getElementById('pay-'+x).style.display=x===m?'block':'none'; });
-    if (m === 'paypal' && currentOrd) {
-      setTimeout(() => initPayPalButton(currentOrd.deposit_amount, currentOrd.order_number), 200);
+    if (m === 'paypal') {
+      setTimeout(() => {
+        const ord = allOrdersCache?.find(o=>o.id===payingOrdId) || currentOrd;
+        const amt = ord?.deposit_amount || parseFloat(document.getElementById('price-dep')?.textContent?.replace('$',''))||25;
+        const num = ord?.order_number || 'ORD-NEW';
+        initPayPalButton(amt, num);
+      }, 300);
     }
   }
 
@@ -860,18 +865,17 @@
     msgs.scrollTop = msgs.scrollHeight;
     aiHistory.push({ role: 'user', content: text });
     try {
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
+      // Call Supabase Edge Function as AI proxy (keeps API key secure server-side)
+      const r = await fetch('https://wgypsnemgtsvpqrgbrpg.supabase.co/functions/v1/ai-chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: 'You are ScholarConnect AI support assistant. Help clients with: orders, pricing ($10/page standard, $15/page urgent, <5 days = urgent), payments (50% deposit held in escrow, released on approval), 2 free revisions per order, citation styles (APA, MLA, Chicago, Harvard, etc.), deadlines, and platform features. Be concise and helpful. For complex account issues redirect to WhatsApp +254716603371 or email writerhub97@gmail.com.',
-          messages: aiHistory
-        })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (await sb.auth.getSession()).data.session?.access_token
+        },
+        body: JSON.stringify({ messages: aiHistory })
       });
       const d = await r.json();
-      const reply = d.content?.[0]?.text || 'Please contact support for help.';
+      const reply = d.reply || d.content?.[0]?.text || 'Please contact support for help.';
       aiHistory.push({ role: 'assistant', content: reply });
       document.getElementById('ai-typing')?.remove();
       msgs.insertAdjacentHTML('beforeend', `<div style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%">${reply.replace(/\n/g, '<br>')}</div>`);
