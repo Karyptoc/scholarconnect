@@ -133,8 +133,25 @@
         <div style="font-size:3rem;margin-bottom:16px">📬</div>
         <h1 class="auth-title">Verify Your Email</h1>
         <p class="auth-subtitle">We sent a verification link to <strong id="reg-email-show"></strong></p>
-        <div class="alert alert-info" style="text-align:left"><span>📧</span><span>Click the link in the email to activate your account, then come back here to log in.<br><br><strong>No email?</strong> Check spam or <a onclick="resendVerify()" style="cursor:pointer;color:var(--steel);font-weight:600">click to resend</a>.</span></div>
-        <button class="btn btn-outline btn-full" onclick="showStep('login')" style="margin-top:12px">Back to Login</button>
+        <div class="alert alert-warning" style="text-align:left;margin-bottom:16px">
+          <span>⚠️</span>
+          <div>
+            <strong>You must verify your email before logging in.</strong><br>
+            Check your inbox and click the verification link. Then return here to log in.
+          </div>
+        </div>
+        <div class="alert alert-info" style="text-align:left"><span>📧</span><span>
+          <strong>No email?</strong> Check your spam/junk folder.<br><br>
+          Still nothing? <a onclick="resendVerify()" style="cursor:pointer;color:var(--steel);font-weight:600">Click to resend verification email</a>.
+        </span></div>
+        <div style="margin-top:20px;padding:16px;background:var(--parch);border-radius:10px;font-size:0.875rem;color:var(--muted)">
+          <strong>Steps:</strong><br>
+          1️⃣ Check email at <strong id="reg-email-show2"></strong><br>
+          2️⃣ Click the verification link<br>
+          3️⃣ Return here and log in
+        </div>
+        <button class="btn btn-primary btn-full" onclick="showStep('login')" style="margin-top:16px">I've verified — Go to Login →</button>
+        <button class="btn btn-outline btn-full" onclick="resendVerify()" style="margin-top:8px">Resend Verification Email</button>
       </div>
 
     </div>
@@ -317,6 +334,8 @@
     }
     pendingRegEmail = email;
     document.getElementById('reg-email-show').textContent = email;
+    const show2 = document.getElementById('reg-email-show2');
+    if (show2) show2.textContent = email;
     showStep('check-email');
   }
 
