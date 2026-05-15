@@ -404,6 +404,10 @@
     const res = await SC.orders.create(profile, { title, instructions: instr, subject: subj, subLevel: subl, level, pages, deadline: dl, citationStyle: citation, briefFiles: briefUrls });
     btn.disabled=false; btn.textContent='Proceed to Payment →';
     if (res.error) { err.textContent=res.error; err.style.display='flex'; return; }
+    // Save brief_files directly to DB (in case SC.orders.create ignores it)
+    if (briefUrls.length && res.order?.id) {
+      await sb.from('orders').update({ brief_files: briefUrls }).eq('id', res.order.id);
+    }
     openPayModal(res.order);
   }
 
@@ -447,6 +451,11 @@
     currentOrdId = ordId;
     const { data: o } = await SC.orders.getOne(ordId);
     if (!o) return;
+    // Ensure brief_files loaded
+    if (!o.brief_files || !o.brief_files.length) {
+      const { data: extra } = await sb.from('orders').select('brief_files, brief_url').eq('id', ordId).single();
+      if (extra) { o.brief_files = extra.brief_files || []; o.brief_url = o.brief_url || extra.brief_url; }
+    }
     currentOrd = o;
     document.getElementById('det-title').textContent = o.instructions?.slice(0,60) || o.order_number;
     document.getElementById('det-num').textContent = o.order_number + ' · ' + new Date(o.created_at).toLocaleDateString();
