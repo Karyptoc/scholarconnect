@@ -860,30 +860,42 @@
     if (!text) return;
     input.value = '';
     const msgs = document.getElementById('ai-messages');
-    msgs.insertAdjacentHTML('beforeend', `<div style="background:var(--navy);color:white;padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%;align-self:flex-end">${text}</div>`);
-    msgs.insertAdjacentHTML('beforeend', '<div id="ai-typing" style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;color:var(--muted)">Typing...</div>');
+    msgs.insertAdjacentHTML('beforeend', `<div style="background:var(--navy);color:white;padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%;align-self:flex-end;margin-left:auto">${text}</div>`);
+    msgs.insertAdjacentHTML('beforeend', '<div id="ai-typing" style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;color:var(--muted)">🤖 Typing...</div>');
     msgs.scrollTop = msgs.scrollHeight;
     aiHistory.push({ role: 'user', content: text });
+    let reply = null;
     try {
-      // Call Supabase Edge Function as AI proxy (keeps API key secure server-side)
+      const session = await sb.auth.getSession();
+      const token = session?.data?.session?.access_token;
       const r = await fetch('https://wgypsnemgtsvpqrgbrpg.supabase.co/functions/v1/ai-chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + (await sb.auth.getSession()).data.session?.access_token
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         body: JSON.stringify({ messages: aiHistory })
       });
-      const d = await r.json();
-      const reply = d.reply || d.content?.[0]?.text || 'Please contact support for help.';
-      aiHistory.push({ role: 'assistant', content: reply });
-      document.getElementById('ai-typing')?.remove();
-      msgs.insertAdjacentHTML('beforeend', `<div style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%">${reply.replace(/\n/g, '<br>')}</div>`);
-      msgs.scrollTop = msgs.scrollHeight;
-    } catch(e) {
-      document.getElementById('ai-typing')?.remove();
-      msgs.insertAdjacentHTML('beforeend', '<div style="color:var(--danger);font-size:0.85rem">Sorry, please contact: +254716603371</div>');
+      if (r.ok) { const d = await r.json(); reply = d.reply || d.content?.[0]?.text; }
+    } catch(e) { console.warn('Edge fn:', e); }
+    if (!reply) {
+      const q = text.toLowerCase();
+      if (q.match(/hello|hi|hey/)) reply = `Hello ${profile.full_name?.split(' ')[0]||'there'}! 👋 I'm your ScholarConnect AI. Ask me about orders, pricing, payments, revisions, or anything else!`;
+      else if (q.match(/price|cost|how much|rate/)) reply = 'Pricing: $10/page standard (5+ days) · $15/page urgent (<5 days). You pay 50% deposit upfront, 50% balance after approving delivery.';
+      else if (q.match(/pay|paypal|bank|deposit|escrow/)) reply = 'We accept PayPal and bank transfer. Your deposit is held in escrow and only released to the writer after you approve the work — your money is always protected.';
+      else if (q.match(/revision|revise|change|edit/)) reply = 'Every order includes 2 free revisions within 7 days of delivery. Open your order → click "Request Revision" and describe what needs changing.';
+      else if (q.match(/deadline|urgent|fast|quick|how long/)) reply = 'Standard orders need 5+ days. Urgent orders (<5 days) cost $15/page. Once you pay the deposit, a writer is assigned and work begins immediately.';
+      else if (q.match(/dispute|refund|unhappy|problem|issue/)) reply = 'Not satisfied? Open a dispute from your order page within 7 days of delivery. Admin reviews all disputes within 24–48 hours and mediates fairly.';
+      else if (q.match(/cancel/)) reply = 'You can cancel before a writer is assigned for a full deposit refund. After assignment, contact support — partial refund may apply.';
+      else if (q.match(/citation|apa|mla|chicago|harvard|format|style/)) reply = 'We support: APA 7th, MLA 9th, Chicago/Turabian, Harvard, Vancouver, IEEE, AMA, Oxford. Select your style when placing the order.';
+      else if (q.match(/plagiarism|original|turnitin/)) reply = 'All work is plagiarism-checked before delivery. If plagiarism is found, you can dispute for a free rewrite or refund.';
+      else if (q.match(/writer|who write/)) reply = 'All writers are vetted professionals — they pass a 25-question English test, submit academic essays, and verify their credentials before being approved.';
+      else if (q.match(/order|place|start|new/)) reply = 'To place an order: click "+ New Order" → fill in details → select subject, citation style & deadline → pay 50% deposit. Your order goes live immediately!';
+      else if (q.match(/track|status|progress/)) reply = 'Track your orders in "My Orders". Each order shows its current status: Pending Writer → In Progress → Under Review → Completed.';
+      else if (q.match(/support|help|contact/)) reply = 'Need human support? Email: writerhub97@gmail.com or WhatsApp: +254716603371. We respond within 24 hours.';
+      else reply = 'I can help with: pricing, payments, revisions, deadlines, disputes, citation styles, and order tracking. What would you like to know? For account-specific help, contact writerhub97@gmail.com or WhatsApp +254716603371.';
     }
+    aiHistory.push({ role: 'assistant', content: reply });
+    document.getElementById('ai-typing')?.remove();
+    msgs.insertAdjacentHTML('beforeend', `<div style="background:var(--parch);padding:10px 14px;border-radius:12px;font-size:0.85rem;max-width:85%">${reply.replace(/\n/g, '<br>')}</div>`);
+    msgs.scrollTop = msgs.scrollHeight;
   }
 </script>
 </body>
