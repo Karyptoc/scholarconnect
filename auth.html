@@ -4,11 +4,10 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>ScholarConnect – Sign In / Register</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 </head>
 <body>
 <div class="auth-split">
-
-  <!-- Left panel -->
   <div class="auth-left">
     <div style="position:relative;z-index:1">
       <a href="index.html" style="font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:white;display:block;margin-bottom:40px">Scholar<span style="color:var(--gold2)">Connect</span></a>
@@ -28,7 +27,6 @@
     </div>
   </div>
 
-  <!-- Right panel -->
   <div class="auth-right">
     <div class="auth-form-wrap">
       <a href="index.html" class="auth-logo">Scholar<span>Connect</span></a>
@@ -89,6 +87,14 @@
             <div style="font-size:0.75rem;color:var(--muted)">I want to earn</div>
           </div>
         </div>
+        <!-- Writer application window status -->
+        <div id="writer-closed-banner" class="alert alert-danger" style="display:none">
+          <span>🚫</span>
+          <div>
+            <strong>Writer Applications Closed</strong>
+            <p id="writer-closed-msg" style="margin:4px 0 0;font-size:0.875rem">We are not currently accepting new writer applications. Please check back later.</p>
+          </div>
+        </div>
         <div id="reg-err" class="alert alert-danger" style="display:none"></div>
         <div class="form-group">
           <label class="form-label">Full Name *</label>
@@ -109,7 +115,9 @@
             <div class="pw-rule fail" id="pr-spec">✗ One special character</div>
           </div>
         </div>
-        <div id="writer-note" class="alert alert-info" style="display:none"><span>✍️</span><span>Writers must pass a <strong>25-question English test (80%)</strong> then submit a <strong>subject essay</strong> before accessing orders.</span></div>
+        <div id="writer-note" class="alert alert-info" style="display:none"><span>✍️</span><span>Writers must pass a <strong>25-question English test (80%)</strong> then submit a <strong>subject essay</strong> and <strong>credentials</strong> before accessing orders.</span></div>
+        <!-- hCaptcha -->
+        <div class="h-captcha" data-sitekey="10000000-ffff-ffff-ffff-000000000001" style="margin-bottom:16px"></div>
         <div class="consent-box" style="margin-bottom:18px">
           <input type="checkbox" id="r-consent">
           <label for="r-consent">I agree to the <a href="terms.html" target="_blank">Terms of Service</a> and <a href="privacy.html" target="_blank">Privacy Policy</a>, and consent to receive order-related and platform emails.</label>
@@ -142,17 +150,27 @@
 <script>
   if (localStorage.getItem('sc_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
 
-  // Redirect if already logged in
   const existing = SC.auth.getProfile();
   if (existing) redirectByRole(existing.user_type);
 
-  // Handle post-email-verification redirect
   const params = new URLSearchParams(location.search);
   if (params.get('verified') === '1') showStep('verified');
   else if (params.get('mode') === 'register') { showStep('register'); if (params.get('role')) selRole(params.get('role')); }
   else showStep('login');
 
   let selectedRole = null, pendingRegEmail = null, tfaTimerInt = null;
+  let writerAppOpen = true; // default open until checked
+
+  // Check application window status
+  async function checkAppWindow() {
+    try {
+      const { data: s } = await sb.from('platform_settings').select('value').eq('key','applications_open').single();
+      writerAppOpen = s?.value === true || s?.value === 'true';
+      const { data: msg } = await sb.from('platform_settings').select('value').eq('key','applications_message').single();
+      if (msg?.value) document.getElementById('writer-closed-msg').textContent = msg.value;
+    } catch(e) { writerAppOpen = true; }
+  }
+  checkAppWindow();
 
   function redirectByRole(role) {
     const map = { client:'client-dashboard.html', writer:'freelancer-dashboard.html', admin:'admin.html' };
@@ -175,6 +193,18 @@
       el.style.background  = x === r ? 'rgba(107,159,212,0.08)' : 'var(--surface)';
     });
     document.getElementById('writer-note').style.display = r === 'writer' ? 'flex' : 'none';
+    // Show closed banner if writer apps are closed
+    const banner = document.getElementById('writer-closed-banner');
+    const regBtn = document.getElementById('reg-btn');
+    if (r === 'writer' && !writerAppOpen) {
+      banner.style.display = 'flex';
+      regBtn.disabled = true;
+      regBtn.style.opacity = '0.5';
+    } else {
+      banner.style.display = 'none';
+      regBtn.disabled = false;
+      regBtn.style.opacity = '1';
+    }
   }
 
   function checkPwStrength() {
@@ -243,8 +273,12 @@
     const err     = document.getElementById('reg-err');
     err.style.display = 'none';
     if (!name || !email || !pass) { err.textContent = 'Please fill in all required fields.'; err.style.display = 'flex'; return; }
-    if (!selectedRole)            { err.textContent = 'Please select your account type.'; err.style.display = 'flex'; return; }
-    if (!consent)                 { err.textContent = 'You must accept the Terms of Service to continue.'; err.style.display = 'flex'; return; }
+    if (!selectedRole) { err.textContent = 'Please select your account type.'; err.style.display = 'flex'; return; }
+    if (selectedRole === 'writer' && !writerAppOpen) { err.textContent = 'Writer applications are currently closed.'; err.style.display = 'flex'; return; }
+    if (!consent) { err.textContent = 'You must accept the Terms of Service to continue.'; err.style.display = 'flex'; return; }
+    // hCaptcha check (in production replace sitekey with real one)
+    const captcha = document.querySelector('[name="h-captcha-response"]');
+    if (captcha && !captcha.value) { err.textContent = 'Please complete the security check.'; err.style.display = 'flex'; return; }
     const btn = document.getElementById('reg-btn');
     btn.disabled = true; btn.textContent = 'Creating account…';
     const res = await SC.auth.register({ email, password: pass, fullName: name, userType: selectedRole, consent });
