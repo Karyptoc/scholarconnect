@@ -625,8 +625,10 @@
     curUserTab=role;
     ['client','writer'].forEach(r=>{document.getElementById('ut-'+r).style.borderBottomColor=r===role?'var(--navy2)':'transparent';});
     const search=document.getElementById('user-search').value.toLowerCase();
-    let users=await SC.users.getAll(role);
-    if(search)users=users.filter(u=>(u.full_name+u.email).toLowerCase().includes(search));
+    // Direct query for reliability
+    let { data: users } = await sb.from('profiles').select('*').eq('user_type', role).order('created_at', { ascending: false });
+    users = users || [];
+    if(search) users=users.filter(u=>((u.full_name||'')+(u.email||'')).toLowerCase().includes(search));
     const tbody=document.getElementById('user-tbody');
     if(!users.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">No users found</td></tr>';return;}
     tbody.innerHTML=users.map(u=>`<tr>
@@ -786,18 +788,43 @@
     const pending = writers.filter(w => !w.is_writer_approved && w.is_active);
     const el = document.getElementById('pending-applications');
     if (!pending.length) { el.innerHTML = '<p class="text-muted text-sm">No pending writer applications.</p>'; return; }
-    el.innerHTML = pending.map(w => `
-      <div class="flex-between" style="padding:12px 0;border-bottom:1px solid var(--border)">
-        <div>
-          <strong>${w.full_name}</strong> <span class="text-muted text-sm">· ${w.email}</span>
-          <div class="text-xs text-muted">Applied: ${new Date(w.created_at).toLocaleDateString()}</div>
+    // Fetch credentials for pending writers
+    const writerIds = pending.map(w => w.id);
+    let credsMap = {};
+    if (writerIds.length) {
+      const { data: credsData } = await sb.from('profiles')
+        .select('id, id_url, cert_url, selfie_url, resume_url, credentials_submitted_at, bio')
+        .in('id', writerIds);
+      (credsData||[]).forEach(c => credsMap[c.id] = c);
+    }
+
+    el.innerHTML = pending.map(w => {
+      const c = credsMap[w.id] || {};
+      const hasAllCreds = c.id_url && c.cert_url && c.selfie_url && c.resume_url;
+      return `<div style="border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+        <div class="flex-between" style="margin-bottom:12px">
+          <div>
+            <strong>${w.full_name}</strong> <span class="text-muted text-sm">· ${w.email}</span>
+            <div class="text-xs text-muted">Applied: ${new Date(w.created_at).toLocaleDateString()}</div>
+            ${c.bio ? `<div class="text-sm" style="margin-top:4px;color:var(--muted)">${c.bio}</div>` : ''}
+          </div>
+          <div class="flex-gap">
+            <button class="btn btn-sm btn-gold" onclick="approveWriter('${w.id}')" ${!hasAllCreds?'title="Missing credentials"':''}>✓ Approve</button>
+            <button class="btn btn-sm btn-outline" onclick="toggleUser('${w.id}',false)">✗ Reject</button>
+            <button class="btn btn-sm btn-primary" onclick="quickMessage('${w.id}','${w.full_name}')">✉ Message</button>
+          </div>
         </div>
-        <div class="flex-gap">
-          <button class="btn btn-sm btn-gold" onclick="approveWriter('${w.id}')">✓ Approve</button>
-          <button class="btn btn-sm btn-outline" onclick="toggleUser('${w.id}',false)">✗ Reject</button>
-          <button class="btn btn-sm btn-primary" onclick="quickMessage('${w.id}','${w.full_name}')">✉ Message</button>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          ${[['🪪 National ID','id_url'],['🎓 Certificate','cert_url'],['🤳 Selfie','selfie_url'],['📄 Resume','resume_url']].map(([label,key]) =>
+            `<div style="background:var(--parch);border-radius:8px;padding:8px;text-align:center;font-size:0.78rem">
+              <div style="margin-bottom:4px">${label}</div>
+              ${c[key] ? `<a href="${c[key]}" target="_blank" class="btn btn-sm btn-outline" style="font-size:0.72rem">View 👁</a>` : '<span class="badge badge-danger">Missing</span>'}
+            </div>`
+          ).join('')}
         </div>
-      </div>`).join('');
+        ${!hasAllCreds ? '<div class="alert alert-warning" style="margin-top:8px;padding:8px"><span>⚠️</span><span style="font-size:0.82rem">Some credentials are missing. You can still approve but review carefully.</span></div>' : '<div class="alert alert-success" style="margin-top:8px;padding:8px"><span>✅</span><span style="font-size:0.82rem">All credentials submitted.</span></div>'}
+      </div>`;
+    }).join('');
   }
 
   async function openApplicationWindow() {
@@ -842,7 +869,13 @@
     document.getElementById('sec-withdrawals').textContent=pend.length;
     document.getElementById('bl-count').textContent=blocked.length;
     document.getElementById('blocked-list').innerHTML=blocked.length?blocked.map(b=>`<div style="border:1px solid rgba(224,85,85,0.2);background:rgba(224,85,85,0.03);border-radius:8px;padding:12px;margin-bottom:8px">
-      <div class="flex-between" style="margin-bottom:6px"><div class="flex-gap"><span class="badge badge-danger">⚠️ BLOCKED</span><span class="fw-600 text-sm">${b.profiles?.full_name||b.user_id}</span><span class="tag" style="font-size:0.72rem">Order ${b.order_id}</span></div><span class="text-xs text-muted">${new Date(b.created_at).toLocaleString()}</span></div>
+      <div class="flex-between" style="margin-bottom:6px">
+        <div class="flex-gap"><span class="badge badge-danger">⚠️ BLOCKED</span><span class="fw-600 text-sm">${b.profiles?.full_name||b.user_id}</span><span class="tag" style="font-size:0.72rem">Order ${b.order_id}</span></div>
+        <div class="flex-gap">
+          <button class="btn btn-sm btn-primary" onclick="messageBlockedUser('${b.user_id}','${(b.profiles?.full_name||'User').replace(/'/g,'')}')" title="Message this user">✉ Message</button>
+          <span class="text-xs text-muted">${new Date(b.created_at).toLocaleString()}</span>
+        </div>
+      </div>
       <div style="font-size:0.82rem;color:var(--danger);background:rgba(224,85,85,0.06);padding:8px;border-radius:6px">"${b.blocked_content||b.detail}"</div>
     </div>`).join(''):'<div class="empty-state" style="padding:20px"><p class="text-sm">No blocked messages 🎉</p></div>';
     document.getElementById('disputes-list').innerHTML=disp.length?disp.map(o=>{const cl=o.client||{};return `<div class="card card-sm" style="margin-bottom:10px"><div class="flex-between"><div><strong>${o.order_number}</strong> – ${o.subject}<br><span class="text-sm text-muted">Client: ${cl.full_name||'?'} · <span style="color:var(--danger)">${(o.dispute_reason||'').slice(0,80)}</span></span></div><button class="btn btn-sm btn-primary" onclick="openDispute(${o.id},'${o.order_number}','${o.dispute_reason||''}')">Resolve</button></div></div>`;}).join(''):'<p class="text-muted text-sm">No active disputes.</p>';
@@ -1004,6 +1037,18 @@
     document.getElementById('msg-recipient').value = '';
     showGlobalToast('Message sent successfully!', 'success');
     renderMessages();
+  }
+
+  function messageBlockedUser(userId, userName) {
+    showTab('messages');
+    setTimeout(() => {
+      const sel = document.getElementById('msg-recipient');
+      for (let opt of sel.options) { if (opt.value === userId) { opt.selected = true; break; } }
+      document.getElementById('msg-subject').value = 'Warning: Contact Information Policy Violation';
+      document.getElementById('msg-content').value = `Dear ${userName},\n\nOur system has flagged a message in one of your orders that appears to contain personal contact information. This is a violation of ScholarConnect's platform policy.\n\nPlease note:\n• All communication must remain within the platform\n• Sharing personal contact details (phone, email, social media) is strictly prohibited\n• Repeated violations may result in account suspension\n\nThis is an automated warning. Please review our Terms of Service.\n\nScholarConnect Team`;
+      document.getElementById('msg-content').focus();
+      showGlobalToast('Warning message pre-filled for ' + userName, 'warning');
+    }, 500);
   }
 
   async function approveWithdrawal(id){await SC.withdrawals.updateStatus(id,'paid','Approved by admin');showGlobalToast('Withdrawal released!','success');renderSecurity();}
