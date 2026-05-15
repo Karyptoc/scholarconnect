@@ -496,6 +496,12 @@
     const filter=document.getElementById('ord-filter').value;
     const search=document.getElementById('ord-search').value.toLowerCase();
     const{data:orders}=await SC.orders.getAll(filter);
+    // Enrich with brief_files
+    if (orders && orders.length) {
+      const ids = orders.map(o=>o.id);
+      const {data:bf} = await sb.from('orders').select('id,brief_files,brief_url').in('id',ids);
+      if (bf) bf.forEach(b=>{ const o=orders.find(x=>x.id===b.id); if(o){o.brief_files=b.brief_files||[];o.brief_url=o.brief_url||b.brief_url;} });
+    }
     allOrdersCache = orders || [];
     let list=allOrdersCache;
     if(search) list=list.filter(o=>
@@ -582,6 +588,7 @@
       ${delivery?.file_url?`<div style="margin-bottom:12px"><a href="${delivery.file_url}" target="_blank" class="btn btn-outline btn-sm">📄 Download Submitted Work</a>${delivery.notes_to_client?`<div style="margin-top:8px;font-size:0.82rem;color:var(--muted)"><strong>Writer notes:</strong> ${delivery.notes_to_client}</div>`:''}</div>`:''}
       <div class="form-label">Instructions</div>
       <div style="background:var(--parch);border-radius:6px;padding:12px;font-size:0.82rem;line-height:1.7;max-height:130px;overflow-y:auto">${o.instructions||'—'}</div>
+      ${o.brief_files && o.brief_files.length ? `<div style="margin-top:10px"><div class="form-label">Client Brief Files</div><div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${o.brief_files.map(f=>`<a href="${f.url}" target="_blank" class="btn btn-outline btn-sm" style="justify-content:flex-start;gap:8px">📎 ${f.name}</a>`).join('')}</div></div>` : o.brief_url ? `<div style="margin-top:10px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Client Brief</a></div>` : ''}
       ${o.dispute_reason?`<div class="alert alert-danger" style="margin-top:12px">⚠️ <strong>Dispute:</strong> ${o.dispute_reason}</div>`:''}`;
     openM('m-ord');
   }
