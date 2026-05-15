@@ -261,6 +261,7 @@
 <div class="toast-container" id="toasts"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=AYuGUzwNFNHKTh2OLwHCMJq0Ge_f3P7MHj7B2nGl9q7f9XY5lf3KDhbTkFgqBXj4EKk5Jj0mzwc4WBem&currency=USD" data-sdk-integration-source="button-factory"></script>
 <script src="supabase-client.js"></script>
 <script>
   // Global error catcher to help debug
@@ -431,7 +432,11 @@
 
   function selPM(m) {
     payMethod = m;
+    paypalRendered = false;
     ['stripe','paypal','bank'].forEach(x => { document.getElementById('pm-'+x).style.borderColor=x===m?'var(--steel)':'var(--border)'; document.getElementById('pm-'+x).style.background=x===m?'rgba(107,159,212,0.08)':'var(--surface)'; document.getElementById('pay-'+x).style.display=x===m?'block':'none'; });
+    if (m === 'paypal' && currentOrd) {
+      setTimeout(() => initPayPalButton(currentOrd.deposit_amount, currentOrd.order_number), 200);
+    }
   }
 
   async function processPayment() {
@@ -486,6 +491,7 @@
       <div class="form-label">Instructions</div>
       <div style="background:var(--parch);border-radius:8px;padding:14px;margin-top:6px;font-size:0.875rem;line-height:1.7">${o.instructions}</div>
       ${o.brief_files && o.brief_files.length ? `<div style="margin-top:12px"><div class="form-label">Uploaded Brief Files</div><div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${o.brief_files.map(f=>`<a href="${f.url}" target="_blank" class="btn btn-outline btn-sm" style="justify-content:flex-start;gap:8px">📎 ${f.name}</a>`).join('')}</div></div>` : o.brief_url ? `<div style="margin-top:12px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Brief File</a></div>` : ''}
+      ${delivery?.draft_url ? `<div class="alert alert-info" style="margin-top:12px">📝 <strong>Draft uploaded by writer:</strong><br><a href="${delivery.draft_url}" target="_blank" class="btn btn-outline btn-sm" style="margin-top:6px">📎 View Draft - ${delivery.draft_name||'Draft'}</a>${delivery.draft_note?`<div class="text-sm text-muted" style="margin-top:4px">Writer note: ${delivery.draft_note}</div>`:''}</div>` : ''}
       ${delivery?.plagiarism_score?`<div class="flex-gap" style="margin-top:12px"><span class="badge badge-success">✓ Plagiarism: ${delivery.plagiarism_score}% original</span><span class="badge badge-success">✓ Virus scan: Clean</span></div>`:''}
       ${o.revisions_used>0?`<div class="alert alert-info" style="margin-top:12px">Revisions used: ${o.revisions_used}/2</div>`:''}
       ${o.rating?`<div style="margin-top:12px;font-size:1.1rem">${'⭐'.repeat(o.rating)} <span class="text-sm text-muted">${o.review_text||''}</span></div>`:''}
@@ -511,6 +517,13 @@
           <button class="btn btn-primary btn-sm" onclick="assignWriter('${o.id}','${r.writer_id}')">Assign</button>
         </div>`).join('') : '<p class="text-sm text-muted">No writer requests yet. Check back soon.</p>';
       actions = `<div class="card card-sm"><h4 style="margin-bottom:12px">Writer Requests (${reqs.length})</h4>${reqHTML}</div>`;
+    } else if (o.status === 'completed' && !o.rating) {
+      actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">⭐ Rate This Order</h4>
+        <p class="text-sm text-muted" style="margin-bottom:10px">How was your experience with this writer?</p>
+        <button class="btn btn-gold btn-full" onclick="openM('m-review')">Rate & Leave Feedback</button>
+        <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="openM('m-revision')">Request Further Revision</button>
+        <button class="btn btn-danger btn-sm btn-full" style="margin-top:8px" onclick="openM('m-dispute')">Open Dispute</button>
+      </div>`;
     } else if (o.status === 'completed') {
       actions = `<div class="card card-sm"><h4>✅ Completed</h4><div class="alert alert-success" style="margin-top:8px">Order complete. Writer has been paid.</div>${delivery?.file_url?`<a href="${delivery.file_url}" target="_blank" class="btn btn-outline btn-full btn-sm" style="margin-top:10px">📄 Download Work</a>`:''}</div>`;
     } else if (o.status === 'disputed') {
@@ -787,6 +800,42 @@
     msg.textContent = 'Password updated successfully!'; msg.className = 'alert alert-success'; msg.style.display = 'flex';
     document.getElementById('cp-newpass').value = ''; document.getElementById('cp-confpass').value = '';
     setTimeout(() => msg.style.display = 'none', 3000);
+  }
+
+
+  // ── PayPal Integration ──────────────────────────────────
+  let paypalRendered = false;
+
+  function initPayPalButton(amount, ordNum) {
+    if (paypalRendered) return;
+    const container = document.getElementById('paypal-button-container');
+    if (!container || typeof paypal === 'undefined') return;
+    container.innerHTML = '';
+    paypalRendered = true;
+    paypal.Buttons({
+      createOrder: function(data, actions) {
+        return actions.order.create({
+          purchase_units: [{
+            amount: { value: amount.toFixed(2) },
+            description: 'ScholarConnect Order ' + ordNum,
+            payee: { email_address: 'jameskinyua1997@gmail.com' }
+          }]
+        });
+      },
+      onApprove: async function(data, actions) {
+        const details = await actions.order.capture();
+        document.getElementById('paypal-success').style.display = 'flex';
+        document.getElementById('pay-btn').style.display = 'none';
+        showGlobalToast('PayPal payment successful!', 'success');
+        // Record payment
+        await SC.orders.payDeposit(payingOrdId, 'paypal');
+        setTimeout(() => { closeM('m-pay'); showPage('my-orders'); }, 2000);
+      },
+      onError: function(err) {
+        showGlobalToast('PayPal error. Please try again or use bank transfer.', 'error');
+      },
+      style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' }
+    }).render('#paypal-button-container');
   }
 
   // ── AI Support Chat ─────────────────────────────────────
