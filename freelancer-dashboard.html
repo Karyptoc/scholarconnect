@@ -444,6 +444,11 @@
     curOrdId = ordId; detFrom = from;
     const { data: o } = await SC.orders.getOne(ordId);
     if (!o) return;
+    // Ensure brief_files is loaded (SC.orders.getOne may not include it)
+    if (!o.brief_files || !o.brief_files.length) {
+      const { data: extra } = await sb.from('orders').select('brief_files, brief_url').eq('id', ordId).single();
+      if (extra) { o.brief_files = extra.brief_files || []; o.brief_url = o.brief_url || extra.brief_url; }
+    }
     document.getElementById('det-title').textContent = `${o.subject} · ${o.page_count} pages`;
     document.getElementById('det-num').textContent = o.order_number + ' · ' + o.academic_level;
     document.getElementById('chat-label').textContent = o.order_number;
