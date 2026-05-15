@@ -870,7 +870,10 @@
       const token = session?.data?.session?.access_token;
       const r = await fetch('https://wgypsnemgtsvpqrgbrpg.supabase.co/functions/v1/ai-chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndneXBzbmVtZ3RzdnBxcmdicnBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMDU3MzQsImV4cCI6MjA5Mzc4MTczNH0.FGhHIGqnNi0oTiLvruuya0iU8-zdD0keAOY5BQhVf8w'
+        },
         body: JSON.stringify({ messages: aiHistory })
       });
       if (r.ok) { const d = await r.json(); reply = d.reply || d.content?.[0]?.text; }
