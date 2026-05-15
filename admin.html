@@ -629,15 +629,14 @@
     });
     const searchEl=document.getElementById('user-search');
     const search=(searchEl?.value||'').toLowerCase();
-    const tbody=document.getElementById('user-tbody');
-    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto"></div></td></tr>';
+    const utbody=document.getElementById('user-tbody');
+    utbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto"></div></td></tr>';
     let { data: users, error } = await sb.from('profiles').select('*').eq('user_type', role).order('created_at', { ascending: false });
-    if(error){console.error('Users error:',error);tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--danger)">Error loading users: '+error.message+'</td></tr>';return;}
+    if(error){console.error('Users error:',error);utbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--danger)">Error: '+error.message+'</td></tr>';return;}
     users = users || [];
     if(search) users=users.filter(u=>((u.full_name||'')+(u.email||'')).toLowerCase().includes(search));
-    const tbody=document.getElementById('user-tbody');
-    if(!users.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">No users found</td></tr>';return;}
-    tbody.innerHTML=users.map(u=>`<tr>
+    if(!users.length){utbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">No users found</td></tr>';return;}
+    utbody.innerHTML=users.map(u=>`<tr>
       <td><div class="flex-gap"><div class="avatar">${(u.full_name||'?').charAt(0)}</div><div><strong style="font-size:0.875rem">${u.full_name}</strong></div></div></td>
       <td style="color:var(--danger);font-size:0.82rem"><strong>${u.email}</strong></td>
       <td style="font-size:0.78rem;color:var(--muted)">${u.last_ip||'—'}<br>${u.updated_at?new Date(u.updated_at).toLocaleString():'Never'}</td>
