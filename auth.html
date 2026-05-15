@@ -4,7 +4,7 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>ScholarConnect – Sign In / Register</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+  <script src="https://js.hcaptcha.com/1/api.js"></script>
 </head>
 <body>
 <div class="auth-split">
@@ -117,7 +117,9 @@
         </div>
         <div id="writer-note" class="alert alert-info" style="display:none"><span>✍️</span><span>Writers must pass a <strong>25-question English test (80%)</strong> then submit a <strong>subject essay</strong> and <strong>credentials</strong> before accessing orders.</span></div>
         <!-- hCaptcha -->
-        <div class="h-captcha" data-sitekey="eec02df4-d084-492e-b20a-2316b1be7eb4" style="margin-bottom:16px"></div>
+        <div id="hcaptcha-container" style="margin-bottom:16px;min-height:78px;display:flex;align-items:center;justify-content:center;background:var(--parch);border-radius:8px;border:1px solid var(--border)">
+          <div class="h-captcha" data-sitekey="eec02df4-d084-492e-b20a-2316b1be7eb4" data-theme="light"></div>
+        </div>
         <div class="consent-box" style="margin-bottom:18px">
           <input type="checkbox" id="r-consent">
           <label for="r-consent">I agree to the <a href="terms.html" target="_blank">Terms of Service</a> and <a href="privacy.html" target="_blank">Privacy Policy</a>, and consent to receive order-related and platform emails.</label>
@@ -183,6 +185,22 @@
     );
     document.getElementById('step-'+name).style.display = 'block';
     if (name === '2fa') setTimeout(() => document.getElementById('tfa-code').focus(), 120);
+    if (name === 'register') {
+      // Render hCaptcha when register step is shown
+      setTimeout(() => {
+        try {
+          if (typeof hcaptcha !== 'undefined') {
+            hcaptcha.render('hcaptcha-container', {
+              sitekey: 'eec02df4-d084-492e-b20a-2316b1be7eb4',
+              theme: 'light'
+            });
+          }
+        } catch(e) {
+          // Already rendered, ignore
+          console.log('hcaptcha:', e.message);
+        }
+      }, 300);
+    }
   }
 
   function selRole(r) {
@@ -276,14 +294,27 @@
     if (!selectedRole) { err.textContent = 'Please select your account type.'; err.style.display = 'flex'; return; }
     if (selectedRole === 'writer' && !writerAppOpen) { err.textContent = 'Writer applications are currently closed.'; err.style.display = 'flex'; return; }
     if (!consent) { err.textContent = 'You must accept the Terms of Service to continue.'; err.style.display = 'flex'; return; }
-    // hCaptcha check (in production replace sitekey with real one)
-    const captcha = document.querySelector('[name="h-captcha-response"]');
-    if (captcha && !captcha.value) { err.textContent = 'Please complete the security check.'; err.style.display = 'flex'; return; }
+    // hCaptcha verification
+    let captchaToken = '';
+    try {
+      if (typeof hcaptcha !== 'undefined') {
+        captchaToken = hcaptcha.getResponse();
+        if (!captchaToken) {
+          err.textContent = 'Please complete the security check (tick the captcha).';
+          err.style.display = 'flex';
+          return;
+        }
+      }
+    } catch(e) { console.warn('hCaptcha check:', e); }
     const btn = document.getElementById('reg-btn');
     btn.disabled = true; btn.textContent = 'Creating account…';
     const res = await SC.auth.register({ email, password: pass, fullName: name, userType: selectedRole, consent });
     btn.disabled = false; btn.textContent = 'Create Account →';
-    if (res.error) { err.textContent = res.error; err.style.display = 'flex'; return; }
+    if (res.error) {
+      err.textContent = res.error; err.style.display = 'flex';
+      try { if (typeof hcaptcha !== 'undefined') hcaptcha.reset(); } catch(e) {}
+      return;
+    }
     pendingRegEmail = email;
     document.getElementById('reg-email-show').textContent = email;
     showStep('check-email');
