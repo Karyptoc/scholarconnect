@@ -70,9 +70,22 @@
               </select>
             </div>
           </div>
-          <div class="form-group"><label class="form-label">Pages * <span class="text-muted text-xs">(1–100)</span></label><input type="number" class="form-input" id="o-pages" min="1" max="100" value="5" oninput="calcPrice()"><span class="form-hint">1 page ≈ 275 words</span></div>
-          <div class="form-group"><label class="form-label">Deadline *</label><input type="datetime-local" class="form-input" id="o-deadline" onchange="calcPrice()"><span class="form-hint" id="deadline-hint">≥5 days = $10/page · &lt;5 days = $15/page (urgent)</span></div>
+          <div class="form-group">
+            <label class="form-label">Pages / Words *</label>
+            <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">
+              <input type="number" class="form-input" id="o-pages" min="1" max="100" value="5" oninput="syncWords()">
+              <span class="text-muted" style="text-align:center;font-size:0.82rem">or</span>
+              <input type="number" class="form-input" id="o-words" min="275" placeholder="e.g. 1500" oninput="syncPages()">
+            </div>
+            <div class="form-hint" id="pages-words-hint">5 pages = 1,375 words · 1 page = 275 words</div>
+          </div>
+          <div class="form-group"><label class="form-label">Deadline *</label><input type="datetime-local" class="form-input" id="o-deadline" onchange="calcPrice()"><span class="form-hint" id="deadline-hint">Standard: ≥5 days = $10/page · Urgent: &lt;5 days = $15/page</span></div>
           <div class="form-group"><label class="form-label">Upload Files <span class="text-muted">(optional — rubric, notes, references)</span></label><input type="file" class="form-input" id="o-files" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg"></div>
+          <div class="form-group">
+            <label class="form-label">Referral Code <span class="text-muted text-xs">(optional — get 20% discount)</span></label>
+            <input type="text" class="form-input" id="o-referral" placeholder="Enter referral code" oninput="checkReferral()" style="text-transform:uppercase">
+            <div id="referral-msg" style="font-size:0.82rem;margin-top:4px;display:none"></div>
+          </div>
           <div class="consent-box" style="margin-bottom:18px"><input type="checkbox" id="o-consent"><label for="o-consent">I agree to the <a href="terms.html" target="_blank">Terms of Service</a>. I understand the 50% deposit is held in escrow and released only upon my approval.</label></div>
           <div id="order-err" class="alert alert-danger" style="display:none"></div>
           <button class="btn btn-primary btn-lg" id="order-btn" onclick="createOrder()">Proceed to Payment →</button>
@@ -173,6 +186,19 @@
             <button class="btn btn-primary" onclick="saveClientProfile()">Save Changes</button>
           </div>
           <div class="card">
+            <h3 style="font-family:var(--font-display);margin-bottom:16px">🎁 Referral Program</h3>
+            <div class="alert alert-success" style="margin-bottom:14px"><span>💰</span><span>Share your referral code and earn <strong>20% discount</strong> on your next order when someone uses it!</span></div>
+            <div class="form-group">
+              <label class="form-label">Your Referral Code</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="text" class="form-input" id="cp-refcode" readonly style="font-weight:700;font-size:1.1rem;letter-spacing:2px;text-align:center;background:var(--parch)">
+                <button class="btn btn-outline btn-sm" onclick="copyReferralCode()" style="white-space:nowrap">📋 Copy</button>
+              </div>
+              <div class="form-hint">Share this code with friends. They get 20% off, you get 20% off your next order.</div>
+            </div>
+            <div id="ref-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px"></div>
+          </div>
+          <div class="card">
             <h3 style="font-family:var(--font-display);margin-bottom:16px">Change Password</h3>
             <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" id="cp-newpass" placeholder="Min 8 characters"></div>
             <div class="form-group"><label class="form-label">Confirm Password</label><input type="password" class="form-input" id="cp-confpass" placeholder="Repeat new password"></div>
@@ -202,7 +228,10 @@
       <div class="card card-compact" id="pm-paypal" onclick="selPM('paypal')" style="cursor:pointer;text-align:center;border:2px solid var(--border)"><div style="font-size:1.4rem">🅿️</div><div style="font-size:0.78rem;font-weight:600;margin-top:4px">PayPal</div></div>
       <div class="card card-compact" id="pm-bank" onclick="selPM('bank')" style="cursor:pointer;text-align:center;border:2px solid var(--border)"><div style="font-size:1.4rem">🏦</div><div style="font-size:0.78rem;font-weight:600;margin-top:4px">Bank</div></div>
     </div>
-    <div id="pay-stripe"><div class="alert alert-info" style="margin-bottom:12px"><span>💳</span><span>Test: card <strong>4242 4242 4242 4242</strong>, any future date, any CVC</span></div><div style="border:1.5px solid var(--border);border-radius:8px;padding:14px"><div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px">Card Number</div><input class="form-input" value="4242 4242 4242 4242" style="font-family:monospace"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px"><div><div style="font-size:0.8rem;color:var(--muted);margin-bottom:5px">Expiry</div><input class="form-input" value="12/28"></div><div><div style="font-size:0.8rem;color:var(--muted);margin-bottom:5px">CVC</div><input class="form-input" value="123"></div></div></div></div>
+    <div id="pay-stripe">
+      <div class="alert alert-info" style="margin-bottom:12px"><span>💳</span><span>Pay securely via PayPal using your debit or credit card — no PayPal account needed.</span></div>
+      <div class="alert alert-warning"><span>ℹ️</span><span>Click <strong>PayPal</strong> tab above to pay by card or PayPal balance. Card payments are processed securely through PayPal.</span></div>
+    </div>
     <div id="pay-paypal" style="display:none"><div class="alert alert-info"><span>🅿️</span><span>Send payment to: <strong id="pp-email"></strong></span></div><div style="background:var(--parch);border-radius:8px;padding:14px;font-size:0.875rem"><div class="flex-between" style="margin-bottom:6px"><span>PayPal email:</span><strong id="pp-addr"></strong></div><div class="flex-between" style="margin-bottom:6px"><span>Amount:</span><strong id="pp-amt"></strong></div><div class="flex-between"><span>Reference:</span><strong id="pp-ref"></strong></div></div><div class="alert alert-warning" style="margin-top:10px"><span>⚠️</span><span>Include the reference in the PayPal note. Admin confirms and activates your order.</span></div></div>
     <div id="pay-bank" style="display:none"><div class="alert alert-info"><span>🏦</span><span>Transfer the deposit to our bank account below.</span></div><div style="background:var(--parch);border-radius:8px;padding:14px;font-size:0.875rem;line-height:2.1"><div class="flex-between"><span>Bank:</span><strong id="bk-name"></strong></div><div class="flex-between"><span>Account Name:</span><strong>ScholarConnect</strong></div><div class="flex-between"><span>Account No:</span><strong id="bk-acc"></strong></div><div class="flex-between"><span>Sort Code:</span><strong id="bk-sort"></strong></div><div class="flex-between"><span>SWIFT:</span><strong id="bk-swift"></strong></div><div class="flex-between"><span>Amount:</span><strong id="bk-amt"></strong></div><div class="flex-between"><span>Reference:</span><strong id="bk-ref"></strong></div></div><div class="alert alert-warning" style="margin-top:10px"><span>⚠️</span><span>Use the exact reference. Admin confirms after transfer.</span></div></div>
     <div id="pay-err" class="alert alert-danger" style="display:none;margin-top:12px"></div>
@@ -306,19 +335,76 @@
     calcPrice();
   }
 
+  function syncWords() {
+    const pages = parseInt(document.getElementById('o-pages').value)||1;
+    const words = pages * 275;
+    document.getElementById('o-words').value = words;
+    document.getElementById('pages-words-hint').textContent = `${pages} page${pages!==1?'s':''} = ${words.toLocaleString()} words · 1 page = 275 words`;
+    calcPrice();
+  }
+
+  function syncPages() {
+    const words = parseInt(document.getElementById('o-words').value)||275;
+    const pages = Math.ceil(words / 275);
+    document.getElementById('o-pages').value = pages;
+    document.getElementById('pages-words-hint').textContent = `${words.toLocaleString()} words = ${pages} page${pages!==1?'s':''} · 1 page = 275 words`;
+    calcPrice();
+  }
+
+  function getUrgentThreshold(pages) {
+    // Dynamic urgent threshold based on page count
+    if (pages <= 2) return 6 / 24;       // 6 hours for 1-2 pages
+    if (pages <= 5) return 12 / 24;      // 12 hours for 3-5 pages
+    return 24 / 24;                       // 24 hours for 6+ pages
+  }
+
   function calcPrice() {
     const pages = parseInt(document.getElementById('o-pages').value)||1;
     const dl = document.getElementById('o-deadline').value;
     let urgent = false, rate = parseFloat(settings.standard_rate||10);
-    if (dl) { const days = (new Date(dl)-Date.now())/86400000; urgent = days < parseFloat(settings.urgent_threshold_days||5); rate = urgent ? parseFloat(settings.urgent_rate||15) : parseFloat(settings.standard_rate||10); }
-    const total = pages*rate, dep = total*0.5;
+    const hint = document.getElementById('deadline-hint');
+    if (dl) {
+      const days = (new Date(dl)-Date.now())/86400000;
+      const threshold = getUrgentThreshold(pages);
+      urgent = days < threshold;
+      rate = urgent ? parseFloat(settings.urgent_rate||15) : parseFloat(settings.standard_rate||10);
+      // Update hint based on page count
+      if (pages <= 2) hint.textContent = '≥6 hours = $10/page · <6 hours = $15/page (urgent)';
+      else if (pages <= 5) hint.textContent = '≥12 hours = $10/page · <12 hours = $15/page (urgent)';
+      else hint.textContent = '≥24 hours = $10/page · <24 hours = $15/page (urgent)';
+    }
+    // Apply referral discount if valid
+    let discount = 0;
+    const refMsg = document.getElementById('referral-msg');
+    if (refMsg && refMsg.style.color === 'var(--success)') discount = 0.20;
+    const total = pages*rate*(1-discount), dep = total*0.5;
     document.getElementById('price-total').textContent = `$${total.toFixed(2)}`;
     document.getElementById('price-dep').textContent = `$${dep.toFixed(2)}`;
     document.getElementById('pr-balance').textContent = `$${dep.toFixed(2)}`;
     document.getElementById('pr-pages').textContent = pages;
-    document.getElementById('pr-rate').textContent = `$${rate}/page`;
-    document.getElementById('pr-type').textContent = urgent ? '⚡ Urgent (<5 days)' : 'Standard (≥5 days)';
+    document.getElementById('pr-rate').textContent = discount > 0 ? `$${rate}/page (-20% referral)` : `$${rate}/page`;
+    document.getElementById('pr-type').textContent = urgent ? `⚡ Urgent` : 'Standard';
     document.getElementById('pr-type').className = 'badge ' + (urgent ? 'badge-warning' : 'badge-navy');
+    if (discount > 0) document.getElementById('price-total').style.color = 'var(--success)';
+    else document.getElementById('price-total').style.color = '';
+  }
+
+  async function checkReferral() {
+    const code = document.getElementById('o-referral').value.trim().toUpperCase();
+    const msg = document.getElementById('referral-msg');
+    if (!code || code.length < 6) { msg.style.display='none'; calcPrice(); return; }
+    // Check if referral code exists in profiles
+    const { data } = await sb.from('profiles').select('id, full_name, referral_code').eq('referral_code', code).single();
+    if (data && data.id !== profile.id) {
+      msg.textContent = `✓ Valid referral code from ${data.full_name.split(' ')[0]}! You get 20% off this order.`;
+      msg.style.color = 'var(--success)';
+      msg.style.display = 'block';
+    } else {
+      msg.textContent = data?.id === profile.id ? 'You cannot use your own referral code.' : 'Invalid referral code.';
+      msg.style.color = 'var(--danger)';
+      msg.style.display = 'block';
+    }
+    calcPrice();
   }
 
   function showPage(name) {
@@ -757,6 +843,26 @@
     document.getElementById('cp-fullname').value = profile.full_name || '';
     document.getElementById('cp-email').value = profile.email || '';
     document.getElementById('cp-phone').value = profile.phone || '';
+    // Load or generate referral code
+    const { data: prof } = await sb.from('profiles').select('referral_code, referral_count, referral_discount').eq('id', profile.id).single();
+    let refCode = prof?.referral_code;
+    if (!refCode) {
+      // Generate unique referral code
+      refCode = 'SC' + profile.full_name.split(' ')[0].toUpperCase().slice(0,4) + Math.random().toString(36).slice(2,6).toUpperCase();
+      await sb.from('profiles').update({ referral_code: refCode }).eq('id', profile.id);
+    }
+    document.getElementById('cp-refcode').value = refCode;
+    const refCount = prof?.referral_count || 0;
+    const hasDiscount = prof?.referral_discount || false;
+    document.getElementById('ref-stats').innerHTML = `
+      <div style="background:var(--parch);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:var(--navy)">${refCount}</div>
+        <div style="font-size:0.8rem;color:var(--muted)">Referrals made</div>
+      </div>
+      <div style="background:${hasDiscount?'rgba(58,158,110,0.1)':'var(--parch)'};border-radius:8px;padding:12px;text-align:center;border:${hasDiscount?'1px solid var(--success)':'none'}">
+        <div style="font-size:1.5rem;font-weight:700;color:${hasDiscount?'var(--success)':'var(--muted)'}">${hasDiscount?'20%':'0%'}</div>
+        <div style="font-size:0.8rem;color:var(--muted)">${hasDiscount?'Discount ready!':'Next order discount'}</div>
+      </div>`;
     const av = document.getElementById('client-avatar');
     if (profile.avatar_url) {
       av.innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover">`;
@@ -807,6 +913,17 @@
     setTimeout(() => msg.style.display = 'none', 3000);
   }
 
+
+  function copyReferralCode() {
+    const code = document.getElementById('cp-refcode').value;
+    navigator.clipboard.writeText(code).then(() => {
+      showGlobalToast('Referral code copied! Share it with friends.', 'success');
+    }).catch(() => {
+      document.getElementById('cp-refcode').select();
+      document.execCommand('copy');
+      showGlobalToast('Referral code copied!', 'success');
+    });
+  }
 
   // ── PayPal Integration ──────────────────────────────────
   let paypalRendered = false;
