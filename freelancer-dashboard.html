@@ -142,6 +142,16 @@
       </div>
     </div>
 
+    <!-- CREDENTIALS UPLOAD (shown if not yet submitted) -->
+    <div id="credentials-banner" class="alert alert-warning" style="display:none;margin:16px 24px 0;border-radius:12px">
+      <span>📋</span>
+      <div>
+        <strong>Action Required: Upload Your Credentials</strong>
+        <p style="margin:4px 0 0;font-size:0.875rem">You must upload your ID, academic certificate, selfie and resume before you can be approved to take orders.</p>
+        <button class="btn btn-gold btn-sm" style="margin-top:8px" onclick="showPage('qualifications')">Upload Credentials →</button>
+      </div>
+    </div>
+
     <!-- PROFILE -->
     <div class="page" id="page-profile">
       <div class="page-header"><div class="page-title">My Profile</div><div class="page-subtitle">Your public writer profile and account settings</div></div>
@@ -193,13 +203,26 @@
 
 <!-- SUBMIT WORK MODAL -->
 <div class="modal-overlay" id="m-submit">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">Submit Completed Work</div><button class="modal-close" onclick="closeM('m-submit')">×</button></div>
-    <div class="alert alert-info"><span>🔒</span><span>Files are automatically virus-scanned and plagiarism-checked before the client is notified.</span></div>
-    <div class="form-group" style="margin-top:14px"><label class="form-label">Final Document * (.pdf, .doc, .docx)</label><input type="file" class="form-input" id="sub-file" accept=".pdf,.doc,.docx"></div>
-    <div class="form-group"><label class="form-label">Notes to Client <span class="text-muted">(optional)</span></label><textarea class="form-textarea" id="sub-notes" placeholder="Sources used, any relevant notes…"></textarea></div>
-    <div id="submit-err" class="alert alert-danger" style="display:none"></div>
-    <button class="btn btn-primary btn-full" id="submit-btn" onclick="doSubmitWork()">Submit for Client Review</button>
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header"><div class="modal-title">Submit Work</div><button class="modal-close" onclick="closeM('m-submit')">×</button></div>
+    <div class="alert alert-info"><span>🔒</span><span>Files are virus-scanned and plagiarism-checked before client notification.</span></div>
+    <div class="tabs" style="margin:14px 0 16px">
+      <button class="tab active" id="sub-tab-draft" onclick="switchSubTab('draft')">📝 Upload Draft</button>
+      <button class="tab" id="sub-tab-final" onclick="switchSubTab('final')">✅ Submit Final</button>
+    </div>
+    <div id="sub-draft-panel">
+      <div class="alert alert-warning"><span>📝</span><span>Drafts are visible to the client but do NOT trigger payment release.</span></div>
+      <div class="form-group" style="margin-top:10px"><label class="form-label">Draft File (.pdf, .doc, .docx)</label><input type="file" class="form-input" id="draft-file" accept=".pdf,.doc,.docx"></div>
+      <div class="form-group"><label class="form-label">Message to Client</label><textarea class="form-textarea" id="draft-note" placeholder="e.g. Here is the draft for your review. Please let me know your feedback…"></textarea></div>
+      <button class="btn btn-outline btn-full" id="draft-btn" onclick="doUploadDraft()">📤 Send Draft to Client</button>
+    </div>
+    <div id="sub-final-panel" style="display:none">
+      <div class="alert alert-success"><span>✅</span><span>Submitting final work notifies the client for review and payment release.</span></div>
+      <div class="form-group" style="margin-top:10px"><label class="form-label">Final Document * (.pdf, .doc, .docx)</label><input type="file" class="form-input" id="sub-file" accept=".pdf,.doc,.docx"></div>
+      <div class="form-group"><label class="form-label">Notes to Client <span class="text-muted">(optional)</span></label><textarea class="form-textarea" id="sub-notes" placeholder="Sources used, any relevant notes…"></textarea></div>
+      <div id="submit-err" class="alert alert-danger" style="display:none"></div>
+      <button class="btn btn-primary btn-full" id="submit-btn" onclick="doSubmitWork()">✅ Submit Final for Client Review</button>
+    </div>
   </div>
 </div>
 
@@ -553,6 +576,14 @@ ${o.brief_files && o.brief_files.length ? `<div style="margin-top:12px"><div cla
   }
 
   async function renderQualifications() {
+    // Check if credentials uploaded
+    const { data: creds } = await sb.from('profiles')
+      .select('id_url, cert_url, selfie_url, resume_url, credentials_submitted_at')
+      .eq('id', profile.id).single();
+    const credsSubmitted = creds?.credentials_submitted_at;
+    const banner = document.getElementById('credentials-banner');
+    if (banner) banner.style.display = credsSubmitted ? 'none' : 'flex';
+
     testResults = await SC.tests.getResultsForWriter(profile.id);
     const engTest = testResults.find(r=>r.test_type==='english');
     const essays  = testResults.filter(r=>r.test_type==='essay');
@@ -563,7 +594,61 @@ ${o.brief_files && o.brief_files.length ? `<div style="margin-top:12px"><div cla
       Object.keys(SUBJECTS).forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
     }
     const rows = essays.map(e=>`<tr><td><strong>${e.subject}</strong></td><td>${e.sub_level||'General'}</td><td><span class="badge ${e.admin_approved?'badge-success':e.admin_note?'badge-danger':'badge-warning'}">${e.admin_approved?'Approved':e.admin_note?'Rejected':'Pending'}</span></td><td style="font-size:0.82rem;color:var(--muted)">${e.admin_note||'—'}</td><td style="font-size:0.8rem;color:var(--muted)">${new Date(e.completed_at).toLocaleDateString()}</td></tr>`).join('');
-    document.getElementById('qual-content').innerHTML = `
+    // Build credentials HTML
+    const credsHTML = `
+      <div class="card" style="margin-bottom:18px;border:${credsSubmitted?'2px solid var(--success)':'2px solid var(--warning)'}">
+        <div class="flex-between" style="margin-bottom:16px">
+          <h3 style="font-family:var(--font-display)">📋 Identity & Credentials</h3>
+          ${credsSubmitted ? '<span class="badge badge-success">✅ Submitted</span>' : '<span class="badge badge-warning">⚠️ Required</span>'}
+        </div>
+        ${!credsSubmitted ? '<div class="alert alert-warning" style="margin-bottom:16px"><span>⚠️</span><span>You must submit all 4 documents before admin can approve your account.</span></div>' : ''}
+        <div class="grid-2" style="gap:16px">
+          <div class="form-group">
+            <label class="form-label">🪪 National ID / Passport *</label>
+            <div style="background:var(--parch);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.82rem">
+              ${creds?.id_url ? '<span class="badge badge-success">✅ Uploaded</span> <a href="' + creds.id_url + '" target="_blank" style="font-size:0.8rem;margin-left:6px">View</a>' : '<span class="badge badge-warning">Not uploaded</span>'}
+            </div>
+            <input type="file" class="form-input" id="cred-id" accept=".pdf,.jpg,.jpeg,.png" ${creds?.id_url?'':'required'}>
+            <div class="form-hint">Clear photo or scan of your national ID or passport</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🎓 University / College Certificate *</label>
+            <div style="background:var(--parch);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.82rem">
+              ${creds?.cert_url ? '<span class="badge badge-success">✅ Uploaded</span> <a href="' + creds.cert_url + '" target="_blank" style="font-size:0.8rem;margin-left:6px">View</a>' : '<span class="badge badge-warning">Not uploaded</span>'}
+            </div>
+            <input type="file" class="form-input" id="cred-cert" accept=".pdf,.jpg,.jpeg,.png">
+            <div class="form-hint">Degree certificate, diploma or transcript</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🤳 Selfie with ID *</label>
+            <div style="background:var(--parch);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.82rem">
+              ${creds?.selfie_url ? '<span class="badge badge-success">✅ Uploaded</span> <a href="' + creds.selfie_url + '" target="_blank" style="font-size:0.8rem;margin-left:6px">View</a>' : '<span class="badge badge-warning">Not uploaded</span>'}
+            </div>
+            <input type="file" class="form-input" id="cred-selfie" accept=".jpg,.jpeg,.png">
+            <div class="form-hint">A photo of you holding your ID clearly visible</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">📄 Resume / CV *</label>
+            <div style="background:var(--parch);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.82rem">
+              ${creds?.resume_url ? '<span class="badge badge-success">✅ Uploaded</span> <a href="' + creds.resume_url + '" target="_blank" style="font-size:0.8rem;margin-left:6px">View</a>' : '<span class="badge badge-warning">Not uploaded</span>'}
+            </div>
+            <input type="file" class="form-input" id="cred-resume" accept=".pdf,.doc,.docx">
+            <div class="form-hint">Your academic and professional background</div>
+          </div>
+        </div>
+        <div id="cred-err" class="alert alert-danger" style="display:none;margin-top:12px"></div>
+        <div id="cred-progress" style="display:none;margin-top:12px">
+          <div class="progress-track" style="height:6px;background:var(--border);border-radius:3px">
+            <div id="cred-prog-bar" style="height:100%;background:var(--success);border-radius:3px;width:0%;transition:width 0.3s"></div>
+          </div>
+          <div id="cred-prog-text" style="font-size:0.8rem;color:var(--muted);margin-top:4px">Uploading…</div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:16px" id="cred-btn" onclick="uploadCredentials()">
+          ${credsSubmitted ? '🔄 Update Credentials' : '📤 Submit Credentials for Verification'}
+        </button>
+      </div>`;
+
+    document.getElementById('qual-content').innerHTML = credsHTML + `
       <div class="card" style="margin-bottom:18px">
         <div class="flex-between" style="margin-bottom:14px">
           <h3 style="font-family:var(--font-display)">English Proficiency Test</h3>
@@ -795,6 +880,51 @@ ${o.brief_files && o.brief_files.length ? `<div style="margin-top:12px"><div cla
     renderEarnings();
   }
 
+  // ── Credentials Upload ───────────────────────────────────
+  async function uploadCredentials() {
+    const btn = document.getElementById('cred-btn');
+    const err = document.getElementById('cred-err');
+    const prog = document.getElementById('cred-progress');
+    const bar = document.getElementById('cred-prog-bar');
+    const txt = document.getElementById('cred-prog-text');
+    err.style.display = 'none';
+
+    const files = {
+      id: document.getElementById('cred-id')?.files[0],
+      cert: document.getElementById('cred-cert')?.files[0],
+      selfie: document.getElementById('cred-selfie')?.files[0],
+      resume: document.getElementById('cred-resume')?.files[0],
+    };
+
+    // Check if at least ID is provided on first submission
+    const { data: existing } = await sb.from('profiles').select('id_url,cert_url,selfie_url,resume_url').eq('id',profile.id).single();
+    if (!existing?.id_url && !files.id) { err.textContent = 'National ID is required.'; err.style.display='flex'; return; }
+
+    btn.disabled = true; prog.style.display = 'block';
+    const updates = {};
+    const labels = { id: 'National ID', cert: 'Certificate', selfie: 'Selfie', resume: 'Resume' };
+    let done = 0; const total = Object.values(files).filter(Boolean).length;
+
+    for (const [key, file] of Object.entries(files)) {
+      if (!file) continue;
+      txt.textContent = `Uploading ${labels[key]}…`;
+      const path = profile.id + '/' + key + '_' + Date.now() + '.' + file.name.split('.').pop();
+      const { data, error } = await sb.storage.from('credentials').upload(path, file, { upsert: true });
+      if (error) { err.textContent = 'Failed to upload ' + labels[key] + ': ' + error.message; err.style.display='flex'; btn.disabled=false; return; }
+      const { data: urlData } = sb.storage.from('credentials').getPublicUrl(data.path);
+      updates[key + '_url'] = urlData.publicUrl;
+      done++;
+      bar.style.width = (done/total*100) + '%';
+    }
+
+    updates.credentials_submitted_at = new Date().toISOString();
+    await sb.from('profiles').update(updates).eq('id', profile.id);
+
+    prog.style.display = 'none'; btn.disabled = false;
+    showGlobalToast('Credentials submitted! Admin will review within 24 hours.', 'success');
+    renderQualifications();
+  }
+
   // ── Writer Profile ────────────────────────────────────────
   async function loadWriterProfile() {
     document.getElementById('wp-name').textContent = profile.full_name;
@@ -859,6 +989,38 @@ ${o.brief_files && o.brief_files.length ? `<div style="margin-top:12px"><div cla
     msg.textContent='Password updated!'; msg.className='alert alert-success'; msg.style.display='flex';
     document.getElementById('wp-newpass').value=''; document.getElementById('wp-confpass').value='';
     setTimeout(()=>msg.style.display='none',3000);
+  }
+
+  function switchSubTab(tab) {
+    document.getElementById('sub-tab-draft').classList.toggle('active', tab==='draft');
+    document.getElementById('sub-tab-final').classList.toggle('active', tab==='final');
+    document.getElementById('sub-draft-panel').style.display = tab==='draft'?'block':'none';
+    document.getElementById('sub-final-panel').style.display = tab==='final'?'block':'none';
+  }
+
+  async function doUploadDraft() {
+    const fi = document.getElementById('draft-file');
+    const note = document.getElementById('draft-note').value.trim();
+    if (!fi.files.length) { showGlobalToast('Please select a draft file.','error'); return; }
+    const btn = document.getElementById('draft-btn'); btn.disabled=true; btn.textContent='Uploading…';
+    const file = fi.files[0];
+    const path = curOrdId + '/draft_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const { data, error } = await sb.storage.from('deliverables').upload(path, file, { upsert: true });
+    btn.disabled=false; btn.textContent='📤 Send Draft to Client';
+    if (error) { showGlobalToast('Upload failed: '+error.message,'error'); return; }
+    const { data: urlData } = sb.storage.from('deliverables').getPublicUrl(data.path);
+    // Save draft to deliveries table
+    await sb.from('deliveries').upsert({
+      order_id: curOrdId, writer_id: profile.id,
+      draft_url: urlData.publicUrl, draft_name: file.name,
+      draft_note: note, draft_uploaded_at: new Date().toISOString()
+    }, { onConflict: 'order_id' });
+    // Notify client via message
+    await SC.messages.send(curOrdId, profile.id, 'writer', 
+      (note || 'Draft uploaded') + ' — 📎 ' + file.name + ': ' + urlData.publicUrl);
+    closeM('m-submit');
+    showGlobalToast('Draft sent to client successfully!', 'success');
+    setTimeout(() => openDetail(curOrdId, detFrom), 500);
   }
 
   function openM(id) { document.getElementById(id).classList.add('open'); }
