@@ -229,10 +229,18 @@
       <div class="card card-compact" id="pm-bank" onclick="selPM('bank')" style="cursor:pointer;text-align:center;border:2px solid var(--border)"><div style="font-size:1.4rem">🏦</div><div style="font-size:0.78rem;font-weight:600;margin-top:4px">Bank</div></div>
     </div>
     <div id="pay-stripe">
-      <div class="alert alert-info" style="margin-bottom:12px"><span>💳</span><span>Pay securely via PayPal using your debit or credit card — no PayPal account needed.</span></div>
-      <div class="alert alert-warning"><span>ℹ️</span><span>Click <strong>PayPal</strong> tab above to pay by card or PayPal balance. Card payments are processed securely through PayPal.</span></div>
+      <div class="alert alert-info" style="margin-bottom:16px"><span>💳</span><span>Card payments are processed securely through PayPal. No PayPal account needed!</span></div>
+      <div style="background:var(--parch);border-radius:10px;padding:20px;text-align:center">
+        <div style="font-size:2.5rem;margin-bottom:10px">💳</div>
+        <p style="font-weight:600;margin-bottom:8px">Pay with Debit or Credit Card</p>
+        <p style="font-size:0.875rem;color:var(--muted);margin-bottom:16px">Visa, Mastercard, Amex accepted · Secured by PayPal</p>
+        <button class="btn btn-primary btn-full" onclick="selPM('paypal')" style="max-width:280px;margin:0 auto">
+          Continue to Card Payment →
+        </button>
+      </div>
     </div>
-    <div id="pay-paypal" style="display:none"><div class="alert alert-info"><span>🅿️</span><span>Send payment to: <strong id="pp-email"></strong></span></div><div style="background:var(--parch);border-radius:8px;padding:14px;font-size:0.875rem"><div class="flex-between" style="margin-bottom:6px"><span>PayPal email:</span><strong id="pp-addr"></strong></div><div class="flex-between" style="margin-bottom:6px"><span>Amount:</span><strong id="pp-amt"></strong></div><div class="flex-between"><span>Reference:</span><strong id="pp-ref"></strong></div></div><div class="alert alert-warning" style="margin-top:10px"><span>⚠️</span><span>Include the reference in the PayPal note. Admin confirms and activates your order.</span></div></div>
+    <div id="pay-paypal" style="display:none">
+      <div class="alert alert-info" style="margin-bottom:12px"><span>🅿️</span><span>Pay with <strong>PayPal balance</strong> or <strong>debit/credit card</strong>. No PayPal account needed for card payment.</span></div><div style="background:var(--parch);border-radius:8px;padding:14px;font-size:0.875rem"><div class="flex-between" style="margin-bottom:6px"><span>PayPal email:</span><strong id="pp-addr"></strong></div><div class="flex-between" style="margin-bottom:6px"><span>Amount:</span><strong id="pp-amt"></strong></div><div class="flex-between"><span>Reference:</span><strong id="pp-ref"></strong></div></div><div class="alert alert-warning" style="margin-top:10px"><span>⚠️</span><span>Include the reference in the PayPal note. Admin confirms and activates your order.</span></div></div>
     <div id="pay-bank" style="display:none"><div class="alert alert-info"><span>🏦</span><span>Transfer the deposit to our bank account below.</span></div><div style="background:var(--parch);border-radius:8px;padding:14px;font-size:0.875rem;line-height:2.1"><div class="flex-between"><span>Bank:</span><strong id="bk-name"></strong></div><div class="flex-between"><span>Account Name:</span><strong>ScholarConnect</strong></div><div class="flex-between"><span>Account No:</span><strong id="bk-acc"></strong></div><div class="flex-between"><span>Sort Code:</span><strong id="bk-sort"></strong></div><div class="flex-between"><span>SWIFT:</span><strong id="bk-swift"></strong></div><div class="flex-between"><span>Amount:</span><strong id="bk-amt"></strong></div><div class="flex-between"><span>Reference:</span><strong id="bk-ref"></strong></div></div><div class="alert alert-warning" style="margin-top:10px"><span>⚠️</span><span>Use the exact reference. Admin confirms after transfer.</span></div></div>
     <div id="pay-err" class="alert alert-danger" style="display:none;margin-top:12px"></div>
     <button class="btn btn-gold btn-full btn-lg" id="pay-btn" onclick="processPayment()" style="margin-top:16px"><span id="pay-btn-text">Pay Deposit</span></button>
@@ -401,20 +409,51 @@
   async function checkReferral() {
     const code = document.getElementById('o-referral').value.trim().toUpperCase();
     const msg = document.getElementById('referral-msg');
-    if (!code || code.length < 6) { msg.style.display='none'; calcPrice(); return; }
-    // Check if referral code exists in profiles
-    const { data } = await sb.from('profiles').select('id, full_name, referral_code').eq('referral_code', code).single();
-    if (data && data.id !== profile.id) {
-      msg.textContent = `✓ Valid referral code from ${data.full_name.split(' ')[0]}! You get 20% off this order.`;
-      msg.style.color = 'var(--success)';
-      msg.style.display = 'block';
-      msg.dataset.valid = 'true';
-    } else {
-      msg.textContent = data?.id === profile.id ? 'You cannot use your own referral code.' : 'Invalid referral code.';
+    if (!code || code.length < 4) { msg.style.display='none'; msg.dataset.valid='false'; calcPrice(); return; }
+
+    // Check 1: Has this client placed any orders before? (first order only)
+    const { data: prevOrders } = await sb.from('orders').select('id').eq('client_id', profile.id).limit(1);
+    if (prevOrders && prevOrders.length > 0) {
+      msg.textContent = '⚠️ Referral codes can only be used on your first order.';
       msg.style.color = 'var(--danger)';
       msg.style.display = 'block';
       msg.dataset.valid = 'false';
+      calcPrice(); return;
     }
+
+    // Check 2: Has this client already used a referral code?
+    const { data: profData } = await sb.from('profiles').select('referred_by').eq('id', profile.id).single();
+    if (profData?.referred_by) {
+      msg.textContent = '⚠️ You have already used a referral code previously.';
+      msg.style.color = 'var(--danger)';
+      msg.style.display = 'block';
+      msg.dataset.valid = 'false';
+      calcPrice(); return;
+    }
+
+    // Check 3: Is the referral code valid and not self-referral?
+    const { data: referrer } = await sb.from('profiles').select('id, full_name, referral_code').eq('referral_code', code).single();
+    if (!referrer) {
+      msg.textContent = '✗ Invalid referral code. Please check and try again.';
+      msg.style.color = 'var(--danger)';
+      msg.style.display = 'block';
+      msg.dataset.valid = 'false';
+      calcPrice(); return;
+    }
+    if (referrer.id === profile.id) {
+      msg.textContent = '✗ You cannot use your own referral code.';
+      msg.style.color = 'var(--danger)';
+      msg.style.display = 'block';
+      msg.dataset.valid = 'false';
+      calcPrice(); return;
+    }
+
+    // All checks passed!
+    msg.textContent = `✓ Valid! Code from ${referrer.full_name.split(' ')[0]}. You get 20% off this order!`;
+    msg.style.color = 'var(--success)';
+    msg.style.display = 'block';
+    msg.dataset.valid = 'true';
+    msg.dataset.referrerId = referrer.id;
     calcPrice();
   }
 
@@ -523,14 +562,19 @@
     if (Object.keys(updateData).length && res.order?.id) {
       await sb.from('orders').update(updateData).eq('id', res.order.id);
     }
-    // If referral used, update referrer's discount and count
+    // If referral used — mark client as referred + credit referrer
     if (refCode && hasDiscount) {
-      const { data: referrer } = await sb.from('profiles').select('id,referral_count').eq('referral_code', refCode).single();
-      if (referrer) {
+      const refMsg2 = document.getElementById('referral-msg');
+      const referrerId = refMsg2?.dataset.referrerId;
+      // Mark this client as having used a referral (prevents reuse)
+      await sb.from('profiles').update({ referred_by: refCode }).eq('id', profile.id);
+      // Credit the referrer with a discount on their next order
+      if (referrerId) {
+        const { data: referrer } = await sb.from('profiles').select('referral_count').eq('id', referrerId).single();
         await sb.from('profiles').update({
-          referral_count: (referrer.referral_count||0) + 1,
-          referral_discount: true
-        }).eq('id', referrer.id);
+          referral_count: (referrer?.referral_count||0) + 1,
+          referral_discount: true  // Referrer gets 20% off their next order
+        }).eq('id', referrerId);
       }
     }
     openPayModal(res.order);
