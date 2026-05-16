@@ -672,22 +672,26 @@
     if (addonSum) addons.push('Executive Summary');
     if (addonOut) addons.push('Outline');
     const btn = document.getElementById('order-btn'); btn.disabled=true; btn.textContent='Creating order…';
-    // Upload brief files if any — non-blocking, order creates even if upload fails
+    // Upload brief files — with timeout so order never gets stuck
     let briefUrls = [];
     const filesInput = document.getElementById('o-files');
     if (filesInput.files.length) {
-      btn.textContent = 'Uploading files…';
+      btn.textContent = 'Uploading files… ('+filesInput.files.length+')';
       for (const file of filesInput.files) {
         try {
-          // Upload directly to Supabase storage
-          const ext = file.name.split('.').pop();
           const path = profile.id + '/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-          const { data, error } = await sb.storage.from('briefs').upload(path, file, { upsert: true });
-          if (!error && data) {
-            const { data: urlData } = sb.storage.from('briefs').getPublicUrl(data.path);
+          // Upload with 15 second timeout
+          const uploadPromise = sb.storage.from('briefs').upload(path, file, { upsert: true });
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Upload timeout')), 15000));
+          const result = await Promise.race([uploadPromise, timeoutPromise]);
+          if (result.data && !result.error) {
+            const { data: urlData } = sb.storage.from('briefs').getPublicUrl(result.data.path);
             briefUrls.push({ name: file.name, url: urlData.publicUrl });
           }
-        } catch(e) { console.warn('File upload skipped:', e); }
+        } catch(e) {
+          console.warn('File upload skipped:', file.name, e.message);
+          // Continue without the file — don't block order creation
+        }
       }
       btn.textContent = 'Creating order…';
     }
