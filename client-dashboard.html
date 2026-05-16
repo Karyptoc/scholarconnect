@@ -692,7 +692,7 @@
       btn.textContent = 'Creating order…';
     }
     // Get exact word count and pricing
-    const wordsVal = parseInt(document.getElementById('o-words')?.value)||0;
+    wordsVal = parseInt(document.getElementById('o-words')?.value)||0;
     const exactPages = wordsVal > 0 ? wordsVal / 275 : pages;
     const refCode = document.getElementById('o-referral')?.value.trim().toUpperCase();
     const refMsg = document.getElementById('referral-msg');
@@ -796,15 +796,25 @@
     currentOrdId = ordId;
     const { data: o } = await SC.orders.getOne(ordId);
     if (!o) return;
-    // Always fetch brief_files directly from DB to ensure we get latest
-    const { data: extra } = await sb.from('orders').select('brief_files, brief_url, word_count, referral_code, discount_percent').eq('id', ordId).single();
+    // Always fetch ALL extra fields directly from DB
+    const { data: extra } = await sb.from('orders')
+      .select('brief_files, brief_url, word_count, paper_type, language, spacing, sources_required, addons, addon_cost, discount_percent, title, referral_code')
+      .eq('id', ordId).single();
     if (extra) {
-      o.brief_files = (extra.brief_files && extra.brief_files.length) ? extra.brief_files : (o.brief_files||[]);
+      // Parse brief_files - handle both array and JSON string formats
+      let bf = extra.brief_files;
+      if (typeof bf === 'string') { try { bf = JSON.parse(bf); } catch(e) { bf = []; } }
+      o.brief_files = Array.isArray(bf) && bf.length > 0 ? bf : (o.brief_files||[]);
       o.brief_url = o.brief_url || extra.brief_url;
       o.word_count = extra.word_count;
+      o.paper_type = extra.paper_type;
+      o.language = extra.language;
+      o.spacing = extra.spacing;
+      o.sources_required = extra.sources_required;
+      o.addons = extra.addons;
+      o.title = extra.title || o.title;
       o.discount_percent = extra.discount_percent;
     }
-    console.log('Brief files:', o.brief_files); // Debug log
     currentOrd = o;
     document.getElementById('det-title').textContent = o.instructions?.slice(0,60) || o.order_number;
     document.getElementById('det-num').textContent = o.order_number + ' · ' + new Date(o.created_at).toLocaleDateString();
