@@ -791,8 +791,24 @@
     const result = await sb.from('direct_messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
     const allMsgs = result.data || [];
     const subject = allMsgs[0]?.subject || 'Conversation';
-    panel.innerHTML = `<div style="padding:14px;border-bottom:1px solid var(--border);font-weight:600">${subject}</div><div id="conv-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">${allMsgs.map(m => { const isMine = m.sender_id === profile.id; return `<div style="display:flex;flex-direction:column;align-items:${isMine?'flex-end':'flex-start'}"><div style="max-width:75%;padding:10px 14px;border-radius:${isMine?'12px 12px 2px 12px':'12px 12px 12px 2px'};background:${isMine?'var(--navy)':'var(--parch)'};color:${isMine?'white':'var(--ink)'};font-size:0.875rem">${m.content}</div><div style="font-size:0.75rem;color:var(--muted);margin-top:3px">${isMine?'You':'Admin'} · ${new Date(m.created_at).toLocaleString('en-US',{dateStyle:'short',timeStyle:'short'})}</div></div>`; }).join('')}</div><div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px"><input type="text" class="form-input" id="conv-reply-input" placeholder="Type your reply..." style="flex:1" onkeydown="if(event.key==='Enter')sendConvReply('${convId}','${subject.replace(/'/g,'\'+'\'')}')"><button class="btn btn-primary" onclick="sendConvReply('${convId}','${subject.replace(/'/g,'\''+'\'')}')">Send</button></div>`;
-    const msgs = document.getElementById('conv-messages'); if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    // Build panel HTML without nested template literals
+    const msgHtml = allMsgs.map(m => {
+      const mine = m.sender_id === profile.id;
+      return '<div style="display:flex;flex-direction:column;align-items:'+(mine?'flex-end':'flex-start')+'">'
+        + '<div style="max-width:75%;padding:10px 14px;border-radius:'+(mine?'12px 12px 2px 12px':'12px 12px 12px 2px')+';background:'+(mine?'var(--navy)':'var(--parch)')+';color:'+(mine?'white':'var(--ink)')+';font-size:0.875rem">'+m.content+'</div>'
+        + '<div style="font-size:0.75rem;color:var(--muted);margin-top:3px">'+(mine?'You':'Admin')+' · '+new Date(m.created_at).toLocaleString('en-US',{dateStyle:'short',timeStyle:'short'})+'</div></div>';
+    }).join('');
+    panel.innerHTML = '<div style="padding:14px;border-bottom:1px solid var(--border);font-weight:600">'+subject+'</div>'
+      + '<div id="conv-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">'+msgHtml+'</div>'
+      + '<div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px">'
+      + '<input type="text" class="form-input" id="conv-reply-input" placeholder="Type your reply..." style="flex:1">'
+      + '<button class="btn btn-primary" id="conv-send-btn">Send</button></div>';
+    const msgs = document.getElementById('conv-messages');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    const replyInput = document.getElementById('conv-reply-input');
+    const sendBtn = document.getElementById('conv-send-btn');
+    if (replyInput) replyInput.addEventListener('keydown', e => { if(e.key==='Enter') sendConvReply(convId, subject); });
+    if (sendBtn) sendBtn.addEventListener('click', () => sendConvReply(convId, subject));
     await sb.from('direct_messages').update({ is_read: true }).eq('recipient_id', profile.id).eq('conversation_id', convId);
   }
 
