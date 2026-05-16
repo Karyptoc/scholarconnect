@@ -108,9 +108,21 @@
       <div class="card"><div class="flex-between" style="margin-bottom:14px"><h3 style="font-family:var(--font-display)">Revenue – 7 Days</h3></div><canvas id="rev-chart" height="200"></canvas></div>
       <div class="card"><h3 style="font-family:var(--font-display);margin-bottom:14px">Order Status</h3><canvas id="status-chart" height="200"></canvas></div>
     </div>
-    <div class="grid-2">
-      <div class="card"><h3 style="font-family:var(--font-display);margin-bottom:14px">Escrow Holdings</h3><div id="ov-escrow"></div></div>
-      <div class="card"><h3 style="font-family:var(--font-display);margin-bottom:14px">Recent Activity</h3><div id="ov-activity"></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:14px">
+          <h3 style="font-family:var(--font-display)">💰 Escrow Holdings</h3>
+          <span class="badge badge-gold" id="ov-escrow-count">—</span>
+        </div>
+        <div id="ov-escrow" style="max-height:280px;overflow-y:auto"></div>
+      </div>
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:14px">
+          <h3 style="font-family:var(--font-display)">🕐 Recent Activity</h3>
+          <button class="btn btn-ghost btn-sm" onclick="showTab('logs')">View all →</button>
+        </div>
+        <div id="ov-activity" style="max-height:280px;overflow-y:auto"></div>
+      </div>
     </div>
   </div>
 
@@ -303,6 +315,23 @@
 </div><!-- end dashboard -->
 
 <!-- MODALS -->
+<!-- Full Instructions Modal -->
+<div class="modal-overlay" id="m-instructions">
+  <div class="modal" style="max-width:800px;max-height:90vh">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="m-inst-title">Order Instructions</div>
+        <div id="m-inst-meta" style="font-size:0.82rem;color:var(--muted);margin-top:4px"></div>
+      </div>
+      <button class="modal-close" onclick="closeM('m-instructions')">×</button>
+    </div>
+    <div style="overflow-y:auto;max-height:calc(90vh - 120px)">
+      <div id="m-inst-body" style="font-size:0.9rem;line-height:1.8;white-space:pre-wrap;padding:4px 0"></div>
+      <div id="m-inst-files" style="margin-top:16px"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Assign -->
 <div class="modal-overlay" id="m-assign">
   <div class="modal"><div class="modal-header"><div class="modal-title">Assign Writer</div><button class="modal-close" onclick="closeM('m-assign')">×</button></div>
@@ -483,7 +512,9 @@
     window._sc=new Chart(c2,{type:'doughnut',data:{labels:Object.keys(sc).map(s=>s.replace(/_/g,' ')),datasets:[{data:Object.values(sc),backgroundColor:['#e8a020','#6b9fd4','#3a9e6e','#d4a840','#0f2040','#e05555','#8898b8']}]},options:{plugins:{legend:{position:'right'}},responsive:true}});
     const {data:escData}=await sb.from('escrow').select('*,orders(order_number)').eq('status','held').limit(6);
     const esc=escData||[];
-    document.getElementById('ov-escrow').innerHTML=esc.length?esc.map(e=>`<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border);font-size:0.82rem"><span><strong>${e.orders?.order_number||e.order_id}</strong></span><span class="badge badge-gold">$${e.amount} · ${e.payment_method||'—'}</span></div>`).join(''):'<p class="text-muted text-sm">No active escrow.</p>';
+    const escCountEl = document.getElementById('ov-escrow-count');
+    if (escCountEl) escCountEl.textContent = esc.length + ' active';
+    document.getElementById('ov-escrow').innerHTML=esc.length?esc.map(e=>`<div class="flex-between" style="padding:10px 0;border-bottom:1px solid var(--border);font-size:0.82rem"><div><strong>${e.orders?.order_number||e.order_id}</strong><div class="text-xs text-muted">${e.payment_method||'—'}</div></div><span class="badge badge-gold">$${e.amount}</span></div>`).join('')+'<div style="text-align:center;padding:8px 0;font-size:0.8rem;color:var(--muted)">Showing up to 6 latest</div>':'<p class="text-muted text-sm">No active escrow holdings.</p>';
     const logs=await SC.security.getLogs();
     document.getElementById('ov-activity').innerHTML=logs.slice(0,8).map(l=>`<div style="display:grid;grid-template-columns:130px 1fr 100px;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.78rem"><span class="fw-700" style="color:var(--navy2)">${l.action}</span><span class="text-muted">${l.detail||'—'}</span><span class="text-muted">${l.ip_address||'—'}</span></div>`).join('');
   }
@@ -517,6 +548,10 @@
       const dl=Math.ceil((new Date(o.deadline)-Date.now())/86400000);
       const delivery=o.deliveries;
       const hasFile = delivery?.file_url;
+      // Parse brief_files safely
+      let bfs = o.brief_files;
+      if (typeof bfs === 'string') { try { bfs = JSON.parse(bfs); } catch(e) { bfs = []; } }
+      const hasBriefs = Array.isArray(bfs) && bfs.length > 0;
       return `<tr>
         <td><strong style="font-size:0.85rem">${o.order_number}</strong></td>
         <td><span class="tag" style="font-size:0.72rem">${o.subject}</span><br><span class="text-xs text-muted">${o.paper_type||'Essay'} · ${o.academic_level}</span>${o.word_count?`<br><span class="text-xs text-muted">${o.word_count.toLocaleString()} words</span>`:''}</td>
@@ -524,7 +559,10 @@
         <td style="font-size:0.82rem">${o.page_count}p<br><strong>$${o.total_price}</strong><br><span class="text-xs text-muted">dep $${o.deposit_amount}</span></td>
         <td><span class="badge status-${o.status}" style="font-size:0.72rem">${o.status.replace(/_/g,' ')}</span>${o.is_urgent?'<br><span class="badge badge-warning" style="margin-top:3px;font-size:0.7rem">⚡</span>':''}</td>
         <td style="font-size:0.82rem">${wr.full_name||'<span class="text-muted">Unassigned</span>'}</td>
-        <td style="font-size:0.82rem">${hasFile?`<a href="${delivery.file_url}" target="_blank" class="btn btn-sm btn-outline" style="font-size:0.72rem">📄 Download</a>${delivery.plagiarism_score?`<br><span class="badge badge-success" style="margin-top:4px;font-size:0.7rem">${delivery.plagiarism_score}% orig</span>`:''}`:'-'}</td>
+        <td style="font-size:0.82rem">
+          ${hasFile?`<a href="${delivery.file_url}" target="_blank" class="btn btn-sm btn-outline" style="font-size:0.72rem">📄 Final</a>${delivery.plagiarism_score?`<br><span class="badge badge-success" style="margin-top:4px;font-size:0.7rem">${delivery.plagiarism_score}% orig</span>`:''}`:'-'}
+          ${hasBriefs?`<br><button class="btn btn-sm btn-navy" style="font-size:0.7rem;margin-top:3px" onclick="event.stopPropagation();openInstructions('${o.order_number} — Brief Files','${o.subject}','${(o.instructions||'').replace(/'/g,\"'\").slice(0,200)}',${JSON.stringify(bfs)})">📎 ${bfs.length} Brief${bfs.length>1?'s':''}</button>`:''}
+        </td>
         <td style="font-size:0.78rem;color:${dl<=1?'var(--danger)':'var(--muted)'}">${new Date(o.deadline).toLocaleDateString()}<br>${dl}d left</td>
         <td><div style="display:flex;gap:4px;flex-wrap:wrap">
           <button class="btn btn-sm btn-primary" onclick="openAssign(${o.id},'${o.order_number}','${o.subject}',${o.page_count})">Assign</button>
@@ -594,9 +632,21 @@
         <div><strong>Plagiarism:</strong> ${delivery?.plagiarism_score?delivery.plagiarism_score+'% original':'Not checked'}</div>
       </div>
       ${delivery?.file_url?`<div style="margin-bottom:12px"><a href="${delivery.file_url}" target="_blank" class="btn btn-outline btn-sm">📄 Download Submitted Work</a>${delivery.notes_to_client?`<div style="margin-top:8px;font-size:0.82rem;color:var(--muted)"><strong>Writer notes:</strong> ${delivery.notes_to_client}</div>`:''}</div>`:''}
-      <div class="form-label">Instructions</div>
-      <div style="background:var(--parch);border-radius:6px;padding:12px;font-size:0.82rem;line-height:1.7;max-height:130px;overflow-y:auto">${o.instructions||'—'}</div>
-      ${o.brief_files && o.brief_files.length ? `<div style="margin-top:10px"><div class="form-label">Client Brief Files</div><div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${o.brief_files.map(f=>`<a href="${f.url}" target="_blank" class="btn btn-outline btn-sm" style="justify-content:flex-start;gap:8px">📎 ${f.name}</a>`).join('')}</div></div>` : o.brief_url ? `<div style="margin-top:10px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Client Brief</a></div>` : ''}
+      <div class="flex-between" style="margin-bottom:6px">
+        <div class="form-label">Instructions</div>
+        <button class="btn btn-sm btn-outline" onclick="openInstructions('${o.order_number} — Instructions','${o.subject} · ${o.academic_level} · ${o.page_count} pages','${(o.instructions||'').replace(/'/g,\"'\").replace(/\n/g,' ')}',${JSON.stringify(o.brief_files||[]).replace(/'/g,"\'")})">📄 View Full</button>
+      </div>
+      <div style="background:var(--parch);border-radius:6px;padding:12px;font-size:0.82rem;line-height:1.7;max-height:100px;overflow:hidden;position:relative">
+        ${(o.instructions||'—').slice(0,200)}${(o.instructions||'').length>200?'…':''}
+      </div>
+      ${(() => {
+        let bf = o.brief_files;
+        if (typeof bf === 'string') { try { bf = JSON.parse(bf); } catch(e) { bf = []; } }
+        if (Array.isArray(bf) && bf.length) {
+          return `<div style="margin-top:10px"><div class="form-label">📎 Client Uploaded Files</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${bf.map(f=>`<a href="${f.url}" target="_blank" class="btn btn-outline btn-sm" style="gap:6px">📄 ${f.name}</a>`).join('')}</div></div>`;
+        }
+        return o.brief_url ? `<div style="margin-top:10px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Client Brief</a></div>` : '';
+      })()}
       ${o.dispute_reason?`<div class="alert alert-danger" style="margin-top:12px">⚠️ <strong>Dispute:</strong> ${o.dispute_reason}</div>`:''}`;
     openM('m-ord');
   }
@@ -1149,6 +1199,22 @@
     (orders||[]).forEach(o=>{csv+=`"${o.order_number}","${o.subject}","${o.academic_level}",${o.page_count},${o.total_price},${o.deposit_amount},${pw*o.page_count},${o.total_price-pw*o.page_count},"${o.payment_method||''}","${new Date(o.created_at).toLocaleDateString()}"\n`;});
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='scholarconnect-revenue.csv';a.click();
     showGlobalToast('Revenue CSV exported!','success');
+  }
+
+  function openInstructions(title, meta, instructions, briefFiles) {
+    document.getElementById('m-inst-title').textContent = title;
+    document.getElementById('m-inst-meta').textContent = meta;
+    document.getElementById('m-inst-body').textContent = instructions || 'No instructions provided.';
+    const filesEl = document.getElementById('m-inst-files');
+    if (briefFiles && briefFiles.length) {
+      let bf = briefFiles;
+      if (typeof bf === 'string') { try { bf = JSON.parse(bf); } catch(e) { bf = []; } }
+      if (Array.isArray(bf) && bf.length) {
+        filesEl.innerHTML = `<div style="font-weight:600;margin-bottom:8px">📎 Uploaded Files:</div>` +
+          bf.map(f => `<a href="${f.url}" target="_blank" class="btn btn-outline btn-sm" style="margin-bottom:6px;display:inline-flex;gap:6px;margin-right:8px">📄 ${f.name}</a>`).join('');
+      } else filesEl.innerHTML = '';
+    } else filesEl.innerHTML = '';
+    openM('m-instructions');
   }
 
   function openM(id){document.getElementById(id).classList.add('open');}
