@@ -345,9 +345,15 @@
 
   function syncPages() {
     const words = parseInt(document.getElementById('o-words').value)||275;
-    const pages = Math.ceil(words / 275);
+    const exactPages = words / 275;
+    const pages = Math.ceil(exactPages); // Round up to nearest page
     document.getElementById('o-pages').value = pages;
-    document.getElementById('pages-words-hint').textContent = `${words.toLocaleString()} words = ${pages} page${pages!==1?'s':''} · 1 page = 275 words`;
+    const hint = document.getElementById('pages-words-hint');
+    if (exactPages % 1 !== 0) {
+      hint.textContent = `${words.toLocaleString()} words = ${exactPages.toFixed(2)} pages (rounded up to ${pages} pages) · 1 page = 275 words`;
+    } else {
+      hint.textContent = `${words.toLocaleString()} words = ${pages} page${pages!==1?'s':''} · 1 page = 275 words`;
+    }
     calcPrice();
   }
 
@@ -360,6 +366,9 @@
 
   function calcPrice() {
     const pages = parseInt(document.getElementById('o-pages').value)||1;
+    // Use exact word count for pricing if words field has value
+    const wordsVal = parseInt(document.getElementById('o-words')?.value)||0;
+    const exactPages = wordsVal > 0 ? wordsVal / 275 : pages;
     const dl = document.getElementById('o-deadline').value;
     let urgent = false, rate = parseFloat(settings.standard_rate||10);
     const hint = document.getElementById('deadline-hint');
@@ -368,25 +377,25 @@
       const threshold = getUrgentThreshold(pages);
       urgent = days < threshold;
       rate = urgent ? parseFloat(settings.urgent_rate||15) : parseFloat(settings.standard_rate||10);
-      // Update hint based on page count
-      if (pages <= 2) hint.textContent = '≥6 hours = $10/page · <6 hours = $15/page (urgent)';
-      else if (pages <= 5) hint.textContent = '≥12 hours = $10/page · <12 hours = $15/page (urgent)';
-      else hint.textContent = '≥24 hours = $10/page · <24 hours = $15/page (urgent)';
+      if (pages <= 2) hint.textContent = `≥6 hours = $${settings.standard_rate||10}/page · <6 hours = $${settings.urgent_rate||15}/page (urgent)`;
+      else if (pages <= 5) hint.textContent = `≥12 hours = $${settings.standard_rate||10}/page · <12 hours = $${settings.urgent_rate||15}/page (urgent)`;
+      else hint.textContent = `≥24 hours = $${settings.standard_rate||10}/page · <24 hours = $${settings.urgent_rate||15}/page (urgent)`;
     }
-    // Apply referral discount if valid
+    // Apply referral discount
     let discount = 0;
     const refMsg = document.getElementById('referral-msg');
-    if (refMsg && refMsg.style.color === 'var(--success)') discount = 0.20;
-    const total = pages*rate*(1-discount), dep = total*0.5;
-    document.getElementById('price-total').textContent = `$${total.toFixed(2)}`;
+    if (refMsg && refMsg.dataset.valid === 'true') discount = 0.20;
+    // Calculate exact price based on exact pages (e.g. 1200 words = 4.36 pages)
+    const exactTotal = exactPages * rate * (1 - discount);
+    const dep = exactTotal * 0.5;
+    document.getElementById('price-total').textContent = `$${exactTotal.toFixed(2)}`;
     document.getElementById('price-dep').textContent = `$${dep.toFixed(2)}`;
     document.getElementById('pr-balance').textContent = `$${dep.toFixed(2)}`;
-    document.getElementById('pr-pages').textContent = pages;
+    document.getElementById('pr-pages').textContent = wordsVal > 0 ? `${exactPages.toFixed(2)} (${wordsVal} words)` : pages;
     document.getElementById('pr-rate').textContent = discount > 0 ? `$${rate}/page (-20% referral)` : `$${rate}/page`;
     document.getElementById('pr-type').textContent = urgent ? `⚡ Urgent` : 'Standard';
     document.getElementById('pr-type').className = 'badge ' + (urgent ? 'badge-warning' : 'badge-navy');
-    if (discount > 0) document.getElementById('price-total').style.color = 'var(--success)';
-    else document.getElementById('price-total').style.color = '';
+    document.getElementById('price-total').style.color = discount > 0 ? 'var(--success)' : '';
   }
 
   async function checkReferral() {
@@ -399,10 +408,12 @@
       msg.textContent = `✓ Valid referral code from ${data.full_name.split(' ')[0]}! You get 20% off this order.`;
       msg.style.color = 'var(--success)';
       msg.style.display = 'block';
+      msg.dataset.valid = 'true';
     } else {
       msg.textContent = data?.id === profile.id ? 'You cannot use your own referral code.' : 'Invalid referral code.';
       msg.style.color = 'var(--danger)';
       msg.style.display = 'block';
+      msg.dataset.valid = 'false';
     }
     calcPrice();
   }
@@ -488,12 +499,39 @@
       }
       btn.textContent = 'Creating order…';
     }
-    const res = await SC.orders.create(profile, { title, instructions: instr, subject: subj, subLevel: subl, level, pages, deadline: dl, citationStyle: citation, briefFiles: briefUrls });
+    // Get exact word count and pricing
+    const wordsVal = parseInt(document.getElementById('o-words')?.value)||0;
+    const exactPages = wordsVal > 0 ? wordsVal / 275 : pages;
+    const refCode = document.getElementById('o-referral')?.value.trim().toUpperCase();
+    const refMsg = document.getElementById('referral-msg');
+    const hasDiscount = refMsg?.dataset.valid === 'true';
+    const discount = hasDiscount ? 0.20 : 0;
+
+    const res = await SC.orders.create(profile, {
+      title, instructions: instr, subject: subj, subLevel: subl, level,
+      pages, words: wordsVal||pages*275, exactPages,
+      deadline: dl, citationStyle: citation, briefFiles: briefUrls,
+      referralCode: refCode, discountPercent: discount*100
+    });
     btn.disabled=false; btn.textContent='Proceed to Payment →';
     if (res.error) { err.textContent=res.error; err.style.display='flex'; return; }
-    // Save brief_files directly to DB (in case SC.orders.create ignores it)
-    if (briefUrls.length && res.order?.id) {
-      await sb.from('orders').update({ brief_files: briefUrls }).eq('id', res.order.id);
+    // Save brief_files, word count, and referral directly to DB
+    const updateData = {};
+    if (briefUrls.length) updateData.brief_files = briefUrls;
+    if (wordsVal > 0) updateData.word_count = wordsVal;
+    if (refCode && hasDiscount) { updateData.referral_code = refCode; updateData.discount_percent = 20; }
+    if (Object.keys(updateData).length && res.order?.id) {
+      await sb.from('orders').update(updateData).eq('id', res.order.id);
+    }
+    // If referral used, update referrer's discount and count
+    if (refCode && hasDiscount) {
+      const { data: referrer } = await sb.from('profiles').select('id,referral_count').eq('referral_code', refCode).single();
+      if (referrer) {
+        await sb.from('profiles').update({
+          referral_count: (referrer.referral_count||0) + 1,
+          referral_discount: true
+        }).eq('id', referrer.id);
+      }
     }
     openPayModal(res.order);
   }
@@ -547,11 +585,15 @@
     currentOrdId = ordId;
     const { data: o } = await SC.orders.getOne(ordId);
     if (!o) return;
-    // Ensure brief_files loaded
-    if (!o.brief_files || !o.brief_files.length) {
-      const { data: extra } = await sb.from('orders').select('brief_files, brief_url').eq('id', ordId).single();
-      if (extra) { o.brief_files = extra.brief_files || []; o.brief_url = o.brief_url || extra.brief_url; }
+    // Always fetch brief_files directly from DB to ensure we get latest
+    const { data: extra } = await sb.from('orders').select('brief_files, brief_url, word_count, referral_code, discount_percent').eq('id', ordId).single();
+    if (extra) {
+      o.brief_files = (extra.brief_files && extra.brief_files.length) ? extra.brief_files : (o.brief_files||[]);
+      o.brief_url = o.brief_url || extra.brief_url;
+      o.word_count = extra.word_count;
+      o.discount_percent = extra.discount_percent;
     }
+    console.log('Brief files:', o.brief_files); // Debug log
     currentOrd = o;
     document.getElementById('det-title').textContent = o.instructions?.slice(0,60) || o.order_number;
     document.getElementById('det-num').textContent = o.order_number + ' · ' + new Date(o.created_at).toLocaleDateString();
@@ -581,6 +623,8 @@
       </div>
       <div class="form-label">Instructions</div>
       <div style="background:var(--parch);border-radius:8px;padding:14px;margin-top:6px;font-size:0.875rem;line-height:1.7">${o.instructions}</div>
+      ${o.word_count ? `<div style="margin-top:8px;font-size:0.82rem;color:var(--muted)">📝 Word count: <strong>${o.word_count.toLocaleString()} words</strong> (${(o.word_count/275).toFixed(2)} pages)</div>` : ''}
+      ${o.discount_percent ? `<div style="margin-top:4px;font-size:0.82rem;color:var(--success)">🎁 Referral discount applied: <strong>${o.discount_percent}% off</strong></div>` : ''}
       ${o.brief_files && o.brief_files.length ? `<div style="margin-top:12px"><div class="form-label">Uploaded Brief Files</div><div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">${o.brief_files.map(f=>`<a href="${f.url}" target="_blank" class="btn btn-outline btn-sm" style="justify-content:flex-start;gap:8px">📎 ${f.name}</a>`).join('')}</div></div>` : o.brief_url ? `<div style="margin-top:12px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Brief File</a></div>` : ''}
       ${delivery?.draft_url ? `<div class="alert alert-info" style="margin-top:12px">📝 <strong>Draft uploaded by writer:</strong><br><a href="${delivery.draft_url}" target="_blank" class="btn btn-outline btn-sm" style="margin-top:6px">📎 View Draft - ${delivery.draft_name||'Draft'}</a>${delivery.draft_note?`<div class="text-sm text-muted" style="margin-top:4px">Writer note: ${delivery.draft_note}</div>`:''}</div>` : ''}
       ${delivery?.plagiarism_score?`<div class="flex-gap" style="margin-top:12px"><span class="badge badge-success">✓ Plagiarism: ${delivery.plagiarism_score}% original</span><span class="badge badge-success">✓ Virus scan: Clean</span></div>`:''}
