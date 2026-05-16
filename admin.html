@@ -561,7 +561,7 @@
         <td style="font-size:0.82rem">${wr.full_name||'<span class="text-muted">Unassigned</span>'}</td>
         <td style="font-size:0.82rem">
           ${hasFile?`<a href="${delivery.file_url}" target="_blank" class="btn btn-sm btn-outline" style="font-size:0.72rem">📄 Final</a>${delivery.plagiarism_score?`<br><span class="badge badge-success" style="margin-top:4px;font-size:0.7rem">${delivery.plagiarism_score}% orig</span>`:''}`:'-'}
-          ${hasBriefs?`<br><button class="btn btn-sm btn-navy" style="font-size:0.7rem;margin-top:3px" onclick="event.stopPropagation();openInstructions('${o.order_number} — Brief Files','${o.subject}','${(o.instructions||'').replace(/'/g,\"'\").slice(0,200)}',${JSON.stringify(bfs)})">📎 ${bfs.length} Brief${bfs.length>1?'s':''}</button>`:''}
+          ${hasBriefs?`<br><button class="btn btn-sm btn-navy" style="font-size:0.7rem;margin-top:3px" onclick="event.stopPropagation();viewBriefFiles(${o.id})">📎 ${bfs.length} File${bfs.length>1?'s':''}</button>`:''}
         </td>
         <td style="font-size:0.78rem;color:${dl<=1?'var(--danger)':'var(--muted)'}">${new Date(o.deadline).toLocaleDateString()}<br>${dl}d left</td>
         <td><div style="display:flex;gap:4px;flex-wrap:wrap">
@@ -606,7 +606,7 @@
     showGlobalToast(`Composing reply for order ${orderNumber}`, 'success');
   }
 
-  function viewOrder(o){
+  function viewOrder(o){ currentViewOrder = o;
     document.getElementById('m-ord-title').textContent=o.order_number;
     const cl=o.client||{};const wr=o.writer||{};
     const delivery=o.deliveries;
@@ -634,7 +634,7 @@
       ${delivery?.file_url?`<div style="margin-bottom:12px"><a href="${delivery.file_url}" target="_blank" class="btn btn-outline btn-sm">📄 Download Submitted Work</a>${delivery.notes_to_client?`<div style="margin-top:8px;font-size:0.82rem;color:var(--muted)"><strong>Writer notes:</strong> ${delivery.notes_to_client}</div>`:''}</div>`:''}
       <div class="flex-between" style="margin-bottom:6px">
         <div class="form-label">Instructions</div>
-        <button class="btn btn-sm btn-outline" onclick="openInstructions('${o.order_number} — Instructions','${o.subject} · ${o.academic_level} · ${o.page_count} pages','${(o.instructions||'').replace(/'/g,\"'\").replace(/\n/g,' ')}',${JSON.stringify(o.brief_files||[]).replace(/'/g,"\'")})">📄 View Full</button>
+        <button class="btn btn-sm btn-outline" onclick="viewOrderInstructions(currentViewOrder)">📄 View Full</button>
       </div>
       <div style="background:var(--parch);border-radius:6px;padding:12px;font-size:0.82rem;line-height:1.7;max-height:100px;overflow:hidden;position:relative">
         ${(o.instructions||'—').slice(0,200)}${(o.instructions||'').length>200?'…':''}
@@ -1199,6 +1199,29 @@
     (orders||[]).forEach(o=>{csv+=`"${o.order_number}","${o.subject}","${o.academic_level}",${o.page_count},${o.total_price},${o.deposit_amount},${pw*o.page_count},${o.total_price-pw*o.page_count},"${o.payment_method||''}","${new Date(o.created_at).toLocaleDateString()}"\n`;});
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='scholarconnect-revenue.csv';a.click();
     showGlobalToast('Revenue CSV exported!','success');
+  }
+
+  // Store current order being viewed
+  let currentViewOrder = null;
+
+  function viewBriefFiles(orderId) {
+    const o = allOrdersCache.find(x => x.id === orderId);
+    if (!o) return;
+    let bf = o.brief_files;
+    if (typeof bf === 'string') { try { bf = JSON.parse(bf); } catch(e) { bf = []; } }
+    openInstructions(o.order_number + ' — Brief Files', o.subject, o.instructions || '', bf || []);
+  }
+
+  function viewOrderInstructions(o) {
+    if (!o) return;
+    let bf = o.brief_files;
+    if (typeof bf === 'string') { try { bf = JSON.parse(bf); } catch(e) { bf = []; } }
+    openInstructions(
+      o.order_number + ' — Full Instructions',
+      o.subject + ' · ' + o.academic_level + ' · ' + o.page_count + ' pages',
+      o.instructions || 'No instructions provided.',
+      bf || []
+    );
   }
 
   function openInstructions(title, meta, instructions, briefFiles) {
