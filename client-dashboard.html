@@ -696,8 +696,8 @@
       btn.textContent = 'Creating order…';
     }
     // Get exact word count and pricing
-    wordsVal = parseInt(document.getElementById('o-words')?.value)||0;
-    const exactPages = wordsVal > 0 ? wordsVal / 275 : pages;
+    const finalWords = parseInt(document.getElementById('o-words')?.value) || wordsVal || pages*275;
+    const exactPages = finalWords > 0 ? finalWords / 275 : pages;
     const refCode = document.getElementById('o-referral')?.value.trim().toUpperCase();
     const refMsg = document.getElementById('referral-msg');
     const hasDiscount = refMsg?.dataset.valid === 'true';
@@ -1113,20 +1113,20 @@
 
   // ── Client Profile ────────────────────────────────────────
   async function loadClientProfile() {
-    document.getElementById('cp-name').textContent = profile.full_name;
-    document.getElementById('cp-joined').textContent = 'Member since ' + new Date(profile.created_at).toLocaleDateString('en-US',{month:'long',year:'numeric'});
-    document.getElementById('cp-fullname').value = profile.full_name || '';
-    document.getElementById('cp-email').value = profile.email || '';
-    document.getElementById('cp-phone').value = profile.phone || '';
+    const setEl = (id, val, prop='textContent') => { const el = document.getElementById(id); if(el) el[prop] = val; };
+    setEl('cp-name', profile.full_name);
+    setEl('cp-joined', 'Member since ' + new Date(profile.created_at).toLocaleDateString('en-US',{month:'long',year:'numeric'}));
+    setEl('cp-fullname', profile.full_name || '', 'value');
+    setEl('cp-email', profile.email || '', 'value');
+    setEl('cp-phone', profile.phone || '', 'value');
     // Load or generate referral code
     const { data: prof } = await sb.from('profiles').select('referral_code, referral_count, referral_discount').eq('id', profile.id).single();
     let refCode = prof?.referral_code;
     if (!refCode) {
-      // Generate unique referral code
       refCode = 'SC' + profile.full_name.split(' ')[0].toUpperCase().slice(0,4) + Math.random().toString(36).slice(2,6).toUpperCase();
       await sb.from('profiles').update({ referral_code: refCode }).eq('id', profile.id);
     }
-    document.getElementById('cp-refcode').value = refCode;
+    setEl('cp-refcode', refCode, 'value');
     const refCount = prof?.referral_count || 0;
     const hasDiscount = prof?.referral_discount || false;
     document.getElementById('ref-stats').innerHTML = `
