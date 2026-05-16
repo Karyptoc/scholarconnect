@@ -48,19 +48,63 @@
       <div class="page-header"><div class="page-title">New Order</div><div class="page-subtitle">Fill in your assignment details</div></div>
       <div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start">
         <div class="card">
-          <div class="form-group"><label class="form-label">Assignment Title *</label><input type="text" class="form-input" id="o-title" placeholder="e.g. Impact of Social Media on Mental Health"></div>
-          <div class="form-group"><label class="form-label">Detailed Instructions *</label><textarea class="form-textarea" id="o-instructions" style="min-height:130px" placeholder="Describe exactly what you need — formatting style, sources required, rubric, etc."></textarea></div>
+          <h3 style="font-family:var(--font-display);margin-bottom:20px">Order Details</h3>
+
           <div class="grid-2">
-            <div class="form-group"><label class="form-label">Subject *</label><select class="form-select" id="o-subject" onchange="populateSub()"><option value="">Select…</option></select></div>
+            <div class="form-group"><label class="form-label">Assignment Topic / Title *</label><input type="text" class="form-input" id="o-title" placeholder="e.g. Impact of Social Media on Mental Health"></div>
+            <div class="form-group"><label class="form-label">Type of Paper *</label>
+              <select class="form-select" id="o-type">
+                <option value="Essay (any type)">Essay (any type)</option>
+                <option value="Research Paper">Research Paper</option>
+                <option value="Term Paper">Term Paper</option>
+                <option value="Case Study">Case Study</option>
+                <option value="Coursework">Coursework</option>
+                <option value="Book Report">Book Report</option>
+                <option value="Literature Review">Literature Review</option>
+                <option value="Dissertation">Dissertation</option>
+                <option value="Thesis">Thesis</option>
+                <option value="Annotated Bibliography">Annotated Bibliography</option>
+                <option value="Lab Report">Lab Report</option>
+                <option value="Business Plan">Business Plan</option>
+                <option value="Presentation/PPT">Presentation/PPT</option>
+                <option value="Math Problem">Math Problem</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group"><label class="form-label">Subject Area *</label><select class="form-select" id="o-subject" onchange="populateSub()"><option value="">Select…</option></select></div>
             <div class="form-group"><label class="form-label">Sub-Specialisation</label><select class="form-select" id="o-sublevel"><option value="General">General</option></select></div>
           </div>
+
           <div class="grid-2">
-            <div class="form-group"><label class="form-label">Academic Level *</label><select class="form-select" id="o-level"><option value="">Select…</option><option>High School</option><option>College (Freshman/Sophomore)</option><option>University (Junior/Senior)</option><option>Master's</option><option>PhD</option></select></div>
+            <div class="form-group"><label class="form-label">Education Level *</label>
+              <select class="form-select" id="o-level">
+                <option value="">Select…</option>
+                <option>High School</option>
+                <option>College (Freshman/Sophomore)</option>
+                <option>University (Junior/Senior)</option>
+                <option>Master's</option>
+                <option>PhD</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Language</label>
+              <select class="form-select" id="o-language">
+                <option value="English (US)">English (US)</option>
+                <option value="English (UK)">English (UK)</option>
+                <option value="English (AU)">English (AU)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-2">
             <div class="form-group"><label class="form-label">Citation / Essay Style *</label>
               <select class="form-select" id="o-citation">
-                <option value="APA">APA (7th Edition)</option>
-                <option value="MLA">MLA (9th Edition)</option>
-                <option value="Chicago">Chicago / Turabian</option>
+                <option value="APA 7th Edition">APA (7th Edition)</option>
+                <option value="APA 6th Edition">APA (6th Edition)</option>
+                <option value="MLA 9th Edition">MLA (9th Edition)</option>
+                <option value="Chicago/Turabian">Chicago / Turabian</option>
                 <option value="Harvard">Harvard</option>
                 <option value="Vancouver">Vancouver</option>
                 <option value="IEEE">IEEE</option>
@@ -69,44 +113,101 @@
                 <option value="None">No citation required</option>
               </select>
             </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Pages / Words *</label>
-            <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">
-              <input type="number" class="form-input" id="o-pages" min="1" max="100" value="5" oninput="syncWords()">
-              <span class="text-muted" style="text-align:center;font-size:0.82rem">or</span>
-              <input type="number" class="form-input" id="o-words" min="275" placeholder="e.g. 1500" oninput="syncPages()">
+            <div class="form-group"><label class="form-label">Spacing</label>
+              <select class="form-select" id="o-spacing">
+                <option value="Double spacing">Double spacing</option>
+                <option value="Single spacing">Single spacing</option>
+              </select>
             </div>
-            <div class="form-hint" id="pages-words-hint">5 pages = 1,375 words · 1 page = 275 words</div>
           </div>
-          <div class="form-group"><label class="form-label">Deadline *</label><input type="datetime-local" class="form-input" id="o-deadline" onchange="calcPrice()"><span class="form-hint" id="deadline-hint">Standard: ≥5 days = $10/page · Urgent: &lt;5 days = $15/page</span></div>
-          <div class="form-group"><label class="form-label">Upload Files <span class="text-muted">(optional — rubric, notes, references)</span></label><input type="file" class="form-input" id="o-files" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg"></div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Size (Pages / Words) *</label>
+              <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">
+                <div>
+                  <input type="number" class="form-input" id="o-pages" min="1" max="100" value="1" oninput="syncWords()" placeholder="Pages">
+                  <div class="form-hint">Pages</div>
+                </div>
+                <span class="text-muted" style="text-align:center;font-size:0.82rem;margin-bottom:18px">or</span>
+                <div>
+                  <input type="number" class="form-input" id="o-words" min="275" placeholder="Words" oninput="syncPages()">
+                  <div class="form-hint">Words (275/page)</div>
+                </div>
+              </div>
+              <div class="form-hint" id="pages-words-hint" style="margin-top:4px">1 page = 275 words · double spaced</div>
+            </div>
+            <div class="form-group"><label class="form-label">Number of Sources</label>
+              <input type="number" class="form-input" id="o-sources" min="0" value="0" placeholder="e.g. 3">
+              <div class="form-hint">0 = no specific requirement</div>
+            </div>
+          </div>
+
+          <div class="form-group"><label class="form-label">Deadline *</label>
+            <input type="datetime-local" class="form-input" id="o-deadline" onchange="calcPrice()">
+            <span class="form-hint" id="deadline-hint">Standard: ≥5 days = $10/page · Urgent: &lt;5 days = $15/page</span>
+          </div>
+
           <div class="form-group">
-            <label class="form-label">Referral Code <span class="text-muted text-xs">(optional — get 20% discount)</span></label>
-            <input type="text" class="form-input" id="o-referral" placeholder="Enter referral code" oninput="checkReferral()" style="text-transform:uppercase">
+            <label class="form-label">Add-ons</label>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.875rem"><input type="checkbox" id="o-addon-plagiarism"> Plagiarism & AI Report (+$5)</label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.875rem"><input type="checkbox" id="o-addon-summary"> Executive Summary (+$3)</label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.875rem"><input type="checkbox" id="o-addon-outline"> Outline (+$2)</label>
+            </div>
+          </div>
+
+          <div class="form-group"><label class="form-label">Detailed Instructions *</label>
+            <textarea class="form-textarea" id="o-instructions" style="min-height:130px" placeholder="Describe exactly what you need — specific requirements, rubric, formatting notes, sources to use, etc."></textarea>
+          </div>
+
+          <div class="form-group"><label class="form-label">Upload Files <span class="text-muted text-xs">(rubric, notes, references — optional)</span></label>
+            <input type="file" class="form-input" id="o-files" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Referral Code <span class="text-muted text-xs">(optional — 20% discount on first order)</span></label>
+            <input type="text" class="form-input" id="o-referral" placeholder="Enter referral code" oninput="checkReferral()" style="text-transform:uppercase" autocomplete="off">
             <div id="referral-msg" style="font-size:0.82rem;margin-top:4px;display:none"></div>
           </div>
-          <div class="consent-box" style="margin-bottom:18px"><input type="checkbox" id="o-consent"><label for="o-consent">I agree to the <a href="terms.html" target="_blank">Terms of Service</a>. I understand the 50% deposit is held in escrow and released only upon my approval.</label></div>
+
+          <div class="consent-box" style="margin-bottom:18px">
+            <input type="checkbox" id="o-consent">
+            <label for="o-consent">I agree to the <a href="terms.html" target="_blank">Terms of Service</a>. I understand the 50% deposit is held in escrow and released only upon my approval.</label>
+          </div>
           <div id="order-err" class="alert alert-danger" style="display:none"></div>
           <button class="btn btn-primary btn-lg" id="order-btn" onclick="createOrder()">Proceed to Payment →</button>
         </div>
-        <div>
+        <div style="position:sticky;top:80px">
           <div class="price-display">
-            <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px">Price Estimate</div>
-            <div class="price-big" id="price-total">$50.00</div>
-            <div style="color:var(--muted);font-size:0.875rem;margin-top:4px">Deposit due now: <strong id="price-dep">$25.00</strong></div>
+            <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px">Order Summary</div>
+            <div class="price-big" id="price-total">$10.00</div>
+            <div style="color:var(--muted);font-size:0.875rem;margin-top:4px">Deposit due now: <strong id="price-dep">$5.00</strong></div>
             <hr class="divider">
             <div style="font-size:0.82rem;color:var(--muted);display:flex;flex-direction:column;gap:8px">
-              <div class="flex-between"><span>Pages:</span><span id="pr-pages">5</span></div>
+              <div class="flex-between"><span>Size:</span><span id="pr-pages">1 page</span></div>
               <div class="flex-between"><span>Rate:</span><span id="pr-rate">$10/page</span></div>
               <div class="flex-between"><span>Type:</span><span id="pr-type" class="badge badge-navy">Standard</span></div>
-              <div class="flex-between"><span>Balance on delivery:</span><span id="pr-balance">$25.00</span></div>
+              <div class="flex-between" id="pr-addon-row" style="display:none!important"><span>Add-ons:</span><span id="pr-addon">$0</span></div>
+              <div class="flex-between"><span>Balance on delivery:</span><span id="pr-balance">$5.00</span></div>
             </div>
           </div>
           <div class="card card-sm" style="margin-top:14px">
-            <div style="font-size:0.8rem;font-weight:600;margin-bottom:10px">Accepted Payments</div>
-            <div style="display:flex;flex-direction:column;gap:7px;font-size:0.82rem;color:var(--muted)">
-              <span class="flex-gap"><span>💳</span>Card (Stripe)</span>
+            <div style="font-size:0.8rem;font-weight:600;margin-bottom:10px">Order Preview</div>
+            <div id="order-preview" style="font-size:0.78rem;color:var(--muted);line-height:2;display:flex;flex-direction:column;gap:2px">
+              <div><span style="color:var(--ink)">Topic:</span> <span id="prev-title">—</span></div>
+              <div><span style="color:var(--ink)">Type:</span> <span id="prev-type">Essay</span></div>
+              <div><span style="color:var(--ink)">Level:</span> <span id="prev-level">—</span></div>
+              <div><span style="color:var(--ink)">Citation:</span> <span id="prev-citation">APA</span></div>
+              <div><span style="color:var(--ink)">Spacing:</span> <span id="prev-spacing">Double</span></div>
+              <div><span style="color:var(--ink)">Language:</span> <span id="prev-lang">English (US)</span></div>
+              <div><span style="color:var(--ink)">Sources:</span> <span id="prev-sources">—</span></div>
+            </div>
+          </div>
+          <div class="card card-sm" style="margin-top:10px">
+            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px">Accepted Payments</div>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:0.82rem;color:var(--muted)">
+              <span class="flex-gap"><span>💳</span>Card (via PayPal)</span>
               <span class="flex-gap"><span>🅿️</span>PayPal</span>
               <span class="flex-gap"><span>🏦</span>Bank Transfer</span>
             </div>
@@ -332,7 +433,40 @@
   const subSel = document.getElementById('o-subject');
   Object.keys(SUBJECTS).forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; subSel.appendChild(o); });
 
-  async function init() { settings = await SC.settings.get(); calcPrice(); renderOverview(); }
+  async function init() {
+    settings = await SC.settings.get();
+    calcPrice();
+    renderOverview();
+    // Live preview updates
+    ['o-title','o-type','o-level','o-citation','o-spacing','o-language','o-sources'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', updatePreview);
+      if (el) el.addEventListener('change', updatePreview);
+    });
+    // Addon price updates
+    ['o-addon-plagiarism','o-addon-summary','o-addon-outline'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', calcPrice);
+    });
+  }
+
+  function updatePreview() {
+    const title = document.getElementById('o-title')?.value || '—';
+    const type  = document.getElementById('o-type')?.value || 'Essay';
+    const level = document.getElementById('o-level')?.value || '—';
+    const cit   = document.getElementById('o-citation')?.value || 'APA';
+    const spc   = document.getElementById('o-spacing')?.value || 'Double spacing';
+    const lang  = document.getElementById('o-language')?.value || 'English (US)';
+    const src   = document.getElementById('o-sources')?.value || '0';
+    const el = id => document.getElementById(id);
+    if (el('prev-title')) el('prev-title').textContent = title.slice(0,30)||(title.length>30?'...':'') || '—';
+    if (el('prev-type'))  el('prev-type').textContent  = type;
+    if (el('prev-level')) el('prev-level').textContent = level;
+    if (el('prev-citation')) el('prev-citation').textContent = cit;
+    if (el('prev-spacing'))  el('prev-spacing').textContent  = spc;
+    if (el('prev-lang'))     el('prev-lang').textContent     = lang;
+    if (el('prev-sources'))  el('prev-sources').textContent  = src === '0' ? 'No specific requirement' : src + ' sources';
+  }
   init();
 
   function populateSub() {
@@ -346,6 +480,7 @@
   function syncWords() {
     const pages = parseInt(document.getElementById('o-pages').value)||1;
     const words = pages * 275;
+    updatePreview();
     document.getElementById('o-words').value = words;
     document.getElementById('pages-words-hint').textContent = `${pages} page${pages!==1?'s':''} = ${words.toLocaleString()} words · 1 page = 275 words`;
     calcPrice();
@@ -504,20 +639,38 @@
   function statusLabel(s) { return {pending_payment:'Pending Payment',pending_writer:'Finding Writer',in_progress:'In Progress',under_review:'Under Review',completed:'Completed',disputed:'Disputed',refunded:'Refunded'}[s]||s; }
 
   async function createOrder() {
-    const title = document.getElementById('o-title').value.trim();
-    const instr = document.getElementById('o-instructions').value.trim();
-    const subj  = document.getElementById('o-subject').value;
-    const subl  = document.getElementById('o-sublevel').value;
-    const level = document.getElementById('o-level').value;
-    const citation = document.getElementById('o-citation').value;
-    const pages = parseInt(document.getElementById('o-pages').value);
-    const dl    = document.getElementById('o-deadline').value;
+    const title   = document.getElementById('o-title').value.trim();
+    const instr   = document.getElementById('o-instructions').value.trim();
+    const subj    = document.getElementById('o-subject').value;
+    const subl    = document.getElementById('o-sublevel').value;
+    const level   = document.getElementById('o-level').value;
+    const citation= document.getElementById('o-citation').value;
+    const pages   = parseInt(document.getElementById('o-pages').value)||1;
+    const dl      = document.getElementById('o-deadline').value;
     const consent = document.getElementById('o-consent').checked;
-    const err   = document.getElementById('order-err');
+    const paperType = document.getElementById('o-type')?.value || 'Essay (any type)';
+    const language  = document.getElementById('o-language')?.value || 'English (US)';
+    const spacing   = document.getElementById('o-spacing')?.value || 'Double spacing';
+    const sources   = parseInt(document.getElementById('o-sources')?.value)||0;
+    const addonPlag = document.getElementById('o-addon-plagiarism')?.checked || false;
+    const addonSum  = document.getElementById('o-addon-summary')?.checked || false;
+    const addonOut  = document.getElementById('o-addon-outline')?.checked || false;
+    const wordsVal  = parseInt(document.getElementById('o-words')?.value)||pages*275;
+    const err = document.getElementById('order-err');
     err.style.display = 'none';
-    if (!title||!instr||!subj||!level||!dl) { err.textContent='Please fill in all required fields.'; err.style.display='flex'; return; }
+    if (!title) { err.textContent='Please enter the assignment topic/title.'; err.style.display='flex'; return; }
+    if (!instr) { err.textContent='Please enter detailed instructions.'; err.style.display='flex'; return; }
+    if (!subj)  { err.textContent='Please select a subject area.'; err.style.display='flex'; return; }
+    if (!level) { err.textContent='Please select education level.'; err.style.display='flex'; return; }
+    if (!dl)    { err.textContent='Please set a deadline.'; err.style.display='flex'; return; }
     if (!consent) { err.textContent='Please accept the Terms of Service to proceed.'; err.style.display='flex'; return; }
     if (pages<1||pages>100) { err.textContent='Pages must be between 1 and 100.'; err.style.display='flex'; return; }
+    // Calculate add-on costs
+    const addonCost = (addonPlag?5:0) + (addonSum?3:0) + (addonOut?2:0);
+    const addons = [];
+    if (addonPlag) addons.push('Plagiarism & AI Report');
+    if (addonSum) addons.push('Executive Summary');
+    if (addonOut) addons.push('Outline');
     const btn = document.getElementById('order-btn'); btn.disabled=true; btn.textContent='Creating order…';
     // Upload brief files if any — non-blocking, order creates even if upload fails
     let briefUrls = [];
@@ -546,21 +699,35 @@
     const hasDiscount = refMsg?.dataset.valid === 'true';
     const discount = hasDiscount ? 0.20 : 0;
 
+    // Create order with standard fields only (what SC.orders.create expects)
     const res = await SC.orders.create(profile, {
       title, instructions: instr, subject: subj, subLevel: subl, level,
-      pages, words: wordsVal||pages*275, exactPages,
-      deadline: dl, citationStyle: citation, briefFiles: briefUrls,
-      referralCode: refCode, discountPercent: discount*100
+      pages, deadline: dl, citationStyle: citation, briefFiles: briefUrls
     });
     btn.disabled=false; btn.textContent='Proceed to Payment →';
     if (res.error) { err.textContent=res.error; err.style.display='flex'; return; }
-    // Save brief_files, word count, and referral directly to DB
-    const updateData = {};
-    if (briefUrls.length) updateData.brief_files = briefUrls;
-    if (wordsVal > 0) updateData.word_count = wordsVal;
-    if (refCode && hasDiscount) { updateData.referral_code = refCode; updateData.discount_percent = 20; }
-    if (Object.keys(updateData).length && res.order?.id) {
+    // Save all extra fields directly to DB after order created
+    if (res.order?.id) {
+      const updateData = {
+        word_count: wordsVal,
+        paper_type: paperType,
+        language: language,
+        spacing: spacing,
+        sources_required: sources,
+        addons: addons.length ? addons : null,
+        addon_cost: addonCost,
+      };
+      if (briefUrls.length) updateData.brief_files = briefUrls;
+      if (refCode && hasDiscount) { updateData.referral_code = refCode; updateData.discount_percent = 20; }
       await sb.from('orders').update(updateData).eq('id', res.order.id);
+      // Also update total price with addon cost
+      if (addonCost > 0) {
+        const newTotal = (res.order.total_price||0) + addonCost;
+        const newDeposit = newTotal * 0.5;
+        await sb.from('orders').update({ total_price: newTotal, deposit_amount: newDeposit }).eq('id', res.order.id);
+        res.order.total_price = newTotal;
+        res.order.deposit_amount = newDeposit;
+      }
     }
     // If referral used — mark client as referred + credit referrer
     if (refCode && hasDiscount) {
@@ -656,13 +823,19 @@
 
     document.getElementById('det-info').innerHTML = `
       <h3 style="font-family:var(--font-display);margin-bottom:16px">Assignment Details</h3>
-      <div class="grid-2" style="gap:14px;margin-bottom:16px">
+      <div class="grid-2" style="gap:12px;margin-bottom:16px">
+        <div><div class="form-label">Topic</div><div>${o.title||o.instructions?.slice(0,60)||'—'}</div></div>
+        <div><div class="form-label">Type of Paper</div><div>${o.paper_type||'Essay (any type)'}</div></div>
+        <div><div class="form-label">Education Level</div><div>${o.academic_level}</div></div>
         <div><div class="form-label">Subject</div><div>${o.subject} → ${o.sub_level||'General'}</div></div>
-        <div><div class="form-label">Level</div><div>${o.academic_level}</div></div>
-        <div><div class="form-label">Pages</div><div>${o.page_count}</div></div>
         <div><div class="form-label">Citation Style</div><div>${o.citation_style||'APA'}</div></div>
+        <div><div class="form-label">Language</div><div>${o.language||'English (US)'}</div></div>
+        <div><div class="form-label">Spacing</div><div>${o.spacing||'Double spacing'}</div></div>
+        <div><div class="form-label">Size</div><div>${o.word_count ? o.word_count.toLocaleString()+' words' : ''} (${o.page_count} pages)</div></div>
+        <div><div class="form-label">Sources Required</div><div>${o.sources_required > 0 ? o.sources_required+' sources' : 'No specific requirement'}</div></div>
+        <div><div class="form-label">Add-ons</div><div>${o.addons?.length ? o.addons.join(', ') : 'None'}</div></div>
         <div><div class="form-label">Deadline</div><div>${dl.toLocaleString()}</div></div>
-        <div><div class="form-label">Total Price</div><div class="fw-700">$${o.total_price}</div></div>
+        <div><div class="form-label">Total Price</div><div class="fw-700">$${o.total_price}${o.discount_percent?` <span class="badge badge-success">${o.discount_percent}% off</span>`:''}</div></div>
         <div><div class="form-label">Deposit</div><div>${o.deposit_paid?`<span class="text-success">✓ $${o.deposit_amount} via ${o.payment_method}</span>`:'<span class="text-danger">Not paid</span>'}</div></div>
       </div>
       <div class="form-label">Instructions</div>
