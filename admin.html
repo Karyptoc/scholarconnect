@@ -534,6 +534,17 @@
       if (bf) bf.forEach(b=>{ const o=orders.find(x=>x.id===b.id); if(o){o.brief_files=b.brief_files||[];o.brief_url=o.brief_url||b.brief_url;} });
     }
     allOrdersCache = orders || [];
+    // Fetch writer request counts for all orders
+    if (allOrdersCache.length) {
+      const { data: reqCounts } = await sb.from('order_requests')
+        .select('order_id')
+        .in('order_id', allOrdersCache.map(o=>o.id));
+      if (reqCounts) {
+        const countMap = {};
+        reqCounts.forEach(r => { countMap[r.order_id] = (countMap[r.order_id]||0) + 1; });
+        allOrdersCache.forEach(o => { o.request_count = countMap[o.id] || 0; });
+      }
+    }
     let list=allOrdersCache;
     if(search) list=list.filter(o=>
       o.order_number.toLowerCase().includes(search)||
@@ -554,7 +565,12 @@
       const hasBriefs = Array.isArray(bfs) && bfs.length > 0;
       return `<tr>
         <td><strong style="font-size:0.85rem">${o.order_number}</strong></td>
-        <td><span class="tag" style="font-size:0.72rem">${o.subject}</span><br><span class="text-xs text-muted">${o.paper_type||'Essay'} · ${o.academic_level}</span>${o.word_count?`<br><span class="text-xs text-muted">${o.word_count.toLocaleString()} words</span>`:''}</td>
+        <td>
+          <span class="tag" style="font-size:0.72rem">${o.subject}</span><br>
+          <span class="text-xs text-muted">${o.paper_type||'Essay'} · ${o.academic_level}</span>
+          ${o.word_count?`<br><span class="text-xs text-muted">${o.word_count.toLocaleString()} words</span>`:''}
+          ${o.request_count>0?`<br><span class="badge badge-gold" style="margin-top:3px;font-size:0.7rem">✋ ${o.request_count} request${o.request_count>1?'s':''}</span>`:''}
+        </td>
         <td><div style="font-size:0.82rem;font-weight:600">${cl.full_name||'?'}</div><div style="font-size:0.75rem;color:var(--danger)">${cl.email||''}</div></td>
         <td style="font-size:0.82rem">${o.page_count}p<br><strong>$${o.total_price}</strong><br><span class="text-xs text-muted">dep $${o.deposit_amount}</span></td>
         <td><span class="badge status-${o.status}" style="font-size:0.72rem">${o.status.replace(/_/g,' ')}</span>${o.is_urgent?'<br><span class="badge badge-warning" style="margin-top:3px;font-size:0.7rem">⚡</span>':''}</td>
@@ -573,6 +589,15 @@
         </div></td>
       </tr>`;
     }).join('');
+  }
+
+  async function confirmAssignFromModal(orderId, writerId, writerName) {
+    if (!confirm('Assign ' + writerName + ' to this order?')) return;
+    const res = await SC.orders.assign(orderId, writerId);
+    if (res.error) { showGlobalToast(res.error, 'error'); return; }
+    closeM('m-ord');
+    showGlobalToast(writerName + ' assigned successfully!', 'success');
+    renderOrders();
   }
 
   async function openAssign(id,num,subj,pages){
@@ -647,7 +672,19 @@
         }
         return o.brief_url ? `<div style="margin-top:10px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Client Brief</a></div>` : '';
       })()}
-      ${o.dispute_reason?`<div class="alert alert-danger" style="margin-top:12px">⚠️ <strong>Dispute:</strong> ${o.dispute_reason}</div>`:''}`;
+      ${o.dispute_reason?`<div class="alert alert-danger" style="margin-top:12px">⚠️ <strong>Dispute:</strong> ${o.dispute_reason}</div>`:''}
+      <div id="modal-requests-${o.id}" style="margin-top:14px"></div>`;
+    // Load writer requests for this order
+    sb.from('order_requests').select('*, profiles(full_name, email, is_writer_approved)').eq('order_id', o.id).then(({data:reqs}) => {
+      const el = document.getElementById('modal-requests-'+o.id);
+      if (!el) return;
+      if (!reqs || !reqs.length) { el.innerHTML = '<div class="text-muted text-sm" style="margin-top:8px">No writer requests yet.</div>'; return; }
+      el.innerHTML = '<div class="form-label" style="margin-bottom:8px">✋ Writer Requests ('+reqs.length+')</div>'
+        + reqs.map(r => '<div class="flex-between" style="padding:8px;background:var(--parch);border-radius:8px;margin-bottom:6px">'
+          + '<div><strong style="font-size:0.875rem">'+r.profiles?.full_name+'</strong><div class="text-xs text-muted">'+r.profiles?.email+'</div></div>'
+          + '<button class="btn btn-sm btn-gold" onclick="confirmAssignFromModal('+o.id+',''+r.writer_id+'',''+r.profiles?.full_name+'')">Assign</button>'
+          + '</div>').join('');
+    });
     openM('m-ord');
   }
 
