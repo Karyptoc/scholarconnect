@@ -473,7 +473,6 @@
       .select('brief_files, brief_url, word_count, paper_type, language, spacing, sources_required, addons, addon_cost, discount_percent, title')
       .eq('id', ordId).single();
     if (extra) {
-      // Parse brief_files safely
       let bf = extra.brief_files;
       if (typeof bf === 'string') { try { bf = JSON.parse(bf); } catch(e) { bf = []; } }
       o.brief_files = Array.isArray(bf) && bf.length > 0 ? bf : (o.brief_files||[]);
@@ -487,13 +486,13 @@
       o.title = extra.title || o.title;
       o.discount_percent = extra.discount_percent;
     }
-    // Show addons reminder in submit modal
+    // Show addons reminder
     if (o.addons?.length) {
       const rem = document.getElementById('addons-reminder');
       const remTxt = document.getElementById('addons-reminder-text');
       if (rem && remTxt) { remTxt.textContent = 'Client requested add-ons: ' + o.addons.join(', ') + '. Please include these in your submission.'; rem.style.display='flex'; }
     }
-    document.getElementById('det-title').textContent = `${o.subject} · ${o.page_count} pages`;
+    document.getElementById('det-title').textContent = (o.paper_type||'Essay') + ' · ' + o.page_count + ' pages';
     document.getElementById('det-num').textContent = o.order_number + ' · ' + o.academic_level;
     document.getElementById('chat-label').textContent = o.order_number;
     document.getElementById('det-badge').innerHTML = `<span class="badge status-${o.status}">${statusLabel(o.status)}</span>`;
@@ -503,7 +502,7 @@
 
     document.getElementById('det-info').innerHTML = `
       <h3 style="font-family:var(--font-display);margin-bottom:14px">Order Brief</h3>
-      <div class="alert alert-info" style="margin-bottom:14px">🔒 <strong>Anonymous.</strong> Client identity is never revealed. Only the order number is used.</div>
+      <div class="alert alert-info" style="margin-bottom:14px">🔒 <strong>Anonymous.</strong> Client identity is never revealed.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
         <div><div class="form-label">Topic</div><div style="font-size:0.875rem">${o.title||o.instructions?.slice(0,50)||'—'}</div></div>
         <div><div class="form-label">Type of Paper</div><div style="font-size:0.875rem">${o.paper_type||'Essay (any type)'}</div></div>
@@ -521,7 +520,7 @@
       </div>
       <div class="form-label">Instructions</div>
       <div style="background:var(--parch);border-radius:8px;padding:14px;margin-top:6px;font-size:0.875rem;line-height:1.7">${o.instructions}</div>
-${(() => {
+      ${(() => {
         let bf = o.brief_files;
         if (typeof bf === 'string') { try { bf = JSON.parse(bf); } catch(e) { bf = []; } }
         if (Array.isArray(bf) && bf.length > 0) {
@@ -529,263 +528,384 @@ ${(() => {
         }
         if (o.brief_url) return '<div style="margin-top:12px"><a href="'+o.brief_url+'" target="_blank" class="btn btn-outline btn-sm">📎 Download Client Brief File</a></div>';
         return '<div style="margin-top:10px;font-size:0.82rem;color:var(--muted)">No files uploaded by client.</div>';
-      })()}TYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>ScholarConnect – Writer Dashboard</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="app-layout">
-  <aside class="sidebar">
-    <div class="sidebar-brand"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><path d="M14 3L3 9v10l11 6 11-6V9L14 3z" fill="var(--navy2)"/><path d="M14 8l6 3.5v7L14 22l-6-3.5v-7L14 8z" fill="var(--gold)"/></svg>Scholar<span>Connect</span></div>
-    <nav class="sidebar-nav">
-      <div class="sidebar-section">Main</div>
-      <button class="sidebar-link active" id="nav-overview" onclick="showPage('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</button>
-      <button class="sidebar-link" id="nav-available" onclick="showPage('available')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Available Orders<span id="avail-badge" class="badge badge-gold" style="margin-left:auto;display:none">0</span></button>
-      <button class="sidebar-link" id="nav-my-orders" onclick="showPage('my-orders')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>My Orders</button>
-      <button class="sidebar-link" id="nav-qualifications" onclick="showPage('qualifications')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>Qualifications</button>
-      <button class="sidebar-link" id="nav-earnings" onclick="showPage('earnings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Earnings</button>
-      <button class="sidebar-link" id="nav-inbox" onclick="showPage('inbox')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>Inbox <span id="inbox-badge" class="badge badge-warning" style="display:none;margin-left:3px">0</span></button>
-      <button class="sidebar-link" id="nav-profile" onclick="showPage('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>My Profile</button>
-      <div class="sidebar-section">Support</div>
-      <a class="sidebar-link" href="mailto:writerhub97@gmail.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Support</a>
-      <a class="sidebar-link" href="https://wa.me/254716603371" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>WhatsApp</a>
-      <div class="sidebar-section">Account</div>
-      <button class="sidebar-link" onclick="SC.auth.logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Log Out</button>
-    </nav>
-    <div style="margin-top:auto;padding-top:20px;padding-left:12px"><button class="theme-toggle" id="theme-btn"></button></div>
-  </aside>
+      })()}
+      ${o.revision_note?`<div class="alert alert-warning" style="margin-top:12px">📝 <strong>Revision note:</strong> ${o.revision_note}</div>`:''}
+      ${delivery?.plagiarism_score?`<div class="badge badge-success" style="margin-top:12px">✓ Plagiarism: ${delivery.plagiarism_score}% original</div>`:''}`;
 
-  <main class="main-content">
+    const isMine = o.assigned_writer_id === profile.id;
+    let actions = '';
+    if (!isMine && o.status === 'pending_writer') {
+      actions = `<div class="card card-sm"><h4 style="margin-bottom:12px">Available</h4><div class="price-display" style="margin-bottom:12px"><div style="font-size:0.78rem;color:var(--muted);margin-bottom:4px">Your Payout</div><div style="font-family:var(--font-display);font-size:2rem;font-weight:700;color:var(--success)">$${p}</div><div style="font-size:0.78rem;color:var(--muted)">$${settings.writer_payout||4} × ${o.page_count} pages</div></div><button class="btn btn-primary btn-full" onclick="openReqModal(${o.id},'${o.order_number}',${o.page_count})">Request This Order</button></div>`;
+    } else if (isMine && o.status === 'in_progress') {
+      actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">Submit Work</h4><div class="alert alert-info" style="margin-bottom:10px"><span>📋</span><span>Required style: <strong>${o.citation_style||'APA'}</strong></span></div><p class="text-sm text-muted" style="margin-bottom:12px">Files are auto virus-scanned and plagiarism-checked before client notification.</p><button class="btn btn-primary btn-full" onclick="openM('m-submit')">Upload &amp; Submit</button></div>`;
+    } else if (isMine && o.status === 'under_review') {
+      actions = `<div class="card card-sm"><h4>⏳ Under Review</h4><p class="text-sm text-muted" style="margin-top:6px">Client is reviewing. Auto-approves in ${o.auto_approve_at?Math.max(0,Math.ceil((new Date(o.auto_approve_at)-Date.now())/3600000)):72}h if no action.</p></div>`;
+    } else if (isMine && o.status === 'completed') {
+      actions = `<div class="card card-sm"><h4>✅ Completed</h4><div class="alert alert-success" style="margin-top:8px">$${p} released to your account.</div>${o.rating?`<div style="margin-top:8px">${'⭐'.repeat(o.rating)} <span class="text-sm">${o.review_text||''}</span></div>`:''}</div>`;
+    }
+    document.getElementById('det-actions').innerHTML = actions + `<div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Order Info</div><div style="font-size:0.82rem;color:var(--muted);line-height:2.2"><div class="flex-between"><span>Pages:</span><strong>${o.page_count}</strong></div><div class="flex-between"><span>Words:</span><strong>${o.word_count?o.word_count.toLocaleString():o.page_count*275}</strong></div><div class="flex-between"><span>Rate:</span><strong>$${settings.writer_payout||4}/page</strong></div><div class="flex-between"><span>Payout:</span><strong style="color:var(--success)">$${p}</strong></div><div class="flex-between"><span>Type:</span><strong>${o.is_urgent?'⚡ Urgent':'Standard'}</strong></div><div class="flex-between"><span>Citation:</span><strong>${o.citation_style||'APA'}</strong></div><div class="flex-between"><span>Language:</span><strong>${o.language||'English (US)'}</strong></div><div class="flex-between"><span>Spacing:</span><strong>${o.spacing||'Double'}</strong></div><div class="flex-between"><span>Sources:</span><strong>${o.sources_required||0}</strong></div>${o.addons?.length?`<div class="flex-between"><span>Add-ons:</span><strong style="color:var(--warning);font-size:0.78rem">${o.addons.join(', ')}</strong></div>`:''}</div></div>`;
 
-    <!-- ENGLISH TEST OVERLAY -->
-    <div id="test-overlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:500;overflow-y:auto;padding:40px 24px" oncontextmenu="return false" onselectstart="return false">
-      <div style="max-width:700px;margin:0 auto">
-        <div class="text-center" style="margin-bottom:28px">
-          <h1 style="font-family:var(--font-display);font-size:1.8rem;margin-bottom:8px">English Proficiency Test</h1>
-          <p class="text-muted">25 questions · 80% pass mark (20/25) · 10-minute limit · No copy/paste</p>
-          <div class="flex-center" style="gap:16px;margin-top:12px"><div class="timer-pill" id="test-timer">10:00</div></div>
-        </div>
-        <div class="test-progress"><div class="test-progress-fill" id="test-prog" style="width:4%"></div></div>
-        <div id="test-container"></div>
-        <div id="test-result" style="display:none;text-align:center;padding:40px 0">
-          <div id="res-icon" style="font-size:4rem;margin-bottom:16px"></div>
-          <h2 id="res-title" style="font-family:var(--font-display);font-size:2rem;margin-bottom:10px"></h2>
-          <div id="res-score" style="font-family:var(--font-display);font-size:3.5rem;font-weight:700;color:var(--navy);margin-bottom:6px"></div>
-          <div id="res-pct" style="font-size:1rem;color:var(--muted);margin-bottom:8px"></div>
-          <p id="res-msg" class="text-muted" style="max-width:500px;margin:0 auto 28px"></p>
-          <div id="res-actions"></div>
-        </div>
+    showPage('order-detail');
+    loadMessages();
+    if (chatSub) chatSub.unsubscribe();
+    chatSub = SC.messages.subscribe(ordId, msg => appendMsg(msg));
+  }
+
+  async function loadMessages() {
+    const { data: msgs } = await SC.messages.getForOrder(curOrdId);
+    const el = document.getElementById('chat-msgs');
+    if (!msgs.length) { el.innerHTML='<div class="text-center text-muted text-sm" style="padding:20px">No messages yet.</div>'; return; }
+    el.innerHTML = msgs.map(m=>msgHTML(m)).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+  function msgHTML(m) {
+    const mine = m.sender_id === profile.id;
+    return `<div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'}"><div class="msg-bubble ${mine?'msg-mine':'msg-theirs'}">${m.content}</div><div class="msg-meta">${mine?'You':'Client'} · ${new Date(m.created_at).toLocaleTimeString()}</div></div>`;
+  }
+  function appendMsg(m) {
+    const el = document.getElementById('chat-msgs');
+    const empty = el.querySelector('.text-center'); if(empty) el.innerHTML='';
+    el.insertAdjacentHTML('beforeend', msgHTML(m));
+    el.scrollTop = el.scrollHeight;
+  }
+  async function sendMsg() {
+    const input=document.getElementById('chat-input'), text=input.value.trim();
+    if(!text) return;
+    const res = await SC.messages.send(curOrdId, profile.id, 'writer', text);
+    if(res.error){showGlobalToast(res.error,'error');return;}
+    input.value='';
+  }
+  document.getElementById('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}});
+
+  function openReqModal(id, num, pages) {
+    reqOrdId = id;
+    const p = (parseFloat(settings.writer_payout||4)*pages).toFixed(0);
+    document.getElementById('req-info').innerHTML = `<strong>${num}</strong><br>Your payout: <strong style="color:var(--success)">$${p}</strong>`;
+    openM('m-req');
+  }
+  async function confirmRequest() {
+    const res = await SC.orders.requestOrder(reqOrdId, profile.id);
+    if(res.error){showGlobalToast(res.error,'error');return;}
+    closeM('m-req'); showGlobalToast('Order requested! Admin will assign it shortly.','success');
+    renderAvailable(); renderOverview();
+  }
+
+  function switchSubTab(tab) {
+    document.getElementById('sub-tab-draft').classList.toggle('active', tab==='draft');
+    document.getElementById('sub-tab-final').classList.toggle('active', tab==='final');
+    document.getElementById('sub-draft-panel').style.display = tab==='draft'?'block':'none';
+    document.getElementById('sub-final-panel').style.display = tab==='final'?'block':'none';
+  }
+
+  async function doUploadDraft() {
+    const fi = document.getElementById('draft-file');
+    const note = document.getElementById('draft-note').value.trim();
+    if (!fi.files.length) { showGlobalToast('Please select a draft file.','error'); return; }
+    const btn = document.getElementById('draft-btn'); btn.disabled=true; btn.textContent='Uploading…';
+    const file = fi.files[0];
+    const path = curOrdId + '/draft_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const { data, error } = await sb.storage.from('deliverables').upload(path, file, { upsert: true });
+    btn.disabled=false; btn.textContent='📤 Send Draft to Client';
+    if (error) { showGlobalToast('Upload failed: '+error.message,'error'); return; }
+    const { data: urlData } = sb.storage.from('deliverables').getPublicUrl(data.path);
+    await sb.from('deliveries').upsert({ order_id: curOrdId, writer_id: profile.id, draft_url: urlData.publicUrl, draft_name: file.name, draft_note: note, draft_uploaded_at: new Date().toISOString() }, { onConflict: 'order_id' });
+    await SC.messages.send(curOrdId, profile.id, 'writer', (note || 'Draft uploaded') + ' — 📎 ' + file.name + ': ' + urlData.publicUrl);
+    closeM('m-submit');
+    showGlobalToast('Draft sent to client successfully!', 'success');
+    setTimeout(() => openDetail(curOrdId, detFrom), 500);
+  }
+
+  async function doSubmitWork() {
+    const fi = document.getElementById('sub-file');
+    const notes = document.getElementById('sub-notes').value;
+    const err = document.getElementById('submit-err'); err.style.display='none';
+    const btn = document.getElementById('submit-btn'); btn.disabled=true; btn.textContent='Submitting…';
+    let fileUrl = '', fileName = 'submitted_work.pdf';
+    if (fi.files.length) {
+      const r = await SC.storage.uploadDeliverable(curOrdId, profile.id, fi.files[0]);
+      if (r.error) { err.textContent=r.error; err.style.display='flex'; btn.disabled=false; btn.textContent='Submit for Client Review'; return; }
+      fileUrl = r.url; fileName = fi.files[0].name;
+    }
+    const res = await SC.orders.submitWork(curOrdId, profile.id, fileUrl, fileName, notes);
+    btn.disabled=false; btn.textContent='Submit for Client Review';
+    if(res.error){err.textContent=res.error;err.style.display='flex';return;}
+    closeM('m-submit');
+    showGlobalToast(`Work submitted! Plagiarism: ${res.plagiarismScore}% original. Client notified.`,'success');
+    setTimeout(()=>openDetail(curOrdId,detFrom),500);
+  }
+
+  async function renderQualifications() {
+    const { data: creds } = await sb.from('profiles').select('id_url, cert_url, selfie_url, resume_url, credentials_submitted_at').eq('id', profile.id).single();
+    const credsSubmitted = creds?.credentials_submitted_at;
+    const banner = document.getElementById('credentials-banner');
+    if (banner) banner.style.display = credsSubmitted ? 'none' : 'flex';
+    testResults = await SC.tests.getResultsForWriter(profile.id);
+    const engTest = testResults.find(r=>r.test_type==='english');
+    const essays  = testResults.filter(r=>r.test_type==='essay');
+    const approved = essays.filter(r=>r.admin_approved);
+    const sel = document.getElementById('e-subject');
+    if (!sel.options.length || sel.options[0].value==='') {
+      sel.innerHTML = '<option value="">Select subject…</option>';
+      Object.keys(SUBJECTS).forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+    }
+    const rows = essays.map(e=>`<tr><td><strong>${e.subject}</strong></td><td>${e.sub_level||'General'}</td><td><span class="badge ${e.admin_approved?'badge-success':e.admin_note?'badge-danger':'badge-warning'}">${e.admin_approved?'Approved':e.admin_note?'Rejected':'Pending'}</span></td><td style="font-size:0.82rem;color:var(--muted)">${e.admin_note||'—'}</td><td style="font-size:0.8rem;color:var(--muted)">${new Date(e.completed_at).toLocaleDateString()}</td></tr>`).join('');
+    const credsHTML = `<div class="card" style="margin-bottom:18px;border:${credsSubmitted?'2px solid var(--success)':'2px solid var(--warning)'}">
+      <div class="flex-between" style="margin-bottom:16px"><h3 style="font-family:var(--font-display)">📋 Identity & Credentials</h3>${credsSubmitted?'<span class="badge badge-success">✅ Submitted</span>':'<span class="badge badge-warning">⚠️ Required</span>'}</div>
+      ${!credsSubmitted?'<div class="alert alert-warning" style="margin-bottom:16px"><span>⚠️</span><span>You must submit all 4 documents before admin can approve your account.</span></div>':''}
+      <div class="grid-2" style="gap:16px">
+        <div class="form-group"><label class="form-label">🪪 National ID / Passport *</label><div style="background:var(--parch);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.82rem">${creds?.id_url?'<span class="badge badge-success">✅ Uploaded</span> <a href="'+creds.id_url+'" target="_blank" style="font-size:0.8rem;margin-left:6px">View</a>':'<span class="badge badge-warning">Not uploaded</span>'}</div><input type="file" class="form-input" id="cred-id" accept=".pdf,.jpg,.jpeg,.png"><div class="form-hint">Clear photo or scan of your national ID or passport</div></div>
+        <div class="form-group"><label class="form-label">🎓 University / College Certificate *</label><div style="background:var(--parch);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.82rem">${creds?.cert_url?'<span class="badge badge-success">✅ Uploaded</span> <a href="'+creds.cert_url+'" target="_blank" style="font-size:0.8rem;margin-left:6px">View</a>':'<span class="badge badge-warning">Not uploaded</span>'}</div><input type="file" class="form-input" id="cred-cert" accept=".pdf,.jpg,.jpeg,.png"><div class="form-hint">Degree certificate, diploma or transcript</div></div>
+        <div class="form-group"><label class="form-label">🤳 Selfie with ID *</label><div style="background:var(--parch);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.82rem">${creds?.selfie_url?'<span class="badge badge-success">✅ Uploaded</span> <a href="'+creds.selfie_url+'" target="_blank" style="font-size:0.8rem;margin-left:6px">View</a>':'<span class="badge badge-warning">Not uploaded</span>'}</div><input type="file" class="form-input" id="cred-selfie" accept=".jpg,.jpeg,.png"><div class="form-hint">A photo of you holding your ID clearly visible</div></div>
+        <div class="form-group"><label class="form-label">📄 Resume / CV *</label><div style="background:var(--parch);border-radius:8px;padding:10px;margin-bottom:8px;font-size:0.82rem">${creds?.resume_url?'<span class="badge badge-success">✅ Uploaded</span> <a href="'+creds.resume_url+'" target="_blank" style="font-size:0.8rem;margin-left:6px">View</a>':'<span class="badge badge-warning">Not uploaded</span>'}</div><input type="file" class="form-input" id="cred-resume" accept=".pdf,.doc,.docx"><div class="form-hint">Your academic and professional background</div></div>
       </div>
-    </div>
-
-    <!-- OVERVIEW -->
-    <div class="page active" id="page-overview">
-      <div class="page-header flex-between">
-        <div><div class="page-title" id="welcome-msg">Welcome!</div><div class="page-subtitle">Writer dashboard</div></div>
-        <span class="badge" id="status-badge">Loading…</span>
+      <div id="cred-err" class="alert alert-danger" style="display:none;margin-top:12px"></div>
+      <div id="cred-progress" style="display:none;margin-top:12px"><div style="height:6px;background:var(--border);border-radius:3px"><div id="cred-prog-bar" style="height:100%;background:var(--success);border-radius:3px;width:0%;transition:width 0.3s"></div></div><div id="cred-prog-text" style="font-size:0.8rem;color:var(--muted);margin-top:4px">Uploading…</div></div>
+      <button class="btn btn-primary" style="margin-top:16px" id="cred-btn" onclick="uploadCredentials()">${credsSubmitted?'🔄 Update Credentials':'📤 Submit Credentials for Verification'}</button>
+    </div>`;
+    document.getElementById('qual-content').innerHTML = credsHTML + `
+      <div class="card" style="margin-bottom:18px">
+        <div class="flex-between" style="margin-bottom:14px"><h3 style="font-family:var(--font-display)">English Proficiency Test</h3>${engTest?`<span class="badge ${engTest.passed?'badge-success':'badge-danger'}">${engTest.passed?'✓ Passed':'✗ Failed'} – ${engTest.score}/25 (${engTest.percentage}%)</span>`:'<span class="badge badge-warning">Not taken</span>'}</div>
+        <div class="grid-2" style="gap:10px;font-size:0.875rem"><div><span class="text-muted">Score:</span> <strong>${engTest?.score||0} / 25</strong></div><div><span class="text-muted">Percentage:</span> <strong>${engTest?.percentage||0}%</strong></div></div>
+        ${!engTest?.passed?'<button class="btn btn-gold btn-sm" style="margin-top:12px" onclick="startEnglishTest()">Retake Test</button>':''}
       </div>
-      <div class="grid-4" style="margin-bottom:24px">
-        <div class="stat-card"><div class="stat-value" id="st-orders">—</div><div class="stat-label">My Orders</div></div>
-        <div class="stat-card"><div class="stat-value" id="st-done">—</div><div class="stat-label">Completed</div></div>
-        <div class="stat-card"><div class="stat-value" id="st-earn">—</div><div class="stat-label">Earnings</div></div>
-        <div class="stat-card"><div class="stat-value" id="st-subjs">—</div><div class="stat-label">Approved Subjects</div></div>
-      </div>
-      <div class="grid-2">
-        <div class="card"><div class="flex-between" style="margin-bottom:16px"><h3 style="font-family:var(--font-display)">Active Orders</h3><button class="btn btn-ghost btn-sm" onclick="showPage('my-orders')">View all →</button></div><div id="active-list"><div class="loading"><div class="spinner"></div></div></div></div>
-        <div class="card"><div class="flex-between" style="margin-bottom:16px"><h3 style="font-family:var(--font-display)">Available Now</h3><button class="btn btn-ghost btn-sm" onclick="showPage('available')">Browse →</button></div><div id="avail-preview"><div class="loading"><div class="spinner"></div></div></div></div>
-      </div>
-    </div>
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:14px"><h3 style="font-family:var(--font-display)">Subject Essays</h3>${engTest?.passed?'<button class="btn btn-primary btn-sm" onclick="openEssayModal()">+ Submit Essay</button>':'<span class="text-muted text-sm">Pass English test first</span>'}</div>
+        <p class="text-sm text-muted" style="margin-bottom:14px">Submit a 5-page (1,250+ word) academic essay for each subject you want to work on.</p>
+        ${approved.length?`<div style="margin-bottom:14px"><div class="form-label">Approved Subjects</div><div class="flex-gap" style="flex-wrap:wrap;margin-top:8px">${[...new Set(approved.map(r=>r.subject))].map(s=>`<span class="badge badge-success">✓ ${s}</span>`).join('')}</div></div>`:''}
+        ${rows?`<div class="table-wrap"><table><thead><tr><th>Subject</th><th>Sub-Level</th><th>Status</th><th>Admin Feedback</th><th>Submitted</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty-state" style="padding:24px"><p class="text-sm">No essays submitted yet.</p></div>'}
+      </div>`;
+  }
 
-    <!-- AVAILABLE ORDERS -->
-    <div class="page" id="page-available">
-      <div class="page-header"><div class="page-title">Available Orders</div><div class="page-subtitle">Orders matching your approved subjects</div></div>
-      <div class="card card-sm" style="margin-bottom:18px">
-        <div class="flex-gap" style="flex-wrap:wrap">
-          <select class="form-select" id="f-subj" style="width:200px" onchange="renderAvailable()"><option value="">All Subjects</option></select>
-          <select class="form-select" id="f-level" style="width:170px" onchange="renderAvailable()"><option value="">All Levels</option><option>High School</option><option>College (Freshman/Sophomore)</option><option>University (Junior/Senior)</option><option>Master's</option><option>PhD</option></select>
-          <select class="form-select" id="f-urg" style="width:130px" onchange="renderAvailable()"><option value="">Any</option><option value="urgent">Urgent</option><option value="standard">Standard</option></select>
-          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear</button>
-        </div>
-      </div>
-      <div id="available-list"><div class="loading"><div class="spinner"></div></div></div>
-    </div>
+  function openEssayModal() {
+    document.getElementById('essay-text').value='';
+    document.getElementById('essay-err').style.display='none';
+    document.getElementById('essay-prompt').innerHTML='<p class="text-sm text-muted">Select a subject above to see the essay question.</p>';
+    updateWC();
+    openM('m-essay');
+  }
 
-    <!-- MY ORDERS -->
-    <div class="page" id="page-my-orders">
-      <div class="page-header flex-between">
-        <div><div class="page-title">My Orders</div></div>
-        <select class="form-select" id="my-filter" style="width:150px" onchange="renderMyOrders()"><option value="">All</option><option value="in_progress">In Progress</option><option value="under_review">Under Review</option><option value="completed">Completed</option></select>
-      </div>
-      <div id="my-orders-list"><div class="loading"><div class="spinner"></div></div></div>
-    </div>
+  async function onEssaySubjChange() {
+    const subj = document.getElementById('e-subject').value;
+    const sl = document.getElementById('e-sublevel');
+    sl.innerHTML=''; (SUBJECTS[subj]||['General']).forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sl.appendChild(o);});
+    if (!subj) return;
+    const { data: eq } = await SC.tests.getEssayPrompt(subj);
+    if (eq) {
+      const reqs = Array.isArray(eq.requirements) ? eq.requirements : JSON.parse(eq.requirements||'[]');
+      document.getElementById('essay-prompt').innerHTML = `<h4>${eq.title}</h4><p style="margin:8px 0;font-size:0.875rem">${eq.prompt}</p><div style="margin-top:10px"><strong style="font-size:0.82rem">Required format: ${eq.format}</strong></div><ul style="margin-top:8px">${reqs.map(r=>`<li>${r}</li>`).join('')}</ul>`;
+    }
+  }
 
-    <!-- ORDER DETAIL -->
-    <div class="page" id="page-order-detail">
-      <div class="page-header">
-        <button class="btn btn-ghost btn-sm" id="det-back" onclick="goBack()" style="margin-bottom:8px">← Back</button>
-        <div class="flex-between"><div><div class="page-title" id="det-title"></div><div id="det-num" class="text-muted text-sm"></div></div><div id="det-badge"></div></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start">
-        <div style="display:flex;flex-direction:column;gap:18px">
-          <div class="card" id="det-info"></div>
-          <div class="card">
-            <h3 style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:14px">Anonymous Chat</h3>
-            <div class="alert alert-warning" style="margin-bottom:12px">🛡️ Do not share personal contact info. Violations are logged and reported to admin immediately.</div>
-            <div class="chat-wrap">
-              <div class="chat-header"><div class="dot dot-success"></div><span style="font-weight:600;font-size:0.875rem" id="chat-label">Chat</span><span class="text-xs text-muted" style="margin-left:auto">Real-time · Identity protected</span></div>
-              <div class="chat-messages" id="chat-msgs"></div>
-              <div class="chat-input-area"><input type="text" class="form-input" id="chat-input" placeholder="Type message… (no contact info)" style="flex:1"><button class="btn btn-primary" onclick="sendMsg()">Send</button></div>
-            </div>
-          </div>
-        </div>
-        <div id="det-actions" style="display:flex;flex-direction:column;gap:14px"></div>
-      </div>
-    </div>
+  function updateWC() {
+    const wc = document.getElementById('essay-text').value.trim().split(/\s+/).filter(Boolean).length;
+    const el = document.getElementById('wc-disp');
+    el.textContent = `(${wc} words – ${wc>=1250?'✓ minimum met':'need '+(1250-wc)+' more'})`;
+    el.style.color = wc>=1250 ? 'var(--success)' : 'var(--warning)';
+  }
 
-    <!-- QUALIFICATIONS -->
-    <div class="page" id="page-qualifications">
-      <div class="page-header"><div class="page-title">My Qualifications</div><div class="page-subtitle">English test and subject essay submissions</div></div>
-      <div id="qual-content"><div class="loading"><div class="spinner"></div></div></div>
-    </div>
+  async function submitEssay() {
+    const subj = document.getElementById('e-subject').value;
+    const subl = document.getElementById('e-sublevel').value;
+    const text = document.getElementById('essay-text').value;
+    const fi   = document.getElementById('essay-file');
+    const err  = document.getElementById('essay-err'); err.style.display='none';
+    if (!subj) { err.textContent='Please select a subject.'; err.style.display='flex'; return; }
+    const btn = document.getElementById('essay-btn'); btn.disabled=true; btn.textContent='Submitting…';
+    let fileUrl = '';
+    if (fi.files.length) {
+      const r = await SC.storage.uploadEssay(profile.id, subj, fi.files[0]);
+      if (r.url) fileUrl = r.url;
+    }
+    const res = await SC.tests.submitEssay(profile.id, subj, subl, text, fileUrl);
+    btn.disabled=false; btn.textContent='Submit Essay for Admin Review';
+    if (res.error) { err.textContent=res.error; err.style.display='flex'; return; }
+    closeM('m-essay');
+    showGlobalToast(`Essay submitted (${res.wordCount} words). Admin will review shortly.`,'success');
+    renderQualifications();
+  }
 
-    <!-- EARNINGS -->
-    <div class="page" id="page-earnings">
-      <div class="page-header"><div class="page-title">Earnings</div><div class="page-subtitle">$4 per page · minimum withdrawal $20</div></div>
-      <div class="grid-3" style="margin-bottom:24px">
-        <div class="stat-card"><div class="stat-value" id="earn-bal">—</div><div class="stat-label">Available Balance</div></div>
-        <div class="stat-card"><div class="stat-value" id="earn-done">—</div><div class="stat-label">Completed Orders</div></div>
-        <div class="stat-card"><div class="stat-value" id="earn-total">—</div><div class="stat-label">Total Earned</div></div>
-      </div>
-      <div class="grid-2">
-        <div class="card">
-          <h3 style="font-family:var(--font-display);margin-bottom:18px">Withdraw Funds</h3>
-          <div class="alert alert-info" style="margin-bottom:16px"><span>💰</span><span>Withdrawals are processed on the <strong>14th and 28th</strong> of every month. Minimum: <strong>$20</strong>.</span></div>
-          <div id="w-window-alert"></div>
-          <div class="form-group"><label class="form-label">Amount ($) *</label><input type="number" class="form-input" id="w-amt" min="20" placeholder="e.g. 40"></div>
-          <div class="form-group"><label class="form-label">Method *</label><select class="form-select" id="w-method" onchange="updateWLabel()"><option value="paypal">PayPal</option><option value="mpesa">M-Pesa</option><option value="bank">Bank Transfer</option><option value="payoneer">Payoneer</option></select></div>
-          <div class="form-group"><label class="form-label" id="w-label">PayPal Email *</label><input type="text" class="form-input" id="w-details" placeholder="your@paypal.com"></div>
-          <button class="btn btn-gold btn-full" id="w-btn" onclick="requestWithdrawal()">Request Withdrawal</button>
-        </div>
-        <div class="card"><h3 style="font-family:var(--font-display);margin-bottom:16px">Withdrawal History</h3><div id="w-history"><div class="loading"><div class="spinner"></div></div></div></div>
-      </div>
-    </div>
+  async function uploadCredentials() {
+    const btn = document.getElementById('cred-btn');
+    const err = document.getElementById('cred-err');
+    const prog = document.getElementById('cred-progress');
+    const bar = document.getElementById('cred-prog-bar');
+    const txt = document.getElementById('cred-prog-text');
+    err.style.display = 'none';
+    const files = { id: document.getElementById('cred-id')?.files[0], cert: document.getElementById('cred-cert')?.files[0], selfie: document.getElementById('cred-selfie')?.files[0], resume: document.getElementById('cred-resume')?.files[0] };
+    const { data: existing } = await sb.from('profiles').select('id_url,cert_url,selfie_url,resume_url').eq('id',profile.id).single();
+    if (!existing?.id_url && !files.id) { err.textContent = 'National ID is required.'; err.style.display='flex'; return; }
+    btn.disabled = true; prog.style.display = 'block';
+    const updates = {};
+    const labels = { id: 'National ID', cert: 'Certificate', selfie: 'Selfie', resume: 'Resume' };
+    let done = 0; const total = Object.values(files).filter(Boolean).length;
+    for (const [key, file] of Object.entries(files)) {
+      if (!file) continue;
+      txt.textContent = `Uploading ${labels[key]}…`;
+      const path = profile.id + '/' + key + '_' + Date.now() + '.' + file.name.split('.').pop();
+      const { data, error } = await sb.storage.from('credentials').upload(path, file, { upsert: true });
+      if (error) { err.textContent = 'Failed to upload ' + labels[key] + ': ' + error.message; err.style.display='flex'; btn.disabled=false; return; }
+      const { data: urlData } = sb.storage.from('credentials').getPublicUrl(data.path);
+      updates[key + '_url'] = urlData.publicUrl;
+      done++; bar.style.width = (done/total*100) + '%';
+    }
+    updates.credentials_submitted_at = new Date().toISOString();
+    await sb.from('profiles').update(updates).eq('id', profile.id);
+    prog.style.display = 'none'; btn.disabled = false;
+    showGlobalToast('Credentials submitted! Admin will review within 24 hours.', 'success');
+    renderQualifications();
+  }
 
-    <!-- CREDENTIALS UPLOAD (shown if not yet submitted) -->
-    <div id="credentials-banner" class="alert alert-warning" style="display:none;margin:16px 24px 0;border-radius:12px">
-      <span>📋</span>
-      <div>
-        <strong>Action Required: Upload Your Credentials</strong>
-        <p style="margin:4px 0 0;font-size:0.875rem">You must upload your ID, academic certificate, selfie and resume before you can be approved to take orders.</p>
-        <button class="btn btn-gold btn-sm" style="margin-top:8px" onclick="showPage('qualifications')">Upload Credentials →</button>
-      </div>
-    </div>
+  function checkWithdrawalWindow() {
+    const today = new Date().getDate();
+    const isWindow = (today >= 12 && today <= 15) || (today >= 26 && today <= 29);
+    const alert = document.getElementById('w-window-alert');
+    const btn = document.getElementById('w-btn');
+    if (!isWindow) { alert.innerHTML = `<div class="alert alert-warning" style="margin-bottom:12px">⏳ <strong>Withdrawal window closed.</strong> Next window opens on the 14th or 28th.</div>`; btn.disabled = true; btn.style.opacity = '0.5'; }
+    else { alert.innerHTML = `<div class="alert alert-success" style="margin-bottom:12px">✅ <strong>Withdrawal window is open!</strong></div>`; btn.disabled = false; btn.style.opacity = '1'; }
+  }
 
-    <!-- PROFILE -->
-    <div class="page" id="page-profile">
-      <div class="page-header"><div class="page-title">My Profile</div><div class="page-subtitle">Your public writer profile and account settings</div></div>
-      <div style="display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start">
-        <div class="card" style="text-align:center;padding:32px 20px">
-          <div style="position:relative;width:100px;height:100px;margin:0 auto 16px">
-            <div id="writer-avatar" style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--gold));display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:white;font-weight:700;overflow:hidden"></div>
-            <label for="writer-photo-input" style="position:absolute;bottom:0;right:0;width:30px;height:30px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.9rem" title="Change photo">📷</label>
-            <input type="file" id="writer-photo-input" accept="image/*" style="display:none" onchange="uploadWriterPhoto(this)">
-          </div>
-          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700" id="wp-name"></div>
-          <div class="badge badge-success" style="margin-top:8px">✓ Verified Writer</div>
-          <div id="wp-rating" style="font-size:1.2rem;margin-top:10px"></div>
-          <div style="margin-top:8px;font-size:0.82rem;color:var(--muted)" id="wp-stats"></div>
-          <div style="margin-top:6px;font-size:0.78rem;color:var(--muted)" id="wp-joined"></div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:16px">
-          <div class="card">
-            <h3 style="font-family:var(--font-display);margin-bottom:16px">Personal Information</h3>
-            <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" id="wp-fullname"></div>
-            <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-input" id="wp-email" disabled style="opacity:0.6"></div>
-            <div class="form-group"><label class="form-label">Phone Number</label><input type="text" class="form-input" id="wp-phone" placeholder="+254700000000"></div>
-            <div class="form-group"><label class="form-label">Short Bio <span class="text-muted">(visible to clients)</span></label><textarea class="form-textarea" id="wp-bio" placeholder="e.g. Experienced academic writer specialising in Business, Psychology and Law…" style="min-height:80px"></textarea></div>
-            <div id="wp-save-msg" class="alert alert-success" style="display:none">Profile updated!</div>
-            <button class="btn btn-primary" onclick="saveWriterProfile()">Save Changes</button>
-          </div>
-          <div class="card">
-            <h3 style="font-family:var(--font-display);margin-bottom:16px">Approved Subjects</h3>
-            <div id="wp-subjects"></div>
-          </div>
-          <div class="card">
-            <h3 style="font-family:var(--font-display);margin-bottom:16px">Change Password</h3>
-            <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" id="wp-newpass" placeholder="Min 8 characters"></div>
-            <div class="form-group"><label class="form-label">Confirm Password</label><input type="password" class="form-input" id="wp-confpass"></div>
-            <div id="wp-pass-msg" class="alert" style="display:none"></div>
-            <button class="btn btn-outline" onclick="changeWriterPassword()">Update Password</button>
-          </div>
-        </div>
-      </div>
-    </div>
+  async function loadInbox() {
+    const list = document.getElementById('inbox-list');
+    const badge = document.getElementById('inbox-badge');
+    if (!list) return;
+    list.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    const [received, sent] = await Promise.all([
+      sb.from('direct_messages').select('*').eq('recipient_id', profile.id).order('created_at', { ascending: false }),
+      sb.from('direct_messages').select('*').eq('sender_id', profile.id).order('created_at', { ascending: false })
+    ]);
+    const allMsgs = [...(received.data||[]), ...(sent.data||[])];
+    const conversations = {};
+    allMsgs.forEach(m => { const convId = m.conversation_id || m.id; if (!conversations[convId]) conversations[convId] = []; conversations[convId].push(m); });
+    const convList = Object.entries(conversations).map(([id, msgs]) => { msgs.sort((a,b) => new Date(a.created_at) - new Date(b.created_at)); return { id, msgs, latest: msgs[msgs.length-1] }; }).sort((a,b) => new Date(b.latest.created_at) - new Date(a.latest.created_at));
+    const unreadCount = (received.data||[]).filter(m => !m.is_read).length;
+    if (unreadCount > 0) { badge.textContent = unreadCount; badge.style.display = 'inline-flex'; } else { badge.style.display = 'none'; }
+    if (!convList.length) { list.innerHTML = '<div class="card"><p class="text-muted text-sm">No messages yet.</p></div>'; return; }
+    list.innerHTML = `<div style="display:grid;grid-template-columns:320px 1fr;gap:16px;height:600px"><div style="border:1px solid var(--border);border-radius:12px;overflow-y:auto">${convList.map(c => { const latest = c.latest; const isUnread = (received.data||[]).some(m => m.conversation_id === c.id && !m.is_read); const isMine = latest.sender_id === profile.id; return `<div onclick="openConversation('${c.id}')" id="conv-${c.id}" style="padding:14px;border-bottom:1px solid var(--border);cursor:pointer;background:${isUnread?'var(--parch)':'transparent'}"><div class="flex-between" style="margin-bottom:4px"><strong style="font-size:0.875rem">${latest.subject||'Message'}</strong><span class="text-xs text-muted">${new Date(latest.created_at).toLocaleDateString()}</span></div><div style="font-size:0.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${isMine?'You: ':'Admin: '}${latest.content}</div>${isUnread?'<span class="badge badge-warning" style="margin-top:4px;font-size:0.7rem">New</span>':''}</div>`; }).join('')}</div><div style="border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column" id="chat-panel"><div style="padding:20px;text-align:center;color:var(--muted);margin:auto"><p>Select a conversation</p></div></div></div>`;
+  }
 
-    <!-- INBOX -->
-    <div class="page" id="page-inbox">
-      <div class="page-header"><div class="page-title">Inbox</div><div class="page-subtitle">Messages from ScholarConnect admin</div></div>
-      <div id="inbox-list"><div class="loading"><div class="spinner"></div></div></div>
-    </div>
-  </main>
-</div>
+  async function openConversation(convId) {
+    document.querySelectorAll('[id^="conv-"]').forEach(el => el.style.borderLeft = '');
+    const convEl = document.getElementById('conv-'+convId); if (convEl) convEl.style.borderLeft = '3px solid var(--gold)';
+    const panel = document.getElementById('chat-panel');
+    panel.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    const result = await sb.from('direct_messages').select('*').eq('conversation_id', convId).order('created_at', { ascending: true });
+    const allMsgs = result.data || [];
+    const subject = allMsgs[0]?.subject || 'Conversation';
+    panel.innerHTML = `<div style="padding:14px;border-bottom:1px solid var(--border);font-weight:600">${subject}</div><div id="conv-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">${allMsgs.map(m => { const isMine = m.sender_id === profile.id; return `<div style="display:flex;flex-direction:column;align-items:${isMine?'flex-end':'flex-start'}"><div style="max-width:75%;padding:10px 14px;border-radius:${isMine?'12px 12px 2px 12px':'12px 12px 12px 2px'};background:${isMine?'var(--navy)':'var(--parch)'};color:${isMine?'white':'var(--ink)'};font-size:0.875rem">${m.content}</div><div style="font-size:0.75rem;color:var(--muted);margin-top:3px">${isMine?'You':'Admin'} · ${new Date(m.created_at).toLocaleString('en-US',{dateStyle:'short',timeStyle:'short'})}</div></div>`; }).join('')}</div><div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px"><input type="text" class="form-input" id="conv-reply-input" placeholder="Type your reply..." style="flex:1" onkeydown="if(event.key==='Enter')sendConvReply('${convId}','${subject.replace(/'/g,'\'+'\'')}')"><button class="btn btn-primary" onclick="sendConvReply('${convId}','${subject.replace(/'/g,'\''+'\'')}')">Send</button></div>`;
+    const msgs = document.getElementById('conv-messages'); if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    await sb.from('direct_messages').update({ is_read: true }).eq('recipient_id', profile.id).eq('conversation_id', convId);
+  }
 
-<!-- SUBMIT WORK MODAL -->
-<div class="modal-overlay" id="m-submit">
-  <div class="modal" style="max-width:560px">
-    <div class="modal-header"><div class="modal-title">Submit Work</div><button class="modal-close" onclick="closeM('m-submit')">×</button></div>
-    <div class="alert alert-info"><span>🔒</span><span>Files are virus-scanned and plagiarism-checked before client notification.</span></div>
-    <div class="tabs" style="margin:14px 0 16px">
-      <button class="tab active" id="sub-tab-draft" onclick="switchSubTab('draft')">📝 Upload Draft</button>
-      <button class="tab" id="sub-tab-final" onclick="switchSubTab('final')">✅ Submit Final</button>
-    </div>
-    <div id="sub-draft-panel">
-      <div class="alert alert-warning"><span>📝</span><span>Drafts are visible to the client but do NOT trigger payment release.</span></div>
-      <div class="form-group" style="margin-top:10px"><label class="form-label">Draft File (.pdf, .doc, .docx)</label><input type="file" class="form-input" id="draft-file" accept=".pdf,.doc,.docx"></div>
-      <div class="form-group"><label class="form-label">Message to Client</label><textarea class="form-textarea" id="draft-note" placeholder="e.g. Here is the draft for your review. Please let me know your feedback…"></textarea></div>
-      <button class="btn btn-outline btn-full" id="draft-btn" onclick="doUploadDraft()">📤 Send Draft to Client</button>
-    </div>
-    <div id="sub-final-panel" style="display:none">
-      <div class="alert alert-success"><span>✅</span><span>Submitting final work notifies the client for review and payment release.</span></div>
-      <div id="addons-reminder" style="display:none" class="alert alert-warning"><span>📋</span><span id="addons-reminder-text"></span></div>
-      <div class="form-group" style="margin-top:10px"><label class="form-label">Final Document * (.pdf, .doc, .docx)</label><input type="file" class="form-input" id="sub-file" accept=".pdf,.doc,.docx"></div>
-      <div class="form-group"><label class="form-label">Notes to Client <span class="text-muted">(optional)</span></label><textarea class="form-textarea" id="sub-notes" placeholder="Sources used, any relevant notes…"></textarea></div>
-      <div id="submit-err" class="alert alert-danger" style="display:none"></div>
-      <button class="btn btn-primary btn-full" id="submit-btn" onclick="doSubmitWork()">✅ Submit Final for Client Review</button>
-    </div>
-  </div>
-</div>
+  async function sendConvReply(convId, subject) {
+    const input = document.getElementById('conv-reply-input');
+    const content = input.value.trim(); if (!content) return;
+    const { data: adminProf } = await sb.from('profiles').select('id').eq('user_type','admin').single();
+    if (!adminProf) { showGlobalToast('Could not find admin.','error'); return; }
+    const { error } = await sb.from('direct_messages').insert({ sender_id: profile.id, recipient_id: adminProf.id, sender_role: 'writer', sender_name: profile.full_name, subject: subject.startsWith('Re:') ? subject : 'Re: ' + subject, content, conversation_id: convId, is_read: false });
+    if (error) { showGlobalToast(error.message,'error'); return; }
+    input.value = ''; openConversation(convId);
+  }
 
-<!-- REQUEST ORDER MODAL -->
-<div class="modal-overlay" id="m-req">
-  <div class="modal">
-    <div class="modal-header"><div class="modal-title">Request This Order</div><button class="modal-close" onclick="closeM('m-req')">×</button></div>
-    <div id="req-info" style="background:var(--parch);border-radius:8px;padding:14px;margin-bottom:14px;font-size:0.875rem;line-height:1.9"></div>
-    <div class="alert alert-info"><span>ℹ️</span><span>Admin reviews all requests and assigns the best-fit writer. You will be notified if selected.</span></div>
-    <button class="btn btn-primary btn-full" onclick="confirmRequest()">Send Request to Admin</button>
-  </div>
-</div>
+  async function renderEarnings() {
+    checkWithdrawalWindow();
+    const { assigned } = await SC.orders.getForWriter(profile.id);
+    const done = assigned.filter(o=>o.status==='completed');
+    const payout = parseFloat(settings.writer_payout||4);
+    const totalEarned = done.reduce((a,o)=>a+payout*o.page_count,0);
+    document.getElementById('earn-bal').textContent   = '$'+totalEarned.toFixed(0);
+    document.getElementById('earn-done').textContent  = done.length;
+    document.getElementById('earn-total').textContent = '$'+totalEarned.toFixed(0);
+    const ws = await SC.withdrawals.getForWriter(profile.id);
+    document.getElementById('w-history').innerHTML = ws.length ? ws.map(w=>`<div class="flex-between" style="padding:10px 0;border-bottom:1px solid var(--border);font-size:0.875rem"><div><strong>$${w.amount}</strong> via ${w.method}<br><span class="text-xs text-muted">${w.account_details}</span></div><span class="badge badge-${w.status==='pending'?'warning':w.status==='paid'?'success':'danger'}">${w.status}</span></div>`).join('') : '<div class="empty-state" style="padding:16px"><p class="text-sm">No withdrawals yet.</p></div>';
+  }
 
-<!-- ESSAY MODAL -->
-<div class="modal-overlay" id="m-essay">
-  <div class="modal" style="max-width:700px">
-    <div class="modal-header"><div class="modal-title">Submit Subject Essay</div><button class="modal-close" onclick="closeM('m-essay')">×</button></div>
-    <div id="essay-prompt" class="essay-instructions"><p class="text-sm text-muted">Select a subject above to see the essay question and formatting requirements.</p></div>
-    <div class="grid-2" style="margin-bottom:14px">
-      <div class="form-group"><label class="form-label">Subject *</label><select class="form-select" id="e-subject" onchange="onEssaySubjChange()"><option value="">Select…</option></select></div>
-      <div class="form-group"><label class="form-label">Sub-Level *</label><select class="form-select" id="e-sublevel"><option value="General">General</option></select></div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Essay Content * <span id="wc-disp" class="text-muted text-sm">(0 words)</span></label>
-      <textarea class="form-textarea" id="essay-text" style="min-height:260px" placeholder="Write your academic essay here. Minimum 1,250 words (~5 pages). Demonstrate subject expertise, academic writing style, and proper citations…" oninput="updateWC()" onpaste="setTimeout(updateWC,10)"></textarea>
-    </div>
-    <div class="form-group"><label class="form-label">Or Upload Essay File <span class="text-muted">(PDF/DOCX)</span></label><input type="file" class="form-input" id="essay-file" accept=".pdf,.docx,.doc"></div>
-    <div id="essay-err" class="alert alert-danger" style="display:none"></div>
-    <button class="btn btn-primary btn-full" id="essay-btn" onclick="submitEssay()">Submit Essay for Admin Review</button>
-  </div>
-</div>
+  function updateWLabel() {
+    const m = document.getElementById('w-method').value;
+    const labels = {paypal:'PayPal Email *', mpesa:'M-Pesa Number *', bank:'Bank Account / IBAN *', payoneer:'Payoneer Email *'};
+    const phs    = {paypal:'your@paypal.com', mpesa:'+254700000000', bank:'GB29 NWBK 6016 1331 9268 19', payoneer:'your@payoneer.com'};
+    document.getElementById('w-label').textContent = labels[m]||'Account Details *';
+    document.getElementById('w-details').placeholder = phs[m]||'Account details';
+  }
+
+  async function requestWithdrawal() {
+    const amount  = parseFloat(document.getElementById('w-amt').value);
+    const method  = document.getElementById('w-method').value;
+    const details = document.getElementById('w-details').value.trim();
+    if (!amount||amount<20) { showGlobalToast('Minimum withdrawal is $20.','error'); return; }
+    if (!details) { showGlobalToast('Please enter your account details.','error'); return; }
+    const res = await SC.withdrawals.request(profile.id, amount, method, details);
+    if (res.error) { showGlobalToast(res.error,'error'); return; }
+    showGlobalToast(`Withdrawal of $${amount} requested!`,'success');
+    renderEarnings();
+  }
+
+  // ── Writer Profile ────────────────────────────────────────
+  async function loadWriterProfile() {
+    document.getElementById('wp-name').textContent = profile.full_name;
+    document.getElementById('wp-fullname').value = profile.full_name || '';
+    document.getElementById('wp-email').value = profile.email || '';
+    document.getElementById('wp-phone').value = profile.phone || '';
+    document.getElementById('wp-bio').value = profile.bio || '';
+    document.getElementById('wp-joined').textContent = 'Member since ' + new Date(profile.created_at).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    const av = document.getElementById('writer-avatar');
+    av.innerHTML = profile.avatar_url ? `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover">` : (profile.full_name||'W').charAt(0).toUpperCase();
+    const { data: orders } = await sb.from('orders').select('rating').eq('assigned_writer_id', profile.id).eq('status','completed').not('rating','is',null);
+    const rats = (orders||[]).map(o=>o.rating);
+    const avg = rats.length ? (rats.reduce((a,b)=>a+b,0)/rats.length).toFixed(1) : null;
+    document.getElementById('wp-rating').innerHTML = avg ? `${'⭐'.repeat(Math.round(avg))} <span style="font-size:0.9rem;color:var(--muted)">${avg}/5 (${rats.length} reviews)</span>` : '<span class="text-muted text-sm">No reviews yet</span>';
+    const { data: completed } = await sb.from('orders').select('id,page_count').eq('assigned_writer_id',profile.id).eq('status','completed');
+    const pages = (completed||[]).reduce((a,o)=>a+o.page_count,0);
+    document.getElementById('wp-stats').textContent = `${(completed||[]).length} completed orders · ${pages} pages written`;
+    const results = await SC.tests.getResultsForWriter(profile.id);
+    const approvedSubjs = results.filter(r=>r.test_type==='essay'&&r.admin_approved);
+    const subjEl = document.getElementById('wp-subjects');
+    subjEl.innerHTML = approvedSubjs.length ? `<div class="flex-gap" style="flex-wrap:wrap">${[...new Set(approvedSubjs.map(r=>r.subject))].map(s=>`<span class="badge badge-success">✓ ${s}</span>`).join('')}</div>` : '<p class="text-muted text-sm">No approved subjects yet.</p>';
+  }
+
+  async function uploadWriterPhoto(input) {
+    if (!input.files.length) return;
+    const file = input.files[0];
+    if (file.size > 2 * 1024 * 1024) { showGlobalToast('Photo must be under 2MB.','error'); return; }
+    showGlobalToast('Uploading photo…','success');
+    const ext = file.name.split('.').pop();
+    const { data, error } = await sb.storage.from('avatars').upload(profile.id + '/avatar.' + ext, file, { upsert: true });
+    if (error) { showGlobalToast('Upload failed: '+error.message,'error'); return; }
+    const { data: urlData } = sb.storage.from('avatars').getPublicUrl(data.path);
+    await sb.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', profile.id);
+    profile.avatar_url = urlData.publicUrl;
+    document.getElementById('writer-avatar').innerHTML = `<img src="${urlData.publicUrl}" style="width:100%;height:100%;object-fit:cover">`;
+    showGlobalToast('Profile photo updated!','success');
+  }
+
+  async function saveWriterProfile() {
+    const name = document.getElementById('wp-fullname').value.trim();
+    const phone = document.getElementById('wp-phone').value.trim();
+    const bio = document.getElementById('wp-bio').value.trim();
+    if (!name) { showGlobalToast('Name cannot be empty.','error'); return; }
+    await sb.from('profiles').update({ full_name: name, phone, bio }).eq('id', profile.id);
+    profile.full_name = name; profile.bio = bio;
+    document.getElementById('wp-name').textContent = name;
+    document.getElementById('welcome-msg').textContent = `Welcome, ${name.split(' ')[0]}!`;
+    const msg = document.getElementById('wp-save-msg');
+    msg.style.display='flex'; setTimeout(()=>msg.style.display='none',3000);
+  }
+
+  async function changeWriterPassword() {
+    const np = document.getElementById('wp-newpass').value;
+    const cp = document.getElementById('wp-confpass').value;
+    const msg = document.getElementById('wp-pass-msg'); msg.style.display='none';
+    if (np !== cp) { msg.textContent='Passwords do not match.'; msg.className='alert alert-danger'; msg.style.display='flex'; return; }
+    if (np.length < 8) { msg.textContent='Min 8 characters required.'; msg.className='alert alert-danger'; msg.style.display='flex'; return; }
+    const { error } = await sb.auth.updateUser({ password: np });
+    if (error) { msg.textContent=error.message; msg.className='alert alert-danger'; msg.style.display='flex'; return; }
+    msg.textContent='Password updated!'; msg.className='alert alert-success'; msg.style.display='flex';
+    document.getElementById('wp-newpass').value=''; document.getElementById('wp-confpass').value='';
+    setTimeout(()=>msg.style.display='none',3000);
+  }
+
+  function openM(id) { document.getElementById(id).classList.add('open'); }
+  function closeM(id) { document.getElementById(id).classList.remove('open'); }
+</script>
 
 <a href="https://wa.me/254716603371" target="_blank" class="whatsapp-fab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg><span class="whatsapp-tooltip">WhatsApp Support</span></a>
 <div class="toast-container" id="toasts"></div>
