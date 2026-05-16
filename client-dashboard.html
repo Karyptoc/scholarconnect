@@ -151,9 +151,9 @@
           <div class="form-group">
             <label class="form-label">Add-ons</label>
             <div style="display:flex;gap:12px;flex-wrap:wrap">
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.875rem"><input type="checkbox" id="o-addon-plagiarism"> Plagiarism & AI Report (+$5)</label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.875rem"><input type="checkbox" id="o-addon-summary"> Executive Summary (+$3)</label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.875rem"><input type="checkbox" id="o-addon-outline"> Outline (+$2)</label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.875rem"><input type="checkbox" id="o-addon-plagiarism"> Plagiarism & AI Report</label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.875rem"><input type="checkbox" id="o-addon-summary"> Executive Summary</label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.875rem"><input type="checkbox" id="o-addon-outline"> Outline</label>
             </div>
           </div>
 
@@ -666,7 +666,7 @@
     if (!consent) { err.textContent='Please accept the Terms of Service to proceed.'; err.style.display='flex'; return; }
     if (pages<1||pages>100) { err.textContent='Pages must be between 1 and 100.'; err.style.display='flex'; return; }
     // Calculate add-on costs
-    const addonCost = (addonPlag?5:0) + (addonSum?3:0) + (addonOut?2:0);
+    const addonCost = 0; // Add-ons are included in base price
     const addons = [];
     if (addonPlag) addons.push('Plagiarism & AI Report');
     if (addonSum) addons.push('Executive Summary');
