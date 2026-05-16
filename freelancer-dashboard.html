@@ -218,6 +218,7 @@
     </div>
     <div id="sub-final-panel" style="display:none">
       <div class="alert alert-success"><span>✅</span><span>Submitting final work notifies the client for review and payment release.</span></div>
+      <div id="addons-reminder" style="display:none" class="alert alert-warning"><span>📋</span><span id="addons-reminder-text"></span></div>
       <div class="form-group" style="margin-top:10px"><label class="form-label">Final Document * (.pdf, .doc, .docx)</label><input type="file" class="form-input" id="sub-file" accept=".pdf,.doc,.docx"></div>
       <div class="form-group"><label class="form-label">Notes to Client <span class="text-muted">(optional)</span></label><textarea class="form-textarea" id="sub-notes" placeholder="Sources used, any relevant notes…"></textarea></div>
       <div id="submit-err" class="alert alert-danger" style="display:none"></div>
@@ -407,7 +408,7 @@
 
   function miniCard(o) {
     const d=new Date(o.deadline),days=Math.ceil((d-Date.now())/86400000);
-    return `<div class="order-card" style="margin-bottom:10px" onclick="openDetail(${o.id},'my-orders')"><div class="flex-between"><span class="order-num">${o.order_number}</span><span class="badge status-${o.status}">${statusLabel(o.status)}</span></div><div style="font-weight:600;margin:4px 0;font-size:0.9rem">${o.subject} · ${o.page_count}p${o.citation_style?' · '+o.citation_style:''}</div><div class="text-sm text-muted" style="color:${days<=1?'var(--danger)':'inherit'}">${days}d left</div></div>`;
+    return `<div class="order-card" style="margin-bottom:10px" onclick="openDetail(${o.id},'my-orders')"><div class="flex-between"><span class="order-num">${o.order_number}</span><span class="badge status-${o.status}">${statusLabel(o.status)}</span></div><div style="font-weight:600;margin:4px 0;font-size:0.9rem">${o.paper_type||'Essay'} · ${o.subject}</div><div class="text-sm text-muted">${o.word_count?o.word_count.toLocaleString()+' words / ':''} ${o.page_count}p · ${o.citation_style||'APA'} · <span style="color:${days<=1?'var(--danger)':'inherit'}">${days}d left</span></div></div>`;
   }
   function availMini(o) {
     const p=(parseFloat(settings.writer_payout||4)*o.page_count).toFixed(0);
@@ -467,10 +468,25 @@
     curOrdId = ordId; detFrom = from;
     const { data: o } = await SC.orders.getOne(ordId);
     if (!o) return;
-    // Ensure brief_files is loaded (SC.orders.getOne may not include it)
-    if (!o.brief_files || !o.brief_files.length) {
-      const { data: extra } = await sb.from('orders').select('brief_files, brief_url').eq('id', ordId).single();
-      if (extra) { o.brief_files = extra.brief_files || []; o.brief_url = o.brief_url || extra.brief_url; }
+    // Fetch all extra fields directly from DB
+    const { data: extra } = await sb.from('orders').select('brief_files, brief_url, word_count, paper_type, language, spacing, sources_required, addons, addon_cost, discount_percent, title').eq('id', ordId).single();
+    if (extra) {
+      o.brief_files = (extra.brief_files?.length) ? extra.brief_files : (o.brief_files||[]);
+      o.brief_url = o.brief_url || extra.brief_url;
+      o.word_count = extra.word_count;
+      o.paper_type = extra.paper_type;
+      o.language = extra.language;
+      o.spacing = extra.spacing;
+      o.sources_required = extra.sources_required;
+      o.addons = extra.addons;
+      o.title = extra.title || o.title;
+      o.discount_percent = extra.discount_percent;
+    }
+    // Show addons reminder in submit modal
+    if (o.addons?.length) {
+      const rem = document.getElementById('addons-reminder');
+      const remTxt = document.getElementById('addons-reminder-text');
+      if (rem && remTxt) { remTxt.textContent = 'Client requested add-ons: ' + o.addons.join(', ') + '. Please include these in your submission.'; rem.style.display='flex'; }
     }
     document.getElementById('det-title').textContent = `${o.subject} · ${o.page_count} pages`;
     document.getElementById('det-num').textContent = o.order_number + ' · ' + o.academic_level;
@@ -483,12 +499,18 @@
     document.getElementById('det-info').innerHTML = `
       <h3 style="font-family:var(--font-display);margin-bottom:14px">Order Brief</h3>
       <div class="alert alert-info" style="margin-bottom:14px">🔒 <strong>Anonymous.</strong> Client identity is never revealed. Only the order number is used.</div>
-      <div class="grid-2" style="gap:14px;margin-bottom:14px">
-        <div><div class="form-label">Subject</div><div>${o.subject} → ${o.sub_level||'General'}</div></div>
-        <div><div class="form-label">Level</div><div>${o.academic_level}</div></div>
-        <div><div class="form-label">Pages</div><div>${o.page_count}</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+        <div><div class="form-label">Topic</div><div style="font-size:0.875rem">${o.title||o.instructions?.slice(0,50)||'—'}</div></div>
+        <div><div class="form-label">Type of Paper</div><div style="font-size:0.875rem">${o.paper_type||'Essay (any type)'}</div></div>
+        <div><div class="form-label">Subject</div><div style="font-size:0.875rem">${o.subject} → ${o.sub_level||'General'}</div></div>
+        <div><div class="form-label">Education Level</div><div style="font-size:0.875rem">${o.academic_level}</div></div>
         <div><div class="form-label">Citation Style</div><div><strong>${o.citation_style||'APA'}</strong></div></div>
-        <div><div class="form-label">Deadline</div><div style="color:${hrs<=24?'var(--danger)':'inherit'}">${new Date(o.deadline).toLocaleString()} (${hrs}h)</div></div>
+        <div><div class="form-label">Language</div><div style="font-size:0.875rem">${o.language||'English (US)'}</div></div>
+        <div><div class="form-label">Spacing</div><div style="font-size:0.875rem">${o.spacing||'Double spacing'}</div></div>
+        <div><div class="form-label">Size</div><div style="font-size:0.875rem">${o.word_count?o.word_count.toLocaleString()+' words / ':''} ${o.page_count} pages</div></div>
+        <div><div class="form-label">Sources Required</div><div style="font-size:0.875rem">${o.sources_required > 0 ? o.sources_required+' sources' : 'No requirement'}</div></div>
+        <div><div class="form-label">Add-ons Required</div><div style="font-size:0.875rem">${o.addons?.length ? o.addons.join(', ') : 'None'}</div></div>
+        <div><div class="form-label">Deadline</div><div style="font-size:0.875rem;color:${hrs<=24?'var(--danger)':'inherit'}">${new Date(o.deadline).toLocaleString()} (${hrs}h left)</div></div>
         <div><div class="form-label">Your Payout</div><div class="fw-700 text-success">$${p}</div></div>
         <div><div class="form-label">Revisions</div><div>${o.revisions_used}/2</div></div>
       </div>
@@ -509,7 +531,12 @@ ${o.brief_files && o.brief_files.length ? `<div style="margin-top:12px"><div cla
     } else if (isMine && o.status === 'completed') {
       actions = `<div class="card card-sm"><h4>✅ Completed</h4><div class="alert alert-success" style="margin-top:8px">$${p} released to your account.</div>${o.rating?`<div style="margin-top:8px">${'⭐'.repeat(o.rating)} <span class="text-sm">${o.review_text||''}</span></div>`:''}</div>`;
     }
-    document.getElementById('det-actions').innerHTML = actions + `<div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Order Info</div><div style="font-size:0.82rem;color:var(--muted);line-height:2.2"><div class="flex-between"><span>Pages:</span><strong>${o.page_count}</strong></div><div class="flex-between"><span>Rate:</span><strong>$${settings.writer_payout||4}/page</strong></div><div class="flex-between"><span>Payout:</span><strong style="color:var(--success)">$${p}</strong></div><div class="flex-between"><span>Type:</span><strong>${o.is_urgent?'⚡ Urgent':'Standard'}</strong></div><div class="flex-between"><span>Citation:</span><strong>${o.citation_style||'APA'}</strong></div></div></div>`;
+    document.getElementById('det-actions').innerHTML = actions + `<div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Order Info</div><div style="font-size:0.82rem;color:var(--muted);line-height:2.2"><div class="flex-between"><span>Pages:</span><strong>${o.page_count}</strong></div><div class="flex-between"><span>Rate:</span><strong>$${settings.writer_payout||4}/page</strong></div><div class="flex-between"><span>Payout:</span><strong style="color:var(--success)">$${p}</strong></div><div class="flex-between"><span>Type:</span><strong>${o.is_urgent?'⚡ Urgent':'Standard'}</strong></div><div class="flex-between"><span>Citation:</span><strong>${o.citation_style||'APA'}</strong></div>
+              <div class="flex-between"><span>Language:</span><strong>${o.language||'English (US)'}</strong></div>
+              <div class="flex-between"><span>Spacing:</span><strong>${o.spacing||'Double'}</strong></div>
+              <div class="flex-between"><span>Sources:</span><strong>${o.sources_required||0}</strong></div>
+              ${o.addons?.length?`<div class="flex-between"><span>Add-ons:</span><strong style="color:var(--warning);font-size:0.78rem">${o.addons.join(', ')}</strong></div>`:''}
+            </div></div></div>`;
 
     showPage('order-detail');
     loadMessages();
