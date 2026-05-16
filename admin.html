@@ -591,6 +591,25 @@
     }).join('');
   }
 
+  function handleAssignRequest(btn) {
+    const orderId = parseInt(btn.dataset.oid);
+    const idx = parseInt(btn.dataset.idx);
+    const reqs = window._adminWriterReqs && window._adminWriterReqs[orderId];
+    if (!reqs || !reqs[idx]) return;
+    const r = reqs[idx];
+    const writerName = (r.profiles && r.profiles.full_name) ? r.profiles.full_name : 'Writer';
+    confirmAssignFromModal(orderId, r.writer_id, writerName);
+  }
+
+  async function assignFromRequest(orderId, idx) {
+    const reqs = window._writerRequests && window._writerRequests[orderId];
+    if (!reqs || !reqs[idx]) return;
+    const r = reqs[idx];
+    const writerId = r.writer_id;
+    const writerName = r.profiles?.full_name || 'Writer';
+    await confirmAssignFromModal(orderId, writerId, writerName);
+  }
+
   async function confirmAssignFromModal(orderId, writerId, writerName) {
     if (!confirm('Assign ' + writerName + ' to this order?')) return;
     const res = await SC.orders.assign(orderId, writerId);
@@ -682,16 +701,17 @@
         el.innerHTML = '<div class="text-muted text-sm" style="margin-top:8px">No writer requests yet.</div>';
         return;
       }
-      let html = '<div class="form-label" style="margin-bottom:8px">✋ Writer Requests (' + reqs.length + ')</div>';
-      reqs.forEach(r => {
-        const wName = r.profiles?.full_name || 'Writer';
-        const wEmail = r.profiles?.email || '';
-        const wId = r.writer_id;
-        const ordId = o.id;
+      // Use data attributes to avoid quote escaping issues
+      window._adminWriterReqs = window._adminWriterReqs || {};
+      window._adminWriterReqs[o.id] = reqs;
+      let html = '<div style="font-weight:600;font-size:0.82rem;margin-bottom:8px">Writer Requests (' + reqs.length + ')</div>';
+      reqs.forEach((r, i) => {
+        const wName = (r.profiles && r.profiles.full_name) ? r.profiles.full_name : 'Writer';
+        const wEmail = (r.profiles && r.profiles.email) ? r.profiles.email : '';
         html += '<div class="flex-between" style="padding:8px;background:var(--parch);border-radius:8px;margin-bottom:6px">'
           + '<div><strong style="font-size:0.875rem">' + wName + '</strong>'
           + '<div class="text-xs text-muted">' + wEmail + '</div></div>'
-          + '<button class="btn btn-sm btn-gold" onclick="confirmAssignFromModal(' + ordId + ','' + wId + '','' + wName.replace(/'/g,'') + '')">Assign</button>'
+          + '<button class="btn btn-sm btn-gold" data-oid="' + o.id + '" data-idx="' + i + '" onclick="handleAssignRequest(this)">Assign</button>'
           + '</div>';
       });
       el.innerHTML = html;
