@@ -519,7 +519,7 @@
       const hasFile = delivery?.file_url;
       return `<tr>
         <td><strong style="font-size:0.85rem">${o.order_number}</strong></td>
-        <td><span class="tag" style="font-size:0.72rem">${o.subject}</span><br><span class="text-xs text-muted">${o.academic_level}</span></td>
+        <td><span class="tag" style="font-size:0.72rem">${o.subject}</span><br><span class="text-xs text-muted">${o.paper_type||'Essay'} · ${o.academic_level}</span>${o.word_count?`<br><span class="text-xs text-muted">${o.word_count.toLocaleString()} words</span>`:''}</td>
         <td><div style="font-size:0.82rem;font-weight:600">${cl.full_name||'?'}</div><div style="font-size:0.75rem;color:var(--danger)">${cl.email||''}</div></td>
         <td style="font-size:0.82rem">${o.page_count}p<br><strong>$${o.total_price}</strong><br><span class="text-xs text-muted">dep $${o.deposit_amount}</span></td>
         <td><span class="badge status-${o.status}" style="font-size:0.72rem">${o.status.replace(/_/g,' ')}</span>${o.is_urgent?'<br><span class="badge badge-warning" style="margin-top:3px;font-size:0.7rem">⚡</span>':''}</td>
@@ -577,10 +577,18 @@
         <div><div class="form-label" style="color:var(--danger)">🔒 CLIENT (CONFIDENTIAL)</div><div style="background:rgba(224,85,85,0.05);border:1px solid rgba(224,85,85,0.2);border-radius:6px;padding:12px;font-size:0.875rem"><strong>${cl.full_name||'?'}</strong><br><span style="color:var(--danger)">${cl.email||''}</span><br>IP: ${cl.last_ip||'?'} · Logins: ${cl.login_count||0}<br>Consent: ${cl.consent_given?'✓':'✗'}</div></div>
         <div><div class="form-label">WRITER</div><div style="background:var(--parch);border-radius:6px;padding:12px;font-size:0.875rem">${wr.full_name?`<strong>${wr.full_name}</strong><br><span style="color:var(--muted)">${wr.email||''}</span>`:'<em class="text-muted">Unassigned</em>'}</div></div>
       </div>
-      <div class="grid-2" style="gap:10px;font-size:0.875rem;margin-bottom:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:0.82rem;margin-bottom:12px">
+        <div><strong>Topic:</strong> ${o.title||'—'}</div>
+        <div><strong>Type:</strong> ${o.paper_type||'Essay'}</div>
         <div><strong>Subject:</strong> ${o.subject} → ${o.sub_level||'General'}</div>
         <div><strong>Level:</strong> ${o.academic_level}</div>
-        <div><strong>Pages:</strong> ${o.page_count} · <strong>Total:</strong> $${o.total_price}</div>
+        <div><strong>Citation:</strong> ${o.citation_style||'APA'}</div>
+        <div><strong>Language:</strong> ${o.language||'English (US)'}</div>
+        <div><strong>Spacing:</strong> ${o.spacing||'Double'}</div>
+        <div><strong>Size:</strong> ${o.word_count?o.word_count.toLocaleString()+' words / ':''} ${o.page_count} pages</div>
+        <div><strong>Sources:</strong> ${o.sources_required||0}</div>
+        <div><strong>Add-ons:</strong> ${o.addons?.length?o.addons.join(', '):'None'}</div>
+        <div><strong>Total:</strong> $${o.total_price}${o.discount_percent?' (-'+o.discount_percent+'%)':''}</div>
         <div><strong>Deposit:</strong> ${o.deposit_paid?`✓ $${o.deposit_amount} via ${o.payment_method}`:'Not paid'}</div>
         <div><strong>Status:</strong> <span class="badge status-${o.status}">${o.status}</span></div>
         <div><strong>Plagiarism:</strong> ${delivery?.plagiarism_score?delivery.plagiarism_score+'% original':'Not checked'}</div>
