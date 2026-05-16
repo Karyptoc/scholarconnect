@@ -678,12 +678,23 @@
     sb.from('order_requests').select('*, profiles(full_name, email, is_writer_approved)').eq('order_id', o.id).then(({data:reqs}) => {
       const el = document.getElementById('modal-requests-'+o.id);
       if (!el) return;
-      if (!reqs || !reqs.length) { el.innerHTML = '<div class="text-muted text-sm" style="margin-top:8px">No writer requests yet.</div>'; return; }
-      el.innerHTML = '<div class="form-label" style="margin-bottom:8px">✋ Writer Requests ('+reqs.length+')</div>'
-        + reqs.map(r => '<div class="flex-between" style="padding:8px;background:var(--parch);border-radius:8px;margin-bottom:6px">'
-          + '<div><strong style="font-size:0.875rem">'+r.profiles?.full_name+'</strong><div class="text-xs text-muted">'+r.profiles?.email+'</div></div>'
-          + '<button class="btn btn-sm btn-gold" onclick="confirmAssignFromModal('+o.id+',''+r.writer_id+'',''+r.profiles?.full_name+'')">Assign</button>'
-          + '</div>').join('');
+      if (!reqs || !reqs.length) {
+        el.innerHTML = '<div class="text-muted text-sm" style="margin-top:8px">No writer requests yet.</div>';
+        return;
+      }
+      let html = '<div class="form-label" style="margin-bottom:8px">✋ Writer Requests (' + reqs.length + ')</div>';
+      reqs.forEach(r => {
+        const wName = r.profiles?.full_name || 'Writer';
+        const wEmail = r.profiles?.email || '';
+        const wId = r.writer_id;
+        const ordId = o.id;
+        html += '<div class="flex-between" style="padding:8px;background:var(--parch);border-radius:8px;margin-bottom:6px">'
+          + '<div><strong style="font-size:0.875rem">' + wName + '</strong>'
+          + '<div class="text-xs text-muted">' + wEmail + '</div></div>'
+          + '<button class="btn btn-sm btn-gold" onclick="confirmAssignFromModal(' + ordId + ','' + wId + '','' + wName.replace(/'/g,'') + '')">Assign</button>'
+          + '</div>';
+      });
+      el.innerHTML = html;
     });
     openM('m-ord');
   }
