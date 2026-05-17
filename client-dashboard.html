@@ -926,15 +926,24 @@
       actions = `<div class="card card-sm"><h4 style="margin-bottom:12px">Writer Requests (${reqs.length})</h4>${reqHTML}
         <button class="btn btn-danger btn-sm btn-full" style="margin-top:10px" onclick="cancelOrder('${o.id}','${o.order_number}')">Cancel Order</button>
       </div>`;
-    } else if (o.status === 'completed' && !o.rating) {
-      actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">⭐ Rate This Order</h4>
-        <p class="text-sm text-muted" style="margin-bottom:10px">How was your experience with this writer?</p>
-        <button class="btn btn-gold btn-full" onclick="openM('m-review')">Rate & Leave Feedback</button>
-        <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="openM('m-revision')">Request Further Revision</button>
-        <button class="btn btn-danger btn-sm btn-full" style="margin-top:8px" onclick="openM('m-dispute')">Open Dispute</button>
-      </div>`;
     } else if (o.status === 'completed') {
-      actions = `<div class="card card-sm"><h4>✅ Completed</h4><div class="alert alert-success" style="margin-top:8px">Order complete. Writer has been paid.</div>${delivery?.file_url?`<a href="${delivery.file_url}" target="_blank" class="btn btn-outline btn-full btn-sm" style="margin-top:10px">📄 Download Work</a>`:''}</div>`;
+      const hasFile = delivery?.file_url;
+      const alreadyRated = o.rating > 0;
+      actions = `<div class="card card-sm">
+        <h4>✅ Order Complete</h4>
+        <div class="alert alert-success" style="margin-top:8px;margin-bottom:12px">Payment released to writer.</div>
+        ${hasFile ? `<a href="${delivery.file_url}" target="_blank" class="btn btn-primary btn-full" style="margin-bottom:10px">📄 Download Final Work</a>` : '<p class="text-sm text-muted">No file submitted yet.</p>'}
+        ${delivery?.draft_url ? `<a href="${delivery.draft_url}" target="_blank" class="btn btn-outline btn-full btn-sm" style="margin-bottom:10px">📝 View Draft</a>` : ''}
+        ${alreadyRated ?
+          `<div style="margin-top:8px;text-align:center"><div style="font-size:1.3rem">${'⭐'.repeat(o.rating)}</div><div class="text-sm text-muted">${o.review_text||'Your rating has been submitted'}</div></div>` :
+          `<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+            <p class="text-sm text-muted" style="margin-bottom:8px">Please download and review the work, then rate your experience:</p>
+            <button class="btn btn-gold btn-full" style="margin-bottom:6px" onclick="openM('m-review')">⭐ Rate This Order</button>
+            <button class="btn btn-outline btn-full btn-sm" style="margin-bottom:6px" onclick="openM('m-revision')">Request Revision</button>
+            <button class="btn btn-danger btn-full btn-sm" onclick="openM('m-dispute')">Open Dispute</button>
+          </div>`
+        }
+      </div>`;
     } else if (o.status === 'disputed') {
       actions = `<div class="card card-sm"><h4 style="color:var(--danger)">⚖️ Dispute Open</h4><p class="text-sm text-muted" style="margin-top:6px">Admin is reviewing your dispute. Response within 24–48h.</p></div>`;
     }
