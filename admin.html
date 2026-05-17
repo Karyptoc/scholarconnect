@@ -1216,14 +1216,17 @@
 
   // ── Settings ───────────────────────────────────────────────
   async function loadSettings(){
-    const s=await SC.settings.get();
-    document.getElementById('s-std').value=s.standard_rate||10;
-    document.getElementById('s-urg').value=s.urgent_rate||15;
-    document.getElementById('s-thresh').value=s.urgent_threshold_days||5;
-    document.getElementById('s-pay').value=s.writer_payout||4;
-    document.getElementById('s-max').value=s.max_active_orders||3;
-    document.getElementById('s-auto').value=s.auto_approve_hours||72;
-    document.getElementById('s-pp').value=s.paypal_email||'jameskinyua1997@gmail.com';
+    // Always fetch fresh from DB
+    const { data: rawSettings } = await sb.from('platform_settings').select('key, value');
+    const s = {};
+    if (rawSettings) rawSettings.forEach(r => { s[r.key] = r.value; });
+    document.getElementById('s-std').value = s.standard_rate||10;
+    document.getElementById('s-urg').value = s.urgent_rate||15;
+    document.getElementById('s-thresh').value = s.urgent_threshold_days||5;
+    document.getElementById('s-pay').value = s.writer_payout||4;
+    document.getElementById('s-max').value = s.max_active_orders||10;
+    document.getElementById('s-auto').value = s.auto_approve_hours||72;
+    document.getElementById('s-pp').value = s.paypal_email||'jameskinyua1997@gmail.com';
     document.getElementById('s-bn').value=s.bank_name||'';
     document.getElementById('s-ba').value=s.bank_account||'';
     document.getElementById('s-bs').value=s.bank_sort||'';
