@@ -341,7 +341,16 @@
       </div>
     </div>
     <div id="pay-paypal" style="display:none">
-      <div class="alert alert-info" style="margin-bottom:12px"><span>🅿️</span><span>Pay with <strong>PayPal balance</strong> or <strong>debit/credit card</strong>. No PayPal account needed for card payment.</span></div><div style="background:var(--parch);border-radius:8px;padding:14px;font-size:0.875rem"><div class="flex-between" style="margin-bottom:6px"><span>PayPal email:</span><strong id="pp-addr"></strong></div><div class="flex-between" style="margin-bottom:6px"><span>Amount:</span><strong id="pp-amt"></strong></div><div class="flex-between"><span>Reference:</span><strong id="pp-ref"></strong></div></div><div class="alert alert-warning" style="margin-top:10px"><span>⚠️</span><span>Include the reference in the PayPal note. Admin confirms and activates your order.</span></div></div>
+      <div class="alert alert-info" style="margin-bottom:12px"><span>🅿️</span><span>Pay with <strong>PayPal balance</strong> or <strong>debit/credit card</strong>. No PayPal account needed.</span></div>
+      <div style="background:var(--parch);border-radius:8px;padding:14px;font-size:0.875rem;margin-bottom:12px">
+        <div class="flex-between" style="margin-bottom:6px"><span>Amount:</span><strong id="pp-amt"></strong></div>
+        <div class="flex-between"><span>Reference:</span><strong id="pp-ref"></strong></div>
+      </div>
+      <strong id="pp-addr" style="display:none"></strong>
+      <strong id="pp-email" style="display:none"></strong>
+      <div id="paypal-button-container" style="min-height:50px"></div>
+      <div id="paypal-success" class="alert alert-success" style="display:none;margin-top:10px">✅ Payment successful! Redirecting…</div>
+    </div>
     <div id="pay-bank" style="display:none"><div class="alert alert-info"><span>🏦</span><span>Transfer the deposit to our bank account below.</span></div><div style="background:var(--parch);border-radius:8px;padding:14px;font-size:0.875rem;line-height:2.1"><div class="flex-between"><span>Bank:</span><strong id="bk-name"></strong></div><div class="flex-between"><span>Account Name:</span><strong>ScholarConnect</strong></div><div class="flex-between"><span>Account No:</span><strong id="bk-acc"></strong></div><div class="flex-between"><span>Sort Code:</span><strong id="bk-sort"></strong></div><div class="flex-between"><span>SWIFT:</span><strong id="bk-swift"></strong></div><div class="flex-between"><span>Amount:</span><strong id="bk-amt"></strong></div><div class="flex-between"><span>Reference:</span><strong id="bk-ref"></strong></div></div><div class="alert alert-warning" style="margin-top:10px"><span>⚠️</span><span>Use the exact reference. Admin confirms after transfer.</span></div></div>
     <div id="pay-err" class="alert alert-danger" style="display:none;margin-top:12px"></div>
     <button class="btn btn-gold btn-full btn-lg" id="pay-btn" onclick="processPayment()" style="margin-top:16px"><span id="pay-btn-text">Pay Deposit</span></button>
@@ -423,6 +432,7 @@
 
   let currentOrdId = null, currentOrd = null, currentRat = 5;
   let payMethod = 'stripe', payingOrdId = null;
+  let allOrdersCache = []; // Cache for orders
   let chatSub = null, settings = {};
 
   document.getElementById('welcome-msg').textContent = 'Welcome back, ' + ((profile.full_name||'').split(' ')[0]||'there') + '!';
@@ -779,15 +789,22 @@
   function selPM(m) {
     payMethod = m;
     paypalRendered = false;
-    ['stripe','paypal','bank'].forEach(x => { document.getElementById('pm-'+x).style.borderColor=x===m?'var(--steel)':'var(--border)'; document.getElementById('pm-'+x).style.background=x===m?'rgba(107,159,212,0.08)':'var(--surface)'; document.getElementById('pay-'+x).style.display=x===m?'block':'none'; });
+    ['stripe','paypal','bank'].forEach(x => {
+      const pmEl = document.getElementById('pm-'+x);
+      const payEl = document.getElementById('pay-'+x);
+      if (pmEl) { pmEl.style.borderColor = x===m?'var(--steel)':'var(--border)'; pmEl.style.background = x===m?'rgba(107,159,212,0.08)':'var(--surface)'; }
+      if (payEl) payEl.style.display = x===m?'block':'none';
+    });
     if (m === 'paypal') {
       setTimeout(() => {
-        const ord = allOrdersCache?.find(o=>o.id===payingOrdId) || currentOrd;
-        const amt = ord?.deposit_amount || parseFloat(document.getElementById('price-dep')?.textContent?.replace('$',''))||25;
-        const num = ord?.order_number || 'ORD-NEW';
+        const amt = currentOrd?.deposit_amount || 10;
+        const num = currentOrd?.order_number || 'ORD-NEW';
         initPayPalButton(amt, num);
       }, 300);
     }
+    // Hide the main Pay button when PayPal is selected (PayPal has its own button)
+    const payBtn = document.getElementById('pay-btn');
+    if (payBtn) payBtn.style.display = m === 'paypal' ? 'none' : 'block';
   }
 
   async function processPayment() {
@@ -1220,10 +1237,14 @@
       createOrder: function(data, actions) {
         return actions.order.create({
           purchase_units: [{
-            amount: { value: amount.toFixed(2) },
-            description: 'ScholarConnect Order ' + ordNum,
+            amount: { value: parseFloat(amount).toFixed(2) },
+            description: 'ScholarConnect Deposit - ' + ordNum,
             payee: { email_address: 'jameskinyua1997@gmail.com' }
-          }]
+          }],
+          application_context: {
+            brand_name: 'ScholarConnect',
+            shipping_preference: 'NO_SHIPPING'
+          }
         });
       },
       onApprove: async function(data, actions) {
