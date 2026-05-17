@@ -863,9 +863,14 @@
   }
 
   async function updateEssayBadge(){
-    const all=await SC.tests.getAllPendingEssays();
+    const { data: pending } = await sb.from('writer_test_results')
+      .select('id', { count: 'exact' })
+      .eq('test_type', 'essay')
+      .is('admin_approved', null);
+    const count = pending?.length || 0;
     const b=document.getElementById('essay-badge');
-    b.textContent=all.length;b.style.display=all.length>0?'inline-flex':'none';
+    b.textContent=count;
+    b.style.display=count>0?'inline-flex':'none';
   }
 
   function openEssayReview(id,writerId,name,subj,sl){
@@ -895,9 +900,13 @@
 
   // ── Writer Applications Window ─────────────────────────────
   async function renderApplications() {
+    // Fetch directly from DB to get latest value
+    const { data: appSetting } = await sb.from('platform_settings')
+      .select('value').eq('key', 'applications_open').single();
+    const rawVal = appSetting?.value;
+    const isOpen = rawVal === true || rawVal === 'true' || rawVal === 1 || rawVal === '1';
     const s = await SC.settings.get();
-    // Handle both boolean true and string 'true' from DB
-    const isOpen = s.applications_open === true || s.applications_open === 'true';
+    s.applications_open = isOpen;
     const openDate = s.applications_open_date || '';
     const closeDate = s.applications_close_date || '';
     const appMessage = s.applications_message || '';
@@ -1229,21 +1238,28 @@
   }
 
   async function saveSettings(){
-    await SC.settings.update({
-      standard_rate:document.getElementById('s-std').value,
-      urgent_rate:document.getElementById('s-urg').value,
-      urgent_threshold_days:document.getElementById('s-thresh').value,
-      writer_payout:document.getElementById('s-pay').value,
-      max_active_orders:document.getElementById('s-max').value,
-      auto_approve_hours:document.getElementById('s-auto').value,
-      paypal_email:document.getElementById('s-pp').value,
-      bank_name:document.getElementById('s-bn').value,
-      bank_account:document.getElementById('s-ba').value,
-      bank_sort:document.getElementById('s-bs').value,
-      bank_swift:document.getElementById('s-bw').value,
-    });
-    showGlobalToast('Settings saved!','success');
-    SC.settings._cache=null;
+    const updates = {
+      standard_rate: document.getElementById('s-std').value,
+      urgent_rate: document.getElementById('s-urg').value,
+      urgent_threshold_days: document.getElementById('s-thresh').value,
+      writer_payout: document.getElementById('s-pay').value,
+      max_active_orders: document.getElementById('s-max').value,
+      auto_approve_hours: document.getElementById('s-auto').value,
+      paypal_email: document.getElementById('s-pp').value,
+      bank_name: document.getElementById('s-bn').value,
+      bank_account: document.getElementById('s-ba').value,
+      bank_sort: document.getElementById('s-bs').value,
+      bank_swift: document.getElementById('s-bw').value,
+    };
+    // Save each setting as individual row in platform_settings
+    for (const [key, value] of Object.entries(updates)) {
+      await sb.from('platform_settings').upsert(
+        { key, value: String(value) },
+        { onConflict: 'key' }
+      );
+    }
+    showGlobalToast('Settings saved! Changes take effect immediately for all users.', 'success');
+    SC.settings._cache = null;
     loadSettings();
   }
 
