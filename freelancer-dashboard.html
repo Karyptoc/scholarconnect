@@ -308,10 +308,40 @@
 
   // ── ENGLISH TEST ──────────────────────────────────────────
   async function startEnglishTest() {
-    const { data: qs } = await SC.tests.getEnglishQuestions();
-    questions = qs;
+    // Fetch all 75 questions from DB
+    const { data: allQs } = await sb.from('english_test_questions').select('*');
+    if (!allQs || !allQs.length) {
+      showGlobalToast('Could not load test questions. Please try again.', 'error');
+      return;
+    }
+    // Randomly shuffle all questions and pick 25
+    const shuffled = [...allQs].sort(() => Math.random() - 0.5);
+    questions = shuffled.slice(0, 25);
+    // Shuffle answer options for each question to prevent memorisation
+    questions = questions.map(q => {
+      const opts = [
+        { key: 'A', text: q.option_a },
+        { key: 'B', text: q.option_b },
+        { key: 'C', text: q.option_c },
+        { key: 'D', text: q.option_d },
+      ];
+      // Shuffle options
+      const shuffledOpts = opts.sort(() => Math.random() - 0.5);
+      // Find new key for correct answer
+      const correctText = opts.find(o => o.key === q.correct_answer)?.text;
+      const newCorrect = shuffledOpts.find(o => o.text === correctText)?.key || q.correct_answer;
+      return {
+        ...q,
+        option_a: shuffledOpts[0].text, orig_a: shuffledOpts[0].key,
+        option_b: shuffledOpts[1].text, orig_b: shuffledOpts[1].key,
+        option_c: shuffledOpts[2].text, orig_c: shuffledOpts[2].key,
+        option_d: shuffledOpts[3].text, orig_d: shuffledOpts[3].key,
+        correct_answer: newCorrect,
+        _shuffled: true
+      };
+    });
     document.getElementById('test-overlay').style.display = 'block';
-    testAnswers = new Array(qs.length).fill(null); qIdx = 0;
+    testAnswers = new Array(questions.length).fill(null); qIdx = 0;
     renderQ();
     let s = 600;
     const tick = () => {
@@ -553,7 +583,13 @@
     } else if (isMine && o.status === 'under_review') {
       actions = `<div class="card card-sm"><h4>⏳ Under Review</h4><p class="text-sm text-muted" style="margin-top:6px">Client is reviewing. Auto-approves in ${o.auto_approve_at?Math.max(0,Math.ceil((new Date(o.auto_approve_at)-Date.now())/3600000)):72}h if no action.</p></div>`;
     } else if (isMine && o.status === 'completed') {
-      actions = `<div class="card card-sm"><h4>✅ Completed</h4><div class="alert alert-success" style="margin-top:8px">$${p} released to your account.</div>${o.rating?`<div style="margin-top:8px">${'⭐'.repeat(o.rating)} <span class="text-sm">${o.review_text||''}</span></div>`:''}</div>`;
+      const stars = o.rating ? '⭐'.repeat(o.rating) : '';
+      actions = `<div class="card card-sm">
+        <h4>✅ Completed</h4>
+        <div class="alert alert-success" style="margin-top:8px">$${p} released to your account.</div>
+        ${o.rating ? `<div style="margin-top:10px"><strong>Client Rating:</strong><br><span style="font-size:1.3rem">${stars}</span> <span class="text-sm text-muted">${o.rating}/5</span>${o.review_text?`<div class="text-sm text-muted" style="margin-top:4px">"${o.review_text}"</div>`:''}</div>` : '<div class="text-sm text-muted" style="margin-top:8px">Awaiting client rating.</div>'}
+        ${delivery?.file_url ? `<a href="${delivery.file_url}" target="_blank" class="btn btn-outline btn-sm btn-full" style="margin-top:8px">📄 View Submitted Work</a>` : ''}
+      </div>`;
     }
     document.getElementById('det-actions').innerHTML = actions + `<div class="card card-sm"><div class="form-label" style="margin-bottom:10px">Order Info</div><div style="font-size:0.82rem;color:var(--muted);line-height:2.2"><div class="flex-between"><span>Pages:</span><strong>${o.page_count}</strong></div><div class="flex-between"><span>Words:</span><strong>${o.word_count?o.word_count.toLocaleString():o.page_count*275}</strong></div><div class="flex-between"><span>Rate:</span><strong>$${settings.writer_payout||4}/page</strong></div><div class="flex-between"><span>Payout:</span><strong style="color:var(--success)">$${p}</strong></div><div class="flex-between"><span>Type:</span><strong>${o.is_urgent?'⚡ Urgent':'Standard'}</strong></div><div class="flex-between"><span>Citation:</span><strong>${o.citation_style||'APA'}</strong></div><div class="flex-between"><span>Language:</span><strong>${o.language||'English (US)'}</strong></div><div class="flex-between"><span>Spacing:</span><strong>${o.spacing||'Double'}</strong></div><div class="flex-between"><span>Sources:</span><strong>${o.sources_required||0}</strong></div>${o.addons?.length?`<div class="flex-between"><span>Add-ons:</span><strong style="color:var(--warning);font-size:0.78rem">${o.addons.join(', ')}</strong></div>`:''}</div></div>`;
 
