@@ -672,29 +672,10 @@
     if (addonSum) addons.push('Executive Summary');
     if (addonOut) addons.push('Outline');
     const btn = document.getElementById('order-btn'); btn.disabled=true; btn.textContent='Creating order…';
-    // Upload brief files — with timeout so order never gets stuck
+    // Store files for upload after order is created
     let briefUrls = [];
     const filesInput = document.getElementById('o-files');
-    if (filesInput.files.length) {
-      btn.textContent = 'Uploading files… ('+filesInput.files.length+')';
-      for (const file of filesInput.files) {
-        try {
-          const path = profile.id + '/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-          // Upload with 15 second timeout
-          const uploadPromise = sb.storage.from('briefs').upload(path, file, { upsert: true });
-          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Upload timeout')), 15000));
-          const result = await Promise.race([uploadPromise, timeoutPromise]);
-          if (result.data && !result.error) {
-            const { data: urlData } = sb.storage.from('briefs').getPublicUrl(result.data.path);
-            briefUrls.push({ name: file.name, url: urlData.publicUrl });
-          }
-        } catch(e) {
-          console.warn('File upload skipped:', file.name, e.message);
-          // Continue without the file — don't block order creation
-        }
-      }
-      btn.textContent = 'Creating order…';
-    }
+    const pendingFiles = filesInput.files.length > 0 ? Array.from(filesInput.files) : [];
     // Get exact word count and pricing
     const finalWords = parseInt(document.getElementById('o-words')?.value) || wordsVal || pages*275;
     const exactPages = finalWords > 0 ? finalWords / 275 : pages;
@@ -749,23 +730,49 @@
       }
     }
     openPayModal(res.order);
+    // Upload files in background after order created (non-blocking)
+    if (pendingFiles.length && res.order?.id) {
+      uploadBriefFilesBackground(res.order.id, pendingFiles);
+    }
+  }
+
+  async function uploadBriefFilesBackground(orderId, files) {
+    const urls = [];
+    for (const file of files) {
+      try {
+        const path = profile.id + '/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+        const { data, error } = await sb.storage.from('briefs').upload(path, file, { upsert: true });
+        if (data && !error) {
+          const { data: urlData } = sb.storage.from('briefs').getPublicUrl(data.path);
+          if (urlData?.publicUrl) urls.push({ name: file.name, url: urlData.publicUrl });
+        }
+      } catch(e) { console.warn('Background upload failed:', file.name); }
+    }
+    if (urls.length) {
+      await sb.from('orders').update({ brief_files: urls }).eq('id', orderId);
+      showGlobalToast(urls.length + ' file(s) uploaded successfully!', 'success');
+    }
   }
 
   function openPayModal(order) {
     payingOrdId = order.id;
-    document.getElementById('pay-summary').innerHTML = `<strong>${order.order_number}</strong><br>${order.page_count} pages · ${order.subject} · ${order.academic_level}<br><span class="badge ${order.is_urgent?'badge-warning':'badge-navy'}">${order.is_urgent?'⚡ Urgent':'Standard'}</span> &nbsp; Total: <strong>$${order.total_price}</strong> &nbsp; Deposit: <strong style="color:var(--success)">$${order.deposit_amount}</strong>`;
-    document.getElementById('pay-btn-text').textContent = `Pay $${order.deposit_amount} Deposit`;
-    document.getElementById('pp-email').textContent = settings.paypal_email;
-    document.getElementById('pp-addr').textContent = settings.paypal_email;
-    document.getElementById('pp-amt').textContent = `$${order.deposit_amount}`;
-    document.getElementById('pp-ref').textContent = order.order_number;
-    document.getElementById('bk-name').textContent = settings.bank_name;
-    document.getElementById('bk-acc').textContent = settings.bank_account;
-    document.getElementById('bk-sort').textContent = settings.bank_sort;
-    document.getElementById('bk-swift').textContent = settings.bank_swift;
-    document.getElementById('bk-amt').textContent = `$${order.deposit_amount}`;
-    document.getElementById('bk-ref').textContent = order.order_number;
-    selPM('stripe');
+    currentOrd = order;
+    // Helper to safely set element content
+    const setTxt = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+    const setHTML = (id, val) => { const el = document.getElementById(id); if(el) el.innerHTML = val; };
+    setHTML('pay-summary', `<strong>${order.order_number}</strong><br>${order.page_count} pages · ${order.subject} · ${order.academic_level}<br><span class="badge ${order.is_urgent?'badge-warning':'badge-navy'}">${order.is_urgent?'⚡ Urgent':'Standard'}</span> &nbsp; Total: <strong>$${order.total_price}</strong> &nbsp; Deposit: <strong style="color:var(--success)">$${order.deposit_amount}</strong>`);
+    setTxt('pay-btn-text', `Pay $${order.deposit_amount} Deposit`);
+    setTxt('pp-email', settings.paypal_email);
+    setTxt('pp-addr', settings.paypal_email);
+    setTxt('pp-amt', `$${order.deposit_amount}`);
+    setTxt('pp-ref', order.order_number);
+    setTxt('bk-name', settings.bank_name);
+    setTxt('bk-acc', settings.bank_account);
+    setTxt('bk-sort', settings.bank_sort);
+    setTxt('bk-swift', settings.bank_swift);
+    setTxt('bk-amt', `$${order.deposit_amount}`);
+    setTxt('bk-ref', order.order_number);
+    selPM('paypal');
     openM('m-pay');
   }
 
