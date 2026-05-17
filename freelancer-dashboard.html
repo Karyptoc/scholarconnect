@@ -619,13 +619,32 @@
     const fi = document.getElementById('sub-file');
     const notes = document.getElementById('sub-notes').value;
     const err = document.getElementById('submit-err'); err.style.display='none';
-    const btn = document.getElementById('submit-btn'); btn.disabled=true; btn.textContent='Submitting…';
+    const btn = document.getElementById('submit-btn'); btn.disabled=true; btn.textContent='Uploading file…';
     let fileUrl = '', fileName = 'submitted_work.pdf';
     if (fi.files.length) {
-      const r = await SC.storage.uploadDeliverable(curOrdId, profile.id, fi.files[0]);
-      if (r.error) { err.textContent=r.error; err.style.display='flex'; btn.disabled=false; btn.textContent='Submit for Client Review'; return; }
-      fileUrl = r.url; fileName = fi.files[0].name;
+      try {
+        const file = fi.files[0];
+        fileName = file.name;
+        const path = curOrdId + '/' + profile.id + '_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+        // Try deliverables bucket first, fall back to briefs bucket
+        let uploadResult = await sb.storage.from('deliverables').upload(path, file, { upsert: true });
+        if (uploadResult.error) {
+          // Fallback to briefs bucket
+          uploadResult = await sb.storage.from('briefs').upload('deliveries/' + path, file, { upsert: true });
+        }
+        if (uploadResult.error) {
+          err.textContent = 'File upload failed: ' + uploadResult.error.message + '. Please add storage policy for deliverables bucket.';
+          err.style.display='flex'; btn.disabled=false; btn.textContent='Submit for Client Review'; return;
+        }
+        const bucketName = uploadResult.data.path.startsWith('deliveries/') ? 'briefs' : 'deliverables';
+        const { data: urlData } = sb.storage.from(bucketName).getPublicUrl(uploadResult.data.path);
+        fileUrl = urlData.publicUrl;
+      } catch(e) {
+        err.textContent = 'Upload error: ' + e.message;
+        err.style.display='flex'; btn.disabled=false; btn.textContent='Submit for Client Review'; return;
+      }
     }
+    btn.textContent = 'Submitting…';
     const res = await SC.orders.submitWork(curOrdId, profile.id, fileUrl, fileName, notes);
     btn.disabled=false; btn.textContent='Submit for Client Review';
     if(res.error){err.textContent=res.error;err.style.display='flex';return;}
