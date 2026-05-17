@@ -1267,16 +1267,22 @@
   }
 
   async function changePassword(){
+    const curr=document.getElementById('cp-curr').value;
     const np=document.getElementById('cp-new').value;
     const conf=document.getElementById('cp-conf').value;
     const err=document.getElementById('cp-err');err.style.display='none';
+    if(!curr){err.textContent='Please enter your current password.';err.style.display='flex';return;}
     if(np!==conf){err.textContent='New passwords do not match.';err.style.display='flex';return;}
-    const pwErr=validatePassword(np);
-    if(pwErr){err.textContent=pwErr;err.style.display='flex';return;}
+    if(np.length < 8){err.textContent='Min 8 characters required.';err.style.display='flex';return;}
+    // Re-sign in with current password to get fresh session
+    const{error:signInErr}=await sb.auth.signInWithPassword({email:'solutionscenter29@gmail.com',password:curr});
+    if(signInErr){err.textContent='Current password incorrect: '+signInErr.message;err.style.display='flex';return;}
     const{error}=await sb.auth.updateUser({password:np});
     if(error){err.textContent=error.message;err.style.display='flex';return;}
-    showGlobalToast('Password updated!','success');
-    document.getElementById('cp-curr').value='';document.getElementById('cp-new').value='';document.getElementById('cp-conf').value='';
+    showGlobalToast('Password updated successfully!','success');
+    document.getElementById('cp-curr').value='';
+    document.getElementById('cp-new').value='';
+    document.getElementById('cp-conf').value='';
   }
 
   async function exportCSV(){
