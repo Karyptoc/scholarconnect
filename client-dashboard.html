@@ -444,7 +444,16 @@
   Object.keys(SUBJECTS).forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; subSel.appendChild(o); });
 
   async function init() {
-    settings = await SC.settings.get();
+    // Always fetch fresh settings from DB (bypasses cache)
+    const { data: rawSettings } = await sb.from('platform_settings').select('key, value');
+    settings = {};
+    if (rawSettings) rawSettings.forEach(r => { settings[r.key] = r.value; });
+    if (!settings.standard_rate) settings.standard_rate = 10;
+    if (!settings.urgent_rate) settings.urgent_rate = 15;
+    if (!settings.writer_payout) settings.writer_payout = 4;
+    if (!settings.max_active_orders) settings.max_active_orders = 10;
+    if (!settings.urgent_threshold_days) settings.urgent_threshold_days = 5;
+    if (!settings.paypal_email) settings.paypal_email = 'jameskinyua1997@gmail.com';
     calcPrice();
     renderOverview();
     // Live preview updates
@@ -616,6 +625,10 @@
   }
 
   async function renderOverview() {
+    // Refresh settings so pricing always reflects admin changes
+    const { data: rawS } = await sb.from('platform_settings').select('key, value');
+    if (rawS) rawS.forEach(r => { settings[r.key] = r.value; });
+    calcPrice(); // Recalculate with fresh settings
     const result = await SC.orders.getForClient(profile.id);
     const orders = result?.data || [];
     document.getElementById('st-total').textContent = orders.length;
