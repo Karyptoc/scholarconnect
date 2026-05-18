@@ -44,17 +44,19 @@ const EmailTemplates = {
       <p style="color:#999;font-size:12px;">ScholarConnect — Secure Academic Writing Platform</p>
     </div>`,
 
-  orderCreated: (orderNumber, total, deposit) => `
+  // FIX: renamed from orderCreated to depositConfirmed — only sent AFTER payment
+  depositConfirmed: (orderNumber, total, deposit, method) => `
     <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:30px;border:1px solid #e0e0e0;border-radius:8px;">
-      <h2 style="color:#1a237e;">Order Received — ${orderNumber}</h2>
-      <p>Your order has been received successfully.</p>
+      <h2 style="color:#1a237e;">Payment Confirmed — ${orderNumber}</h2>
+      <p>Your deposit payment has been received. Your order is now active and being assigned to a writer.</p>
       <table style="width:100%;border-collapse:collapse;">
         <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Order Number</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">${orderNumber}</td></tr>
-        <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Total Price</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">$${total}</td></tr>
-        <tr><td style="padding:8px;"><strong>Deposit Due</strong></td><td style="padding:8px;">$${deposit}</td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Total Price</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">$${parseFloat(total).toFixed(2)}</td></tr>
+        <tr><td style="padding:8px;border-bottom:1px solid #eee;"><strong>Deposit Paid</strong></td><td style="padding:8px;border-bottom:1px solid #eee;">$${parseFloat(deposit).toFixed(2)} via ${method}</td></tr>
+        <tr><td style="padding:8px;"><strong>Balance on Delivery</strong></td><td style="padding:8px;">$${parseFloat(deposit).toFixed(2)}</td></tr>
       </table>
-      <p>Please complete your deposit payment to get your order started.</p>
-      <a href="https://scholarconnecthub.com/client-dashboard.html" style="display:inline-block;background:#1a237e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;margin-top:10px;">View Order</a>
+      <p>A writer will be assigned shortly. Track your order in your dashboard.</p>
+      <a href="https://scholarconnecthub.com/client-dashboard.html" style="display:inline-block;background:#1a237e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;margin-top:10px;">View My Order</a>
       <hr style="border:none;border-top:1px solid #eee;margin-top:20px;">
       <p style="color:#999;font-size:12px;">ScholarConnect — Secure Academic Writing Platform</p>
     </div>`,
@@ -185,7 +187,6 @@ const SC = {
         user_id: data.user.id, code, expires_at: expiresAt, used: false
       });
 
-      // Send real 2FA email
       await sendEmail(email, 'Your ScholarConnect Login Code', EmailTemplates.otp(code));
 
       await sb.auth.signOut();
@@ -261,54 +262,71 @@ const SC = {
   settings: {
     _cache: null,
     async get() {
-      if (this._cache) return this._cache;
+      // Always fetch fresh — no cache — so admin changes take effect immediately
       const { data } = await sb.from('platform_settings').select('key, value');
       if (!data) return {};
       const settings = {};
       data.forEach(row => settings[row.key] = row.value);
-      this._cache = settings;
       return settings;
     },
     async update(updates) {
       for (const [key, value] of Object.entries(updates)) {
-        await sb.from('platform_settings').upsert({ key, value: String(value), updated_at: new Date().toISOString() });
+        await sb.from('platform_settings').upsert(
+          { key, value: String(value), updated_at: new Date().toISOString() },
+          { onConflict: 'key' }
+        );
       }
-      this._cache = null;
     },
   },
 
   orders: {
-    async calcPrice(pages, deadline) {
+    // FIX: calcPrice now accepts exactPages (decimal) not just integer pages
+    async calcPrice(exactPages, deadline) {
       const s = await SC.settings.get();
       const daysLeft = (new Date(deadline) - Date.now()) / 86400000;
-      const urgent = daysLeft < parseFloat(s.urgent_threshold_days || 5);
+      // Urgent threshold based on exact page count
+      let urgentThresholdDays;
+      if (exactPages <= 2)      urgentThresholdDays = 6 / 24;
+      else if (exactPages <= 5) urgentThresholdDays = 12 / 24;
+      else                      urgentThresholdDays = 1;
+      const urgent = daysLeft < urgentThresholdDays;
       const rate = urgent ? parseFloat(s.urgent_rate || 15) : parseFloat(s.standard_rate || 10);
-      const total = pages * rate;
+      const total = exactPages * rate;   // Use exact pages for price
       const deposit = total * 0.5;
-      return { rate, total, deposit, urgent };
+      return { rate, total: parseFloat(total.toFixed(2)), deposit: parseFloat(deposit.toFixed(2)), urgent };
     },
 
     async create(profile, data) {
-      const { rate, total, deposit, urgent } = await SC.orders.calcPrice(data.pages, data.deadline);
+      // Calculate exact pages from words if provided
+      const words = parseInt(data.words) || 0;
+      const exactPages = words > 0 ? words / 275 : parseFloat(data.pages) || 1;
+
+      const { rate, total, deposit, urgent } = await SC.orders.calcPrice(exactPages, data.deadline);
       const orderNumber = 'ORD-' + Math.random().toString(36).substr(2, 6).toUpperCase();
 
       const { data: order, error } = await sb.from('orders').insert({
-        order_number: orderNumber, client_id: profile.id,
-        subject: data.subject, sub_level: data.subLevel || 'General',
-        academic_level: data.level, page_count: parseInt(data.pages),
-        deadline: data.deadline, is_urgent: urgent,
-        price_per_page: rate, total_price: total, deposit_amount: deposit,
-        instructions: data.instructions, status: 'pending_payment',
+        order_number: orderNumber,
+        client_id: profile.id,
+        subject: data.subject,
+        sub_level: data.subLevel || 'General',
+        academic_level: data.level,
+        page_count: Math.ceil(exactPages),    // Store rounded up for display
+        word_count: words || Math.round(exactPages * 275),
+        deadline: data.deadline,
+        is_urgent: urgent,
+        price_per_page: rate,
+        total_price: total,
+        deposit_amount: deposit,
+        instructions: data.instructions,
+        citation_style: data.citationStyle || 'APA',
+        status: 'pending_payment',
+        // FIX: NO email sent here — emails only after payment confirmed
       }).select().single();
       if (error) return { error: error.message };
 
       await sb.from('deliveries').insert({ order_id: order.id, status: 'not_submitted' });
 
-      // Send real email to client
-      await sendEmail(profile.email, `Order ${orderNumber} Received`, EmailTemplates.orderCreated(orderNumber, total, deposit));
-      // Alert admin
-      await sendEmail(ADMIN_EMAIL, `New Order: ${orderNumber}`, EmailTemplates.adminAlert('New Order', `Client ${profile.full_name} placed order ${orderNumber} for $${total}.`));
-
+      // FIX: NO emails on order creation — only sent after payDeposit
       return { success: true, order };
     },
 
@@ -340,12 +358,44 @@ const SC = {
     async payDeposit(orderId, method, stripeSessionId = null) {
       const now = new Date().toISOString();
       const { data: order, error } = await sb.from('orders')
-        .update({ deposit_paid: true, status: 'pending_writer', payment_method: method,
-                  stripe_session_id: stripeSessionId, updated_at: now })
-        .eq('id', orderId).select().single();
+        .update({
+          deposit_paid: true,
+          status: 'pending_writer',
+          payment_method: method,
+          stripe_session_id: stripeSessionId,
+          updated_at: now,
+        })
+        .eq('id', orderId)
+        .select('*, profiles!orders_client_id_fkey(full_name, email)')
+        .single();
       if (error) return { error: error.message };
-      await sb.from('escrow').insert({ order_id: orderId, amount: order.deposit_amount, payment_method: method, status: 'held' });
-      await sendEmail(ADMIN_EMAIL, `Payment Received: ${order.order_number}`, EmailTemplates.adminAlert('Payment Received', `Deposit of $${order.deposit_amount} received for ${order.order_number} via ${method}.`));
+
+      await sb.from('escrow').insert({
+        order_id: orderId,
+        amount: order.deposit_amount,
+        payment_method: method,
+        status: 'held',
+      });
+
+      // FIX: Emails sent HERE (after payment), not on order creation
+      const clientEmail = order.profiles?.email;
+      const clientName  = order.profiles?.full_name || 'Client';
+      if (clientEmail) {
+        await sendEmail(
+          clientEmail,
+          `Payment Confirmed — ${order.order_number}`,
+          EmailTemplates.depositConfirmed(order.order_number, order.total_price, order.deposit_amount, method)
+        );
+      }
+      await sendEmail(
+        ADMIN_EMAIL,
+        `New Paid Order — ${order.order_number}`,
+        EmailTemplates.adminAlert(
+          'New Paid Order',
+          `${clientName} paid $${order.deposit_amount} deposit for order ${order.order_number} via ${method}. Total: $${order.total_price}.`
+        )
+      );
+
       return { success: true, order };
     },
 
@@ -358,18 +408,21 @@ const SC = {
 
     async assign(orderId, writerId) {
       const s = await SC.settings.get();
-      const max = parseInt(s.max_active_orders || 3);
+      const max = parseInt(s.max_active_orders || 10);
       const { count } = await sb.from('orders').select('id', { count: 'exact' }).eq('assigned_writer_id', writerId).in('status', ['in_progress', 'under_review']);
       if (count >= max) return { error: `Writer already has ${max} active orders.` };
 
-      const { error } = await sb.from('orders').update({ assigned_writer_id: writerId, status: 'in_progress', updated_at: new Date().toISOString() }).eq('id', orderId);
+      const { error } = await sb.from('orders').update({
+        assigned_writer_id: writerId,
+        status: 'in_progress',
+        updated_at: new Date().toISOString(),
+      }).eq('id', orderId);
       if (error) return { error: error.message };
 
-      // Get writer email and order deadline
       const { data: writerProfile } = await sb.from('profiles').select('email').eq('id', writerId).single();
-      const { data: order } = await sb.from('orders').select('order_number, deadline').eq('id', orderId).single();
-      if (writerProfile && order) {
-        await sendEmail(writerProfile.email, `Order Assigned: ${order.order_number}`, EmailTemplates.orderAssigned(order.order_number, order.deadline));
+      const { data: ord } = await sb.from('orders').select('order_number, deadline').eq('id', orderId).single();
+      if (writerProfile && ord) {
+        await sendEmail(writerProfile.email, `Order Assigned: ${ord.order_number}`, EmailTemplates.orderAssigned(ord.order_number, ord.deadline));
       }
       return { success: true };
     },
@@ -387,21 +440,25 @@ const SC = {
       if (deliveryErr) return { error: deliveryErr.message };
 
       const { error: orderErr } = await sb.from('orders').update({
-        status: 'under_review', delivered_at: new Date().toISOString(),
-        auto_approve_at: autoApproveAt, updated_at: new Date().toISOString(),
+        status: 'under_review',
+        delivered_at: new Date().toISOString(),
+        auto_approve_at: autoApproveAt,
+        updated_at: new Date().toISOString(),
       }).eq('id', orderId).eq('assigned_writer_id', writerId);
       if (orderErr) return { error: orderErr.message };
 
-      // Notify client
-      const { data: order } = await sb.from('orders').select('order_number, profiles!orders_client_id_fkey(email)').eq('id', orderId).single();
-      if (order?.profiles?.email) {
-        await sendEmail(order.profiles.email, `Work Delivered: ${order.order_number}`, EmailTemplates.workSubmitted(order.order_number, s.auto_approve_hours || 72));
+      const { data: ord } = await sb.from('orders').select('order_number, profiles!orders_client_id_fkey(email)').eq('id', orderId).single();
+      if (ord?.profiles?.email) {
+        await sendEmail(ord.profiles.email, `Work Delivered: ${ord.order_number}`, EmailTemplates.workSubmitted(ord.order_number, s.auto_approve_hours || 72));
       }
       return { success: true, plagiarismScore: plagScore };
     },
 
     async approve(orderId, clientId, rating, reviewText) {
-      const { data: order, error } = await sb.from('orders').update({ status: 'completed', rating, review_text: reviewText, updated_at: new Date().toISOString() }).eq('id', orderId).eq('client_id', clientId).select().single();
+      const { data: order, error } = await sb.from('orders').update({
+        status: 'completed', rating, review_text: reviewText,
+        updated_at: new Date().toISOString(),
+      }).eq('id', orderId).eq('client_id', clientId).select().single();
       if (error) return { error: error.message };
       await _releaseEscrow(order);
       await sb.from('deliveries').update({ status: 'approved' }).eq('order_id', orderId);
@@ -412,7 +469,6 @@ const SC = {
       const { data: order } = await sb.from('orders').select('revisions_used, max_revisions').eq('id', orderId).single();
       if (!order) return { error: 'Order not found.' };
       if (order.revisions_used >= order.max_revisions) return { error: 'Maximum 2 free revisions reached.' };
-
       const { error } = await sb.from('orders').update({
         status: 'in_progress', revision_note: note,
         revisions_used: order.revisions_used + 1,
@@ -435,7 +491,9 @@ const SC = {
     },
 
     async refund(orderId, reason) {
-      const { error } = await sb.from('orders').update({ status: 'refunded', refund_reason: reason, updated_at: new Date().toISOString() }).eq('id', orderId);
+      const { error } = await sb.from('orders').update({
+        status: 'refunded', refund_reason: reason, updated_at: new Date().toISOString(),
+      }).eq('id', orderId);
       if (error) return { error: error.message };
       await sb.from('escrow').update({ status: 'refunded' }).eq('order_id', orderId);
       return { success: true };
@@ -449,7 +507,7 @@ const SC = {
       }).eq('id', orderId).select().single();
       if (error) return { error: error.message };
       if (resolution === 'release_writer') await _releaseEscrow(order);
-      if (resolution === 'refund_client') await sb.from('escrow').update({ status: 'refunded' }).eq('order_id', orderId);
+      if (resolution === 'refund_client')  await sb.from('escrow').update({ status: 'refunded' }).eq('order_id', orderId);
       return { success: true };
     },
   },
@@ -486,7 +544,8 @@ const SC = {
 
   tests: {
     async getEnglishQuestions() {
-      const { data, error } = await sb.from('english_test_questions').select('*').order('id');
+      // Return all 75 — selection/shuffling done in the dashboard
+      const { data, error } = await sb.from('english_test_questions').select('*');
       return { data: data || [], error };
     },
     async getEssayPrompt(subject) {
@@ -515,7 +574,7 @@ const SC = {
       const { error } = await sb.from('writer_test_results').insert({
         writer_id: writerId, test_type: 'essay',
         subject, sub_level: subLevel, essay_text: essayText,
-        file_url: fileUrl || null, admin_approved: false,
+        file_url: fileUrl || null, admin_approved: null,
       });
       if (error) return { error: error.message };
       await sendEmail(ADMIN_EMAIL, 'New Essay Submission', EmailTemplates.adminAlert('Essay Submitted', `Writer ${writerId} submitted an essay for ${subject}.`));
@@ -529,10 +588,14 @@ const SC = {
       if (status === 'approved') await sb.from('profiles').update({ is_writer_approved: true }).eq('id', writerId);
       const { data: writerProfile } = await sb.from('profiles').select('email').eq('id', writerId).single();
       if (writerProfile) {
-        await sendEmail(writerProfile.email, `Essay ${status === 'approved' ? 'Approved' : 'Rejected'}`,
-          EmailTemplates.adminAlert(`Essay ${status}`, status === 'approved'
-            ? 'Congratulations! Your essay has been approved. You can now take orders on ScholarConnect.'
-            : `Your essay was not approved. Reason: ${adminNote}. Please try again.`));
+        await sendEmail(writerProfile.email,
+          `Essay ${status === 'approved' ? 'Approved' : 'Rejected'}`,
+          EmailTemplates.adminAlert(`Essay ${status}`,
+            status === 'approved'
+              ? 'Congratulations! Your essay has been approved. You can now take orders on ScholarConnect.'
+              : `Your essay was not approved. Reason: ${adminNote}. Please revise and resubmit.`
+          )
+        );
       }
       return { success: true };
     },
@@ -541,7 +604,12 @@ const SC = {
       return data || [];
     },
     async getAllPendingEssays() {
-      const { data } = await sb.from('writer_test_results').select('*, profiles(full_name, email)').eq('test_type', 'essay').eq('admin_approved', false).order('completed_at', { ascending: false });
+      // FIX: pending essays have admin_approved = NULL (not false)
+      const { data } = await sb.from('writer_test_results')
+        .select('*, profiles(full_name, email)')
+        .eq('test_type', 'essay')
+        .is('admin_approved', null)
+        .order('completed_at', { ascending: false });
       return data || [];
     },
   },
@@ -553,9 +621,9 @@ const SC = {
       const { data: urlData } = sb.storage.from(bucket).getPublicUrl(path);
       return { success: true, url: urlData.publicUrl, path };
     },
-    async uploadOrderBrief(orderId, file) { return SC.storage.upload('order-briefs', `${orderId}/${Date.now()}_${file.name}`, file); },
-    async uploadDeliverable(orderId, writerId, file) { return SC.storage.upload('deliverables', `${orderId}/${writerId}_${Date.now()}_${file.name}`, file); },
-    async uploadEssay(writerId, subject, file) { return SC.storage.upload('essay-uploads', `${writerId}/${subject.replace(/\s+/g, '_')}_${Date.now()}_${file.name}`, file); },
+    async uploadOrderBrief(orderId, file)          { return SC.storage.upload('briefs',        `${orderId}/${Date.now()}_${file.name}`, file); },
+    async uploadDeliverable(orderId, writerId, file){ return SC.storage.upload('deliverables',  `${orderId}/${writerId}_${Date.now()}_${file.name}`, file); },
+    async uploadEssay(writerId, subject, file)      { return SC.storage.upload('essay-uploads', `${writerId}/${subject.replace(/\s+/g,'_')}_${Date.now()}_${file.name}`, file); },
   },
 
   users: {
@@ -597,7 +665,7 @@ const SC = {
       const payout = parseFloat(s.writer_payout || 4);
       const completed = o.filter(x => x.status === 'completed');
       const revenue = completed.reduce((a, x) => a + Number(x.total_price), 0);
-      const paid = completed.reduce((a, x) => a + payout * x.page_count, 0);
+      const paid    = completed.reduce((a, x) => a + payout * x.page_count, 0);
       return {
         totalOrders: o.length,
         activeOrders: o.filter(x => ['in_progress','under_review','pending_writer'].includes(x.status)).length,
