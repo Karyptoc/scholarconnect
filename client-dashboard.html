@@ -423,46 +423,7 @@
   const profile = SC.auth.requireRole('client');
   if (!profile) throw new Error('redirect');
 
-  // Suppress premature emails - only send after payment confirmed
-  window._suppressOrderEmails = true; // Flag for supabase-client.js
-  const _originalOrdersCreate = SC.orders.create.bind(SC.orders);
-  SC.orders.create = async function(prof, data) {
-    const result = await _originalOrdersCreate(prof, data);
-    return result;
-  };
-  // Override payDeposit to send emails AFTER payment confirmed
-  const _originalPayDeposit = SC.orders.payDeposit.bind(SC.orders);
-  SC.orders.payDeposit = async function(ordId, method) {
-    const result = await _originalPayDeposit(ordId, method);
-    if (!result.error) {
-      // Send emails now that payment is confirmed
-      try {
-        const { data: ord } = await sb.from('orders').select('*, profiles(full_name, email)').eq('id', ordId).single();
-        if (ord) {
-          await fetch('https://wgypsnemgtsvpqrgbrpg.supabase.co/functions/v1/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndneXBzbmVtZ3RzdnBxcmdicnBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMDU3MzQsImV4cCI6MjA5Mzc4MTczNH0.FGhHIGqnNi0oTiLvruuya0iU8-zdD0keAOY5BQhVf8w' },
-            body: JSON.stringify({
-              to: ord.profiles?.email,
-              subject: 'Your ScholarConnect Order is Confirmed — ' + ord.order_number,
-              html: '<h2>Order Confirmed!</h2><p>Dear ' + ord.profiles?.full_name + ',</p><p>Your deposit payment of <strong>$' + ord.deposit_amount + '</strong> has been received for order <strong>' + ord.order_number + '</strong>.</p><p>A writer will be assigned shortly. You can track your order in your dashboard.</p><p>Thank you for choosing ScholarConnect!</p>'
-            })
-          });
-          // Notify admin
-          await fetch('https://wgypsnemgtsvpqrgbrpg.supabase.co/functions/v1/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndneXBzbmVtZ3RzdnBxcmdicnBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMDU3MzQsImV4cCI6MjA5Mzc4MTczNH0.FGhHIGqnNi0oTiLvruuya0iU8-zdD0keAOY5BQhVf8w' },
-            body: JSON.stringify({
-              to: 'solutionscenter29@gmail.com',
-              subject: 'New Paid Order — ' + ord.order_number,
-              html: '<h2>New Paid Order</h2><p>Order <strong>' + ord.order_number + '</strong> from ' + ord.profiles?.full_name + ' has been paid.</p><p>Deposit: $' + ord.deposit_amount + ' via ' + method + '</p><p>Subject: ' + ord.subject + ' | Pages: ' + ord.page_count + '</p>'
-            })
-          });
-        }
-      } catch(e) { console.warn('Email notification failed:', e); }
-    }
-    return result;
-  };
+  // Email notifications handled in supabase-client.js (fires only after payment)
 
   if (localStorage.getItem('sc_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
   const tb = document.getElementById('theme-btn');
@@ -748,10 +709,10 @@
     const hasDiscount = refMsg?.dataset.valid === 'true';
     const discount = hasDiscount ? 0.20 : 0;
 
-    // Create order with standard fields only (what SC.orders.create expects)
+    // Pass words so supabase-client.js calculates exact price (e.g. 50 words = $1.82)
     const res = await SC.orders.create(profile, {
       title, instructions: instr, subject: subj, subLevel: subl, level,
-      pages, deadline: dl, citationStyle: citation, briefFiles: briefUrls
+      pages, words: wordsVal, deadline: dl, citationStyle: citation, briefFiles: briefUrls
     });
     btn.disabled=false; btn.textContent='Proceed to Payment →';
     if (res.error) { err.textContent=res.error; err.style.display='flex'; return; }
