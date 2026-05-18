@@ -423,6 +423,47 @@
   const profile = SC.auth.requireRole('client');
   if (!profile) throw new Error('redirect');
 
+  // Suppress premature emails - only send after payment confirmed
+  window._suppressOrderEmails = true; // Flag for supabase-client.js
+  const _originalOrdersCreate = SC.orders.create.bind(SC.orders);
+  SC.orders.create = async function(prof, data) {
+    const result = await _originalOrdersCreate(prof, data);
+    return result;
+  };
+  // Override payDeposit to send emails AFTER payment confirmed
+  const _originalPayDeposit = SC.orders.payDeposit.bind(SC.orders);
+  SC.orders.payDeposit = async function(ordId, method) {
+    const result = await _originalPayDeposit(ordId, method);
+    if (!result.error) {
+      // Send emails now that payment is confirmed
+      try {
+        const { data: ord } = await sb.from('orders').select('*, profiles(full_name, email)').eq('id', ordId).single();
+        if (ord) {
+          await fetch('https://wgypsnemgtsvpqrgbrpg.supabase.co/functions/v1/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndneXBzbmVtZ3RzdnBxcmdicnBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMDU3MzQsImV4cCI6MjA5Mzc4MTczNH0.FGhHIGqnNi0oTiLvruuya0iU8-zdD0keAOY5BQhVf8w' },
+            body: JSON.stringify({
+              to: ord.profiles?.email,
+              subject: 'Your ScholarConnect Order is Confirmed — ' + ord.order_number,
+              html: '<h2>Order Confirmed!</h2><p>Dear ' + ord.profiles?.full_name + ',</p><p>Your deposit payment of <strong>$' + ord.deposit_amount + '</strong> has been received for order <strong>' + ord.order_number + '</strong>.</p><p>A writer will be assigned shortly. You can track your order in your dashboard.</p><p>Thank you for choosing ScholarConnect!</p>'
+            })
+          });
+          // Notify admin
+          await fetch('https://wgypsnemgtsvpqrgbrpg.supabase.co/functions/v1/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndneXBzbmVtZ3RzdnBxcmdicnBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMDU3MzQsImV4cCI6MjA5Mzc4MTczNH0.FGhHIGqnNi0oTiLvruuya0iU8-zdD0keAOY5BQhVf8w' },
+            body: JSON.stringify({
+              to: 'solutionscenter29@gmail.com',
+              subject: 'New Paid Order — ' + ord.order_number,
+              html: '<h2>New Paid Order</h2><p>Order <strong>' + ord.order_number + '</strong> from ' + ord.profiles?.full_name + ' has been paid.</p><p>Deposit: $' + ord.deposit_amount + ' via ' + method + '</p><p>Subject: ' + ord.subject + ' | Pages: ' + ord.page_count + '</p>'
+            })
+          });
+        }
+      } catch(e) { console.warn('Email notification failed:', e); }
+    }
+    return result;
+  };
+
   if (localStorage.getItem('sc_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
   const tb = document.getElementById('theme-btn');
   if (localStorage.getItem('sc_theme') === 'dark') tb.classList.add('on');
@@ -519,11 +560,11 @@
     calcPrice();
   }
 
-  function getUrgentThreshold(pages) {
-    // Dynamic urgent threshold based on page count
-    if (pages <= 2) return 6 / 24;       // 6 hours for 1-2 pages
-    if (pages <= 5) return 12 / 24;      // 12 hours for 3-5 pages
-    return 24 / 24;                       // 24 hours for 6+ pages
+  function getUrgentThreshold(exactPages) {
+    // Use exact pages (not rounded) for threshold
+    if (exactPages <= 2) return 6 / 24;       // 6 hours for up to 2 pages
+    if (exactPages <= 5) return 12 / 24;      // 12 hours for 3-5 pages
+    return 1;                                  // 24 hours for 6+ pages
   }
 
   function calcPrice() {
@@ -536,11 +577,11 @@
     const hint = document.getElementById('deadline-hint');
     if (dl) {
       const days = (new Date(dl)-Date.now())/86400000;
-      const threshold = getUrgentThreshold(pages);
+      const threshold = getUrgentThreshold(exactPages); // Use exact pages, not rounded
       urgent = days < threshold;
       rate = urgent ? parseFloat(settings.urgent_rate||15) : parseFloat(settings.standard_rate||10);
-      if (pages <= 2) hint.textContent = `≥6 hours = $${settings.standard_rate||10}/page · <6 hours = $${settings.urgent_rate||15}/page (urgent)`;
-      else if (pages <= 5) hint.textContent = `≥12 hours = $${settings.standard_rate||10}/page · <12 hours = $${settings.urgent_rate||15}/page (urgent)`;
+      if (exactPages <= 2) hint.textContent = `≥6 hours = $${settings.standard_rate||10}/page · <6 hours = $${settings.urgent_rate||15}/page (urgent)`;
+      else if (exactPages <= 5) hint.textContent = `≥12 hours = $${settings.standard_rate||10}/page · <12 hours = $${settings.urgent_rate||15}/page (urgent)`;
       else hint.textContent = `≥24 hours = $${settings.standard_rate||10}/page · <24 hours = $${settings.urgent_rate||15}/page (urgent)`;
     }
     // Apply referral discount
