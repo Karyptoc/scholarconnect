@@ -409,7 +409,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://www.paypal.com/sdk/js?client-id=AbDNwqRVksEcCmu7JKlXLFckqFAr3wQQfWlStBi7MIH0zS4HJX-Y_2d7JBjvCdjrKCCOrsDYaZup77cN&currency=USD" data-sdk-integration-source="button-factory"></script>
-<script src="supabase-client.js"></script>
+<script src="supabase-client.js" onerror="document.body.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;font-family:sans-serif\'><h2 style=\'color:#c62828\'>⚠️ Failed to Load</h2><p>supabase-client.js could not be loaded.</p><p>Please <strong>hard refresh</strong> (Ctrl+Shift+R) or check your internet connection.</p><a href=\'auth.html\' style=\'color:#1a237e\'>Back to Login</a></div>'"></script>
 <script>
   // Global error catcher to help debug
   window.onerror = function(msg, src, line) {
@@ -420,7 +420,17 @@
     console.error('Promise Error:', e.reason);
   };
 
-  const profile = SC.auth.requireRole('client');
+  let profile;
+  try {
+    profile = SC.auth.requireRole('client');
+    if (!profile) throw new Error('redirect');
+  } catch(e) {
+    if (e.message !== 'redirect') {
+      console.error('SC load error:', e);
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;font-family:sans-serif"><h2>Platform Error</h2><p>Failed to load ScholarConnect. Please hard refresh with <strong>Ctrl+Shift+R</strong></p><a href="auth.html" style="color:#1a237e">Back to Login</a></div>';
+    }
+    throw e;
+  }
   if (!profile) throw new Error('redirect');
 
   // Email notifications handled in supabase-client.js (fires only after payment)
