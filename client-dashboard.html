@@ -8,7 +8,12 @@
 <body>
 <div class="app-layout">
   <aside class="sidebar">
-    <div class="sidebar-brand"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><path d="M14 3L3 9v10l11 6 11-6V9L14 3z" fill="var(--navy2)"/><path d="M14 8l6 3.5v7L14 22l-6-3.5v-7L14 8z" fill="var(--gold)"/></svg>Scholar<span>Connect</span></div>
+    <a href="index.html" class="sc-logo sidebar-logo-link">
+          <div class="sc-logo-mark">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L4 7v5c0 4.5 3.4 8.7 8 9.9 4.6-1.2 8-5.4 8-9.9V7l-8-4z" fill="white" opacity="0.9"/><path d="M9 12l2 2 4-4" stroke="#c8971e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="sc-logo-text">Scholar<span>Connect</span></span>
+        </a>
     <nav class="sidebar-nav">
       <div class="sidebar-section">Main</div>
       <button class="sidebar-link active" id="nav-overview" onclick="showPage('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</button>
@@ -409,7 +414,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://www.paypal.com/sdk/js?client-id=AbDNwqRVksEcCmu7JKlXLFckqFAr3wQQfWlStBi7MIH0zS4HJX-Y_2d7JBjvCdjrKCCOrsDYaZup77cN&currency=USD" data-sdk-integration-source="button-factory"></script>
-<script src="supabase-client.js" onerror="scLoadFailed()"></script>
+<script src="supabase-client.js"></script>
 <script>
   // Global error catcher to help debug
   window.onerror = function(msg, src, line) {
@@ -420,20 +425,49 @@
     console.error('Promise Error:', e.reason);
   };
 
-  let profile;
-  try {
-    profile = SC.auth.requireRole('client');
-    if (!profile) throw new Error('redirect');
-  } catch(e) {
-    if (e.message !== 'redirect') {
-      console.error('SC load error:', e);
-      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;font-family:sans-serif"><h2>Platform Error</h2><p>Failed to load ScholarConnect. Please hard refresh with <strong>Ctrl+Shift+R</strong></p><a href="auth.html" style="color:#1a237e">Back to Login</a></div>';
-    }
-    throw e;
-  }
+  const profile = SC.auth.requireRole('client');
   if (!profile) throw new Error('redirect');
 
-  // Email notifications handled in supabase-client.js (fires only after payment)
+  // Suppress premature emails - only send after payment confirmed
+  window._suppressOrderEmails = true; // Flag for supabase-client.js
+  const _originalOrdersCreate = SC.orders.create.bind(SC.orders);
+  SC.orders.create = async function(prof, data) {
+    const result = await _originalOrdersCreate(prof, data);
+    return result;
+  };
+  // Override payDeposit to send emails AFTER payment confirmed
+  const _originalPayDeposit = SC.orders.payDeposit.bind(SC.orders);
+  SC.orders.payDeposit = async function(ordId, method) {
+    const result = await _originalPayDeposit(ordId, method);
+    if (!result.error) {
+      // Send emails now that payment is confirmed
+      try {
+        const { data: ord } = await sb.from('orders').select('*, profiles(full_name, email)').eq('id', ordId).single();
+        if (ord) {
+          await fetch('https://wgypsnemgtsvpqrgbrpg.supabase.co/functions/v1/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndneXBzbmVtZ3RzdnBxcmdicnBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMDU3MzQsImV4cCI6MjA5Mzc4MTczNH0.FGhHIGqnNi0oTiLvruuya0iU8-zdD0keAOY5BQhVf8w' },
+            body: JSON.stringify({
+              to: ord.profiles?.email,
+              subject: 'Your ScholarConnect Order is Confirmed — ' + ord.order_number,
+              html: '<h2>Order Confirmed!</h2><p>Dear ' + ord.profiles?.full_name + ',</p><p>Your deposit payment of <strong>$' + ord.deposit_amount + '</strong> has been received for order <strong>' + ord.order_number + '</strong>.</p><p>A writer will be assigned shortly. You can track your order in your dashboard.</p><p>Thank you for choosing ScholarConnect!</p>'
+            })
+          });
+          // Notify admin
+          await fetch('https://wgypsnemgtsvpqrgbrpg.supabase.co/functions/v1/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndneXBzbmVtZ3RzdnBxcmdicnBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMDU3MzQsImV4cCI6MjA5Mzc4MTczNH0.FGhHIGqnNi0oTiLvruuya0iU8-zdD0keAOY5BQhVf8w' },
+            body: JSON.stringify({
+              to: 'solutionscenter29@gmail.com',
+              subject: 'New Paid Order — ' + ord.order_number,
+              html: '<h2>New Paid Order</h2><p>Order <strong>' + ord.order_number + '</strong> from ' + ord.profiles?.full_name + ' has been paid.</p><p>Deposit: $' + ord.deposit_amount + ' via ' + method + '</p><p>Subject: ' + ord.subject + ' | Pages: ' + ord.page_count + '</p>'
+            })
+          });
+        }
+      } catch(e) { console.warn('Email notification failed:', e); }
+    }
+    return result;
+  };
 
   if (localStorage.getItem('sc_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
   const tb = document.getElementById('theme-btn');
@@ -443,6 +477,7 @@
   const SUBJECTS = {'Business & Management':['General','Strategy','Marketing','Finance','Accounting','HR Management','Entrepreneurship'],'Nursing & Medicine':['General','Clinical','Pharmacology','Pediatrics','Mental Health Nursing','Community Health'],'Computer Science & IT':['General','Programming','Algorithms','AI & Machine Learning','Cybersecurity','Web Development'],'Psychology':['General','Clinical Psychology','Developmental Psychology','Social Psychology','Cognitive Psychology'],'Education':['General','Curriculum Design','Special Education','Educational Psychology','Early Childhood'],'Law':['General','Criminal Law','Constitutional Law','Corporate Law','International Law','Human Rights'],'History':['General','World History','African History','American History','European History','Ancient History'],'English Literature':['General','British Literature','American Literature','African Literature','Poetry','Drama'],'Mathematics':['General','Calculus','Statistics','Linear Algebra','Discrete Mathematics'],'Biology & Life Sciences':['General','Molecular Biology','Ecology','Genetics','Microbiology','Anatomy'],'Chemistry':['General','Organic','Inorganic','Physical Chemistry','Analytical Chemistry'],'Political Science':['General','International Relations','Comparative Politics','Public Policy'],'Sociology':['General','Urban Sociology','Cultural Studies','Gender Studies'],'Economics':['General','Microeconomics','Macroeconomics','Econometrics','Development Economics'],'Engineering':['General','Civil','Mechanical','Electrical','Chemical Engineering']};
 
   let currentOrdId = null, currentOrd = null, currentRat = 5;
+  let pendingBalanceOrdId = null, pendingBalanceRating = 5, pendingBalanceReview = '', balanceAmount = 0, balanceOrderNum = '';
   let payMethod = 'stripe', payingOrdId = null;
   let allOrdersCache = []; // Cache for orders
   let chatSub = null, settings = {};
@@ -719,10 +754,10 @@
     const hasDiscount = refMsg?.dataset.valid === 'true';
     const discount = hasDiscount ? 0.20 : 0;
 
-    // Pass words so supabase-client.js calculates exact price (e.g. 50 words = $1.82)
+    // Create order with standard fields only (what SC.orders.create expects)
     const res = await SC.orders.create(profile, {
       title, instructions: instr, subject: subj, subLevel: subl, level,
-      pages, words: wordsVal, deadline: dl, citationStyle: citation, briefFiles: briefUrls
+      pages, deadline: dl, citationStyle: citation, briefFiles: briefUrls
     });
     btn.disabled=false; btn.textContent='Proceed to Payment →';
     if (res.error) { err.textContent=res.error; err.style.display='flex'; return; }
@@ -1003,10 +1038,73 @@
   function setRating(r) { currentRat=r; document.querySelectorAll('#star-rating span').forEach((s,i)=>s.textContent=i<r?'⭐':'☆'); }
 
   async function submitReview() {
-    const res = await SC.orders.approve(currentOrdId, profile.id, currentRat, document.getElementById('review-text').value.trim());
+    const rating = currentRat;
+    const reviewText = document.getElementById('review-text').value.trim();
+    // Get order balance amount
+    const { data: ord } = await sb.from('orders').select('total_price, deposit_amount, order_number').eq('id', currentOrdId).single();
+    const balance = ord ? parseFloat(ord.total_price) - parseFloat(ord.deposit_amount) : 0;
+    closeM('m-review');
+    if (balance > 0) {
+      // Show balance payment modal before completing
+      openBalancePayModal(currentOrdId, balance, ord.order_number, rating, reviewText);
+    } else {
+      // No balance due (already paid in full or free)
+      const res = await SC.orders.approve(currentOrdId, profile.id, rating, reviewText);
+      if (res.error) { showGlobalToast(res.error,'error'); return; }
+      showGlobalToast('Work approved! Payment released.','success');
+      setTimeout(() => openDetail(currentOrdId), 500);
+    }
+  }
+
+  function openBalancePayModal(ordId, balance, orderNum, rating, reviewText) {
+    pendingBalanceOrdId = ordId;
+    pendingBalanceRating = rating;
+    pendingBalanceReview = reviewText;
+    // Populate balance modal
+    const setTxt = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+    setTxt('bal-order-num', orderNum);
+    setTxt('bal-amount', '$' + balance.toFixed(2));
+    setTxt('bal-pay-btn-text', 'Pay $' + balance.toFixed(2) + ' Balance');
+    // Init PayPal for balance
+    balanceAmount = balance;
+    balanceOrderNum = orderNum;
+    openM('m-balance-pay');
+    setTimeout(() => initBalancePayPal(balance, orderNum), 400);
+  }
+
+  async function initBalancePayPal(amount, orderNum) {
+    const container = document.getElementById('bal-paypal-container');
+    if (!container) return;
+    container.innerHTML = '';
+    if (typeof paypal === 'undefined') return;
+    try {
+      paypal.Buttons({
+        createOrder: (data, actions) => actions.order.create({
+          purchase_units: [{ amount: { value: amount.toFixed(2) }, description: 'ScholarConnect Balance - ' + orderNum, payee: { email_address: 'jameskinyua1997@gmail.com' }, application_context: { brand_name: 'ScholarConnect', shipping_preference: 'NO_SHIPPING' } }]
+        }),
+        onApprove: async (data, actions) => {
+          await actions.order.capture();
+          await completeOrderAfterBalance('paypal');
+        },
+        onError: (err) => showGlobalToast('PayPal error. Try bank transfer.', 'error'),
+        style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' }
+      }).render('#bal-paypal-container');
+    } catch(e) { console.warn('PayPal balance init:', e); }
+  }
+
+  async function payBalanceByBank() {
+    await completeOrderAfterBalance('bank');
+  }
+
+  async function completeOrderAfterBalance(method) {
+    // Record balance payment in DB
+    await sb.from('orders').update({ balance_paid: true, balance_payment_method: method, balance_paid_at: new Date().toISOString() }).eq('id', pendingBalanceOrdId);
+    // Now approve the order
+    const res = await SC.orders.approve(pendingBalanceOrdId, profile.id, pendingBalanceRating, pendingBalanceReview);
     if (res.error) { showGlobalToast(res.error,'error'); return; }
-    closeM('m-review'); showGlobalToast('Work approved! Payment released.','success');
-    setTimeout(() => openDetail(currentOrdId), 500);
+    closeM('m-balance-pay');
+    showGlobalToast('Balance paid! Work approved. Thank you!','success');
+    setTimeout(() => openDetail(pendingBalanceOrdId), 500);
   }
 
   async function submitRevision() {
@@ -1369,15 +1467,41 @@
     msgs.scrollTop = msgs.scrollHeight;
   }
 </script>
-<script>
-function scLoadFailed() {
-  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;font-family:sans-serif;text-align:center;padding:24px">'
-    + '<h2 style="color:#c62828">Failed to Load Platform</h2>'
-    + '<p>supabase-client.js could not be loaded.</p>'
-    + '<p>Please <strong>hard refresh</strong> (Ctrl+Shift+R) and try again.</p>'
-    + '<a href="auth.html" style="color:#1a237e;margin-top:8px">Back to Login</a>'
-    + '</div>';
-}
-</script>
+<!-- BALANCE PAYMENT MODAL -->
+<div class="modal-overlay" id="m-balance-pay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">Pay Remaining Balance</div>
+    </div>
+    <div style="padding:0 0 16px">
+      <div class="alert alert-success" style="margin-bottom:16px">
+        <span>✅</span><span>You've approved the work! Please pay the remaining balance to complete the order.</span>
+      </div>
+      <div style="background:var(--parch);border-radius:10px;padding:14px;margin-bottom:16px;font-size:0.875rem">
+        <div class="flex-between" style="margin-bottom:6px"><span>Order:</span><strong id="bal-order-num">—</strong></div>
+        <div class="flex-between"><span>Balance due:</span><strong id="bal-amount" style="color:var(--gold);font-size:1.1rem">—</strong></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div style="border:2px solid var(--steel);border-radius:10px;padding:14px;text-align:center;cursor:pointer" onclick="document.getElementById('bal-method-paypal').style.display='block';document.getElementById('bal-method-bank').style.display='none'">
+          <div style="font-size:1.3rem">🅿️</div><div style="font-size:0.85rem;font-weight:600;margin-top:4px">PayPal</div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;cursor:pointer" onclick="document.getElementById('bal-method-bank').style.display='block';document.getElementById('bal-method-paypal').style.display='none'">
+          <div style="font-size:1.3rem">🏦</div><div style="font-size:0.85rem;font-weight:600;margin-top:4px">Bank Transfer</div>
+        </div>
+      </div>
+      <div id="bal-method-paypal">
+        <div id="bal-paypal-container" style="min-height:50px"></div>
+      </div>
+      <div id="bal-method-bank" style="display:none">
+        <div class="alert alert-info" style="margin-bottom:10px"><span>🏦</span><span>Transfer the balance to our bank account and include your order number as reference.</span></div>
+        <button class="btn btn-primary btn-full" onclick="payBalanceByBank()">✓ I've Sent the Bank Transfer</button>
+      </div>
+      <div style="margin-top:10px;font-size:0.8rem;color:var(--muted);text-align:center">
+        Your writer will be paid after balance is confirmed.
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
