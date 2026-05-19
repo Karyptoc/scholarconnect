@@ -19,9 +19,6 @@ const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
 // ── Email Helper ──────────────────────────────────────────
 async function sendEmail(to, subject, html) {
   try {
-    // 8-second timeout so email never blocks login or order flow
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
     await fetch(`${FUNCTIONS_URL}/send-email`, {
       method: 'POST',
       headers: {
@@ -29,12 +26,9 @@ async function sendEmail(to, subject, html) {
         'Authorization': `Bearer ${SUPABASE_KEY}`,
       },
       body: JSON.stringify({ to, subject, html }),
-      signal: controller.signal,
     });
-    clearTimeout(timeoutId);
   } catch (e) {
-    // Never block on email failure - log silently
-    console.warn('[Email]', e.message || e);
+    console.error('[Email Error]', e);
   }
 }
 
@@ -193,9 +187,7 @@ const SC = {
         user_id: data.user.id, code, expires_at: expiresAt, used: false
       });
 
-      // Fire email without awaiting - never block login on email
-      sendEmail(email, 'Your ScholarConnect Login Code', EmailTemplates.otp(code))
-        .catch(e => console.warn('[2FA Email]', e));
+      await sendEmail(email, 'Your ScholarConnect Login Code', EmailTemplates.otp(code));
 
       await sb.auth.signOut();
       return { success: true, requires2FA: true, email };
@@ -706,8 +698,38 @@ const SC = {
       return data || [];
     },
     async updateStatus(id, status, adminNote = '') {
-      const { error } = await sb.from('withdrawals').update({ status, admin_note: adminNote, processed_at: new Date().toISOString() }).eq('id', id);
-      return error ? { error: error.message } : { success: true };
+      const { error } = await sb.from('withdrawals')
+        .update({ status, admin_note: adminNote, processed_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) return { error: error.message };
+      // If marking as paid, send invoice email to admin and writer
+      if (status === 'paid') {
+        const { data: w } = await sb.from('withdrawals')
+          .select('*, profiles(full_name, email)')
+          .eq('id', id).single();
+        if (w) {
+          const invoiceHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;border:1px solid #e0e0e0;border-radius:8px;">
+            <h2 style="color:#1a237e;margin-bottom:4px;">ScholarConnect — Withdrawal Paid</h2>
+            <p style="color:#666;margin-bottom:20px;">Reference: WD-${String(id).padStart(6,'0')}</p>
+            <table style="width:100%;border-collapse:collapse;">
+              <tr style="background:#f5f5f5"><td style="padding:10px;border:1px solid #eee"><strong>Writer</strong></td><td style="padding:10px;border:1px solid #eee">${w.profiles?.full_name}</td></tr>
+              <tr><td style="padding:10px;border:1px solid #eee"><strong>Amount</strong></td><td style="padding:10px;border:1px solid #eee;font-size:1.2em;color:#1a237e"><strong>$${w.amount}</strong></td></tr>
+              <tr style="background:#f5f5f5"><td style="padding:10px;border:1px solid #eee"><strong>Method</strong></td><td style="padding:10px;border:1px solid #eee">${w.method}</td></tr>
+              <tr><td style="padding:10px;border:1px solid #eee"><strong>Account</strong></td><td style="padding:10px;border:1px solid #eee">${w.account_details}</td></tr>
+              <tr style="background:#f5f5f5"><td style="padding:10px;border:1px solid #eee"><strong>Date</strong></td><td style="padding:10px;border:1px solid #eee">${new Date().toLocaleDateString()}</td></tr>
+              ${adminNote ? `<tr><td style="padding:10px;border:1px solid #eee"><strong>Note</strong></td><td style="padding:10px;border:1px solid #eee">${adminNote}</td></tr>` : ''}
+            </table>
+            <p style="color:#999;font-size:12px;margin-top:20px;">ScholarConnect — Secure Academic Writing Platform</p>
+          </div>`;
+          // Email admin
+          await sendEmail(ADMIN_EMAIL, `Withdrawal Paid: ${w.profiles?.full_name} — $${w.amount}`, invoiceHtml);
+          // Email writer
+          if (w.profiles?.email) {
+            await sendEmail(w.profiles.email, `Your ScholarConnect Withdrawal of $${w.amount} Has Been Sent`, invoiceHtml);
+          }
+        }
+      }
+      return { success: true };
     },
   },
 };
