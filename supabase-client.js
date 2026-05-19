@@ -19,6 +19,9 @@ const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
 // ── Email Helper ──────────────────────────────────────────
 async function sendEmail(to, subject, html) {
   try {
+    // 8-second timeout so email never blocks login or order flow
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
     await fetch(`${FUNCTIONS_URL}/send-email`, {
       method: 'POST',
       headers: {
@@ -26,9 +29,12 @@ async function sendEmail(to, subject, html) {
         'Authorization': `Bearer ${SUPABASE_KEY}`,
       },
       body: JSON.stringify({ to, subject, html }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
   } catch (e) {
-    console.error('[Email Error]', e);
+    // Never block on email failure - log silently
+    console.warn('[Email]', e.message || e);
   }
 }
 
@@ -187,7 +193,9 @@ const SC = {
         user_id: data.user.id, code, expires_at: expiresAt, used: false
       });
 
-      await sendEmail(email, 'Your ScholarConnect Login Code', EmailTemplates.otp(code));
+      // Fire email without awaiting - never block login on email
+      sendEmail(email, 'Your ScholarConnect Login Code', EmailTemplates.otp(code))
+        .catch(e => console.warn('[2FA Email]', e));
 
       await sb.auth.signOut();
       return { success: true, requires2FA: true, email };
