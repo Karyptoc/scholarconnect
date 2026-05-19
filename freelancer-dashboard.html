@@ -8,7 +8,12 @@
 <body>
 <div class="app-layout">
   <aside class="sidebar">
-    <div class="sidebar-brand"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><path d="M14 3L3 9v10l11 6 11-6V9L14 3z" fill="var(--navy2)"/><path d="M14 8l6 3.5v7L14 22l-6-3.5v-7L14 8z" fill="var(--gold)"/></svg>Scholar<span>Connect</span></div>
+    <a href="index.html" class="sc-logo sidebar-logo-link">
+          <div class="sc-logo-mark">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L4 7v5c0 4.5 3.4 8.7 8 9.9 4.6-1.2 8-5.4 8-9.9V7l-8-4z" fill="white" opacity="0.9"/><path d="M9 12l2 2 4-4" stroke="#c8971e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="sc-logo-text">Scholar<span>Connect</span></span>
+        </a>
     <nav class="sidebar-nav">
       <div class="sidebar-section">Main</div>
       <button class="sidebar-link active" id="nav-overview" onclick="showPage('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</button>
@@ -126,6 +131,8 @@
       <div class="grid-3" style="margin-bottom:24px">
         <div class="stat-card"><div class="stat-value" id="earn-bal">—</div><div class="stat-label">Available Balance</div></div>
         <div class="stat-card"><div class="stat-value" id="earn-done">—</div><div class="stat-label">Completed Orders</div></div>
+              <div class="stat-card"><div class="stat-value" id="earn-withdrawn" style="color:var(--muted)">—</div><div class="stat-label">Total Withdrawn</div></div>
+              <div class="stat-card"><div class="stat-value" id="earn-pending" style="color:var(--warning)">—</div><div class="stat-label">Pending Withdrawal</div></div>
         <div class="stat-card"><div class="stat-value" id="earn-total">—</div><div class="stat-label">Total Earned</div></div>
       </div>
       <div class="grid-2">
@@ -915,10 +922,19 @@
     const done = assigned.filter(o=>o.status==='completed');
     const payout = parseFloat(settings.writer_payout||4);
     const totalEarned = done.reduce((a,o)=>a+payout*o.page_count,0);
-    document.getElementById('earn-bal').textContent   = '$'+totalEarned.toFixed(0);
-    document.getElementById('earn-done').textContent  = done.length;
-    document.getElementById('earn-total').textContent = '$'+totalEarned.toFixed(0);
     const ws = await SC.withdrawals.getForWriter(profile.id);
+    // Deduct paid withdrawals from available balance
+    const totalWithdrawn = ws.filter(w=>w.status==='paid').reduce((a,w)=>a+parseFloat(w.amount||0),0);
+    const pendingWithdrawals = ws.filter(w=>w.status==='pending').reduce((a,w)=>a+parseFloat(w.amount||0),0);
+    const availableBalance = totalEarned - totalWithdrawn - pendingWithdrawals;
+    document.getElementById('earn-bal').textContent   = '$'+availableBalance.toFixed(2);
+    document.getElementById('earn-done').textContent  = done.length;
+    document.getElementById('earn-total').textContent = '$'+totalEarned.toFixed(2);
+    // Show withdrawn amount if element exists
+    const wdEl = document.getElementById('earn-withdrawn');
+    if (wdEl) wdEl.textContent = '$'+totalWithdrawn.toFixed(2);
+    const pendEl = document.getElementById('earn-pending');
+    if (pendEl) pendEl.textContent = '$'+pendingWithdrawals.toFixed(2);
     document.getElementById('w-history').innerHTML = ws.length ? ws.map(w=>`<div class="flex-between" style="padding:10px 0;border-bottom:1px solid var(--border);font-size:0.875rem"><div><strong>$${w.amount}</strong> via ${w.method}<br><span class="text-xs text-muted">${w.account_details}</span></div><span class="badge badge-${w.status==='pending'?'warning':w.status==='paid'?'success':'danger'}">${w.status}</span></div>`).join('') : '<div class="empty-state" style="padding:16px"><p class="text-sm">No withdrawals yet.</p></div>';
   }
 
