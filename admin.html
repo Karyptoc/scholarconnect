@@ -411,14 +411,9 @@
   document.getElementById('tfa-code')?.addEventListener('keydown',e=>{if(e.key==='Enter')do2FA();});
 
   let adminProfile = null;
-  try {
-    const existingProfile = SC.auth.getProfile();
-    if (existingProfile && existingProfile.user_type === 'admin') { adminProfile = existingProfile; showDashboard(); }
-    else { showLoginPage(); }
-  } catch(e) {
-    console.error('Init error:', e);
-    try { showLoginPage(); } catch(e2) {}
-  }
+  const existingProfile = SC.auth.getProfile();
+  if (existingProfile && existingProfile.user_type === 'admin') { adminProfile = existingProfile; showDashboard(); }
+  else { showLoginPage(); }
 
   function showLoginPage() {
     document.getElementById('page-setup').style.display = 'none';
@@ -437,6 +432,7 @@
     initOverview();
     updateEssayBadge();
     updateAppBadge();
+    updateWithdrawalBadge();
   }
 
   function pwScore(pw){return [{ok:pw.length>=8},{ok:/[A-Z]/.test(pw)},{ok:/[0-9]/.test(pw)},{ok:/[!@#$%^&*()\-_=+\[\]{};:,.<>?]/.test(pw)}].filter(r=>r.ok).length;}
@@ -479,7 +475,7 @@
     document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
     document.querySelectorAll('.anav-btn').forEach(b=>b.classList.remove('active'));
     document.getElementById('tab-'+name).style.display='block';
-    const tabs=['overview','orders','users','essays','applications','security','logs','settings','messages'];
+    const tabs=['overview','orders','users','essays','applications','security','logs','settings','messages','withdrawals'];
     const btns=document.querySelectorAll('.anav-btn');
     const i=tabs.indexOf(name);if(btns[i])btns[i].classList.add('active');
     if(name==='orders')renderOrders();
@@ -489,6 +485,7 @@
     if(name==='security')renderSecurity();
     if(name==='logs')renderLogs();
     if(name==='settings')loadSettings();
+    if(name==='withdrawals')renderWithdrawals();
     if(name==='messages')renderMessages();
   }
 
@@ -621,15 +618,6 @@
     if (res.error) { showGlobalToast(res.error, 'error'); return; }
     closeM('m-ord');
     showGlobalToast(writerName + ' assigned successfully!', 'success');
-    renderOrders();
-  }
-
-  async function adminConfirmPayment(orderId, orderNum, amount, method) {
-    if (!confirm('Confirm ' + method + ' payment of $' + amount + ' for order ' + orderNum + '?')) return;
-    const res = await SC.orders.payDeposit(orderId, method);
-    if (res.error) { showGlobalToast('Error: ' + res.error, 'error'); return; }
-    closeM('m-ord');
-    showGlobalToast('Payment confirmed! Order ' + orderNum + ' is now active.', 'success');
     renderOrders();
   }
 
@@ -876,6 +864,13 @@
     </div>`).join('');
   }
 
+  async function updateWithdrawalBadge(){
+    const { data: pending } = await sb.from('withdrawals').select('id').eq('status','pending');
+    const count = pending?.length || 0;
+    const b = document.getElementById('wd-badge');
+    if (b) { b.textContent = count; b.style.display = count>0?'inline-flex':'none'; }
+  }
+
   async function updateEssayBadge(){
     const { data: pending } = await sb.from('writer_test_results')
       .select('id', { count: 'exact' })
@@ -982,13 +977,13 @@
   }
 
   async function openApplicationWindow() {
-    await SC.settings.update({ applications_open: true });
+    await sb.from('platform_settings').upsert({ key: 'applications_open', value: 'true' }, { onConflict: 'key' });
     showGlobalToast('Writer applications are now OPEN!', 'success');
     renderApplications();
   }
 
   async function closeApplicationWindow() {
-    await SC.settings.update({ applications_open: false });
+    await sb.from('platform_settings').upsert({ key: 'applications_open', value: 'false' }, { onConflict: 'key' });
     showGlobalToast('Writer applications are now CLOSED.', 'warning');
     renderApplications();
   }
@@ -1297,6 +1292,83 @@
     document.getElementById('cp-curr').value='';
     document.getElementById('cp-new').value='';
     document.getElementById('cp-conf').value='';
+  }
+
+  async function exportWithdrawalsCSV() {
+    const { data: ws } = await sb.from('withdrawals')
+      .select('*, profiles(full_name, email)')
+      .order('created_at', { ascending: false });
+    if (!ws || !ws.length) { showGlobalToast('No withdrawal records found.', 'error'); return; }
+    let csv = 'Reference,Writer Name,Email,Amount ($),Method,Account Details,Status,Admin Note,Requested,Processed\n';
+    ws.forEach((w, i) => {
+      const ref = 'WD-' + String(w.id).padStart(6,'0');
+      const name = (w.profiles?.full_name || '').replace(/,/g,'');
+      const email = w.profiles?.email || '';
+      const note = (w.admin_note || '').replace(/,/g,'');
+      const acct = (w.account_details || '').replace(/,/g,'');
+      const req = w.created_at ? new Date(w.created_at).toLocaleDateString() : '';
+      const proc = w.processed_at ? new Date(w.processed_at).toLocaleDateString() : '';
+      csv += `"${ref}","${name}","${email}",${w.amount},"${w.method}","${acct}","${w.status}","${note}","${req}","${proc}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = 'scholarconnect_withdrawals_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click(); URL.revokeObjectURL(url);
+    showGlobalToast('Withdrawal report downloaded!', 'success');
+  }
+
+  async function renderWithdrawals() {
+    const { data: ws } = await sb.from('withdrawals')
+      .select('*, profiles(full_name, email)')
+      .order('created_at', { ascending: false });
+    const list = document.getElementById('withdrawals-list');
+    if (!list) return;
+    // Summary stats
+    const pending = ws?.filter(w=>w.status==='pending') || [];
+    const paid    = ws?.filter(w=>w.status==='paid') || [];
+    const totalPending = pending.reduce((a,w)=>a+parseFloat(w.amount||0),0);
+    const totalPaid    = paid.reduce((a,w)=>a+parseFloat(w.amount||0),0);
+    document.getElementById('wd-pending-count').textContent = pending.length + ' pending';
+    document.getElementById('wd-pending-amt').textContent = '$' + totalPending.toFixed(2);
+    document.getElementById('wd-paid-amt').textContent = '$' + totalPaid.toFixed(2);
+    if (!ws || !ws.length) { list.innerHTML = '<p class="text-muted text-sm">No withdrawal requests yet.</p>'; return; }
+    list.innerHTML = ws.map(w => {
+      const ref = 'WD-' + String(w.id).padStart(6,'0');
+      const isPending = w.status === 'pending';
+      const isPaid = w.status === 'paid';
+      return '<div class="flex-between" style="padding:12px;border:0.5px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--surface)">'
+        + '<div style="flex:1">'
+        + '<div class="flex-gap" style="margin-bottom:4px">'
+        + '<strong style="font-size:0.875rem">' + (w.profiles?.full_name||'Writer') + '</strong>'
+        + '<span class="badge badge-' + (isPaid?'success':isPending?'warning':'danger') + '">' + w.status + '</span>'
+        + '<span class="text-xs text-muted">' + ref + '</span>'
+        + '</div>'
+        + '<div style="font-size:0.82rem;color:var(--muted)">'
+        + w.method + ' · ' + w.account_details + ' · Requested: ' + new Date(w.created_at).toLocaleDateString()
+        + (w.processed_at ? ' · Paid: ' + new Date(w.processed_at).toLocaleDateString() : '')
+        + '</div>'
+        + (w.admin_note ? '<div style="font-size:0.8rem;color:var(--muted);margin-top:3px">Note: ' + w.admin_note + '</div>' : '')
+        + '</div>'
+        + '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;margin-left:16px">'
+        + '<strong style="font-size:1.1rem;color:var(--gold)">$' + w.amount + '</strong>'
+        + (isPending
+          ? '<div style="display:flex;gap:6px">'
+            + '<button class="btn btn-sm btn-success" onclick="processWithdrawal(' + w.id + ',\'paid\')">✓ Mark Paid</button>'
+            + '<button class="btn btn-sm btn-danger-outline" onclick="processWithdrawal(' + w.id + ',\'rejected\')">✗ Reject</button>'
+            + '</div>'
+          : '')
+        + '</div></div>';
+    }).join('');
+  }
+
+  async function processWithdrawal(id, status) {
+    const note = status === 'rejected' ? prompt('Reason for rejection:') : '';
+    if (status === 'rejected' && note === null) return;
+    const res = await SC.withdrawals.updateStatus(id, status, note || '');
+    if (res.error) { showGlobalToast(res.error, 'error'); return; }
+    showGlobalToast(status === 'paid' ? '✅ Payment confirmed! Invoice sent.' : 'Withdrawal rejected.', status==='paid'?'success':'warning');
+    renderWithdrawals();
   }
 
   async function exportCSV(){
