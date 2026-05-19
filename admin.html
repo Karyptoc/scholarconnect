@@ -388,7 +388,7 @@
 <div class="toast-container" id="toasts"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="supabase-client.js"></script>
+<script src="supabase-client.js" onerror="document.body.innerHTML='<div style=\'display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;font-family:sans-serif\'><h2 style=\'color:#c62828\'>⚠️ Failed to Load</h2><p>supabase-client.js could not be loaded.</p><p>Please <strong>hard refresh</strong> (Ctrl+Shift+R) or check your internet connection.</p><a href=\'auth.html\' style=\'color:#1a237e\'>Back to Login</a></div>'"></script>
 <script>
   async function do2FA() {
     const code = document.getElementById('tfa-code').value.trim();
@@ -411,9 +411,19 @@
   document.getElementById('tfa-code')?.addEventListener('keydown',e=>{if(e.key==='Enter')do2FA();});
 
   let adminProfile = null;
-  const existingProfile = SC.auth.getProfile();
-  if (existingProfile && existingProfile.user_type === 'admin') { adminProfile = existingProfile; showDashboard(); }
-  else { showLoginPage(); }
+  try {
+    const existingProfile = SC.auth.getProfile();
+    if (existingProfile && existingProfile.user_type === 'admin') { adminProfile = existingProfile; showDashboard(); }
+    else { showLoginPage(); }
+  } catch(e) {
+    console.error('SC not ready:', e);
+    // Show error and fallback to login
+    document.getElementById('page-login').style.display = 'flex';
+    document.getElementById('page-dashboard').style.display = 'none';
+    document.getElementById('page-setup').style.display = 'none';
+    const errEl = document.getElementById('admin-err');
+    if (errEl) { errEl.textContent = 'Platform failed to load. Hard refresh (Ctrl+Shift+R) and try again.'; errEl.style.display = 'flex'; }
+  }
 
   function showLoginPage() {
     document.getElementById('page-setup').style.display = 'none';
