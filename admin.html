@@ -610,6 +610,15 @@
     await confirmAssignFromModal(orderId, writerId, writerName);
   }
 
+  async function adminConfirmPayment(orderId, orderNum, amount, method) {
+    if (!confirm('Confirm ' + method + ' payment of $' + amount + ' for order ' + orderNum + '?')) return;
+    const res = await SC.orders.payDeposit(orderId, method);
+    if (res.error) { showGlobalToast('Error: ' + res.error, 'error'); return; }
+    closeM('m-ord');
+    showGlobalToast('✅ Payment confirmed! Order ' + orderNum + ' is now active.', 'success');
+    renderOrders();
+  }
+
   async function confirmAssignFromModal(orderId, writerId, writerName) {
     if (!confirm('Assign ' + writerName + ' to this order?')) return;
     const res = await SC.orders.assign(orderId, writerId);
@@ -692,7 +701,12 @@
         return o.brief_url ? `<div style="margin-top:10px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Client Brief</a></div>` : '';
       })()}
       ${o.dispute_reason?`<div class="alert alert-danger" style="margin-top:12px">⚠️ <strong>Dispute:</strong> ${o.dispute_reason}</div>`:''}
-      <div id="modal-requests-${o.id}" style="margin-top:14px"></div>`;
+      <div id="modal-requests-${o.id}" style="margin-top:14px"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+        ${!o.deposit_paid ? '<button class=\"btn btn-success btn-sm\" onclick=\"adminConfirmPayment('+o.id+',\''+o.order_number+'\','+o.deposit_amount+',\'bank\')\">✅ Confirm Bank Payment</button><button class=\"btn btn-sm btn-outline\" onclick=\"adminConfirmPayment('+o.id+',\''+o.order_number+'\','+o.deposit_amount+',\'paypal\')\">🅿️ Confirm PayPal</button>' : ''}
+        ${(o.status==='pending_writer'||o.status==='pending_payment') ? '<button class=\"btn btn-gold btn-sm\" onclick=\"closeM(\'m-ord\');openAssign('+o.id+',\''+o.order_number+'\',\''+o.subject+'\','+o.page_count+')\">✍️ Assign Writer</button>' : ''}
+        ${(o.deposit_paid&&!['completed','refunded','cancelled'].includes(o.status)) ? '<button class=\"btn btn-sm btn-ghost\" style=\"color:var(--danger)\" onclick=\"openRefund('+o.id+',\''+o.order_number+'\','+o.deposit_amount+')\">💸 Refund</button>' : ''}
+      </div>\`;
     // Load writer requests for this order
     sb.from('order_requests').select('*, profiles(full_name, email, is_writer_approved)').eq('order_id', o.id).then(({data:reqs}) => {
       const el = document.getElementById('modal-requests-'+o.id);
