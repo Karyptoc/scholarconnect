@@ -296,7 +296,19 @@
     if (!email || !pass) { err.textContent = 'Please fill in all fields.'; err.style.display = 'flex'; return; }
     const btn = document.getElementById('login-btn');
     btn.disabled = true; btn.textContent = 'Verifying…';
-    const res = await SC.auth.login(email, pass);
+    // 20-second timeout safety net so button never stays stuck
+    const loginTimeout = setTimeout(() => {
+      btn.disabled = false; btn.textContent = 'Continue →';
+      err.textContent = 'Login timed out. Please try again.';
+      err.style.display = 'flex';
+    }, 20000);
+    let res;
+    try {
+      res = await SC.auth.login(email, pass);
+    } catch(e) {
+      res = { error: e.message || 'Login failed. Please try again.' };
+    }
+    clearTimeout(loginTimeout);
     btn.disabled = false; btn.textContent = 'Continue →';
     if (res.error) { err.textContent = res.error; err.style.display = 'flex'; return; }
     document.getElementById('tfa-email').textContent = email;
