@@ -30,6 +30,10 @@
   <div class="auth-right">
     <div class="auth-form-wrap">
       <a href="index.html" class="auth-logo">Scholar<span>Connect</span></a>
+      <div id="sc-load-err" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px;margin-bottom:16px;font-size:0.875rem;color:#856404">
+        ⚠️ Failed to load platform. Please <strong>hard refresh</strong> (Ctrl+Shift+R) or clear your browser cache and try again.
+        If the problem persists, contact <a href="mailto:writerhub97@gmail.com">writerhub97@gmail.com</a>
+      </div>
 
       <!-- EMAIL VERIFIED -->
       <div id="step-verified" style="display:none;text-align:center">
@@ -165,17 +169,28 @@
 <div class="toast-container" id="toasts"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="supabase-client.js"></script>
+<script src="supabase-client.js" onerror="document.getElementById('sc-load-err').style.display='block'"></script>
 <script>
   if (localStorage.getItem('sc_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
 
-  const existing = SC.auth.getProfile();
-  if (existing) redirectByRole(existing.user_type);
+  // Wrap in try-catch so page always shows even if SC fails to load
+  try {
+    const existing = SC.auth.getProfile();
+    if (existing) redirectByRole(existing.user_type);
+  } catch(e) { console.warn('SC not ready:', e); }
 
   const params = new URLSearchParams(location.search);
-  if (params.get('verified') === '1') showStep('verified');
-  else if (params.get('mode') === 'register') { showStep('register'); if (params.get('role')) selRole(params.get('role')); }
-  else showStep('login');
+  try {
+    if (params.get('verified') === '1') showStep('verified');
+    else if (params.get('mode') === 'register') { showStep('register'); if (params.get('role')) selRole(params.get('role')); }
+    else showStep('login');
+  } catch(e) {
+    console.error('showStep failed:', e);
+    // Fallback: manually show login step
+    document.querySelectorAll('[id^="step-"]').forEach(el => el.style.display = 'none');
+    const loginEl = document.getElementById('step-login');
+    if (loginEl) loginEl.style.display = 'block';
+  }
 
   let selectedRole = null, pendingRegEmail = null, tfaTimerInt = null;
   let writerAppOpen = true; // default open until checked
