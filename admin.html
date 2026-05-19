@@ -23,7 +23,7 @@
 <!-- Admin Bar -->
 <div id="admin-bar" style="display:none">
   <div class="admin-bar">
-    <div class="admin-logo"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><path d="M14 3L3 9v10l11 6 11-6V9L14 3z" fill="rgba(255,255,255,0.15)"/><path d="M14 8l6 3.5v7L14 22l-6-3.5v-7L14 8z" fill="var(--gold2)"/></svg>ScholarConnect <span class="admin-pill">ADMIN</span></div>
+    <div class="admin-logo" style="display:flex;align-items:center;gap:8px"><img src="logo.png" alt="ScholarConnect" style="height:32px;object-fit:contain;border-radius:4px"><span style="font-family:var(--font-display);font-size:1rem;font-weight:900;color:white">Scholar<span style="color:var(--gold2)">Connect</span></span> <span class="admin-pill">ADMIN</span></div>
     <div class="anav" id="admin-tabs">
       <button class="anav-btn active" onclick="showTab('overview')">Overview</button>
       <button class="anav-btn" onclick="showTab('orders')">Orders</button>
@@ -34,6 +34,7 @@
       <button class="anav-btn" onclick="showTab('logs')">Logs</button>
       <button class="anav-btn" onclick="showTab('settings')">Settings</button>
       <button class="anav-btn" onclick="showTab('messages')">Messages <span id="msg-badge" class="badge badge-warning" style="display:none;margin-left:3px">0</span></button>
+      <button class="anav-btn" onclick="showTab('withdrawals')">Withdrawals <span id="wd-badge" style="display:none;background:var(--warning);color:white;border-radius:10px;padding:1px 6px;font-size:0.7rem;margin-left:4px">0</span></button>
     </div>
     <div class="flex-gap">
       <button class="theme-toggle" id="theme-btn"></button>
@@ -126,6 +127,19 @@
     </div>
   </div>
 
+  <!-- WITHDRAWALS -->
+  <div class="tab-pane" id="tab-withdrawals">
+    <div class="page-header flex-between">
+      <div><div class="page-title">Withdrawal Management</div><div class="page-subtitle">Review and process writer payment requests</div></div>
+      <button class="btn btn-outline btn-sm" onclick="exportWithdrawalsCSV()">Download CSV</button>
+    </div>
+    <div class="grid-4" style="margin-bottom:20px">
+      <div class="stat-card"><div class="stat-value" id="wd-pending-count" style="color:var(--warning)">0</div><div class="stat-label">Pending</div></div>
+      <div class="stat-card"><div class="stat-value" id="wd-pending-amt" style="color:var(--warning)">$0</div><div class="stat-label">Pending Amount</div></div>
+      <div class="stat-card"><div class="stat-value" id="wd-paid-amt" style="color:var(--success)">$0</div><div class="stat-label">Total Paid</div></div>
+    </div>
+    <div class="card" id="withdrawals-list"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
   <!-- ORDERS -->
   <div class="tab-pane" id="tab-orders" style="display:none">
     <div class="page-header flex-between">
@@ -432,7 +446,6 @@
     initOverview();
     updateEssayBadge();
     updateAppBadge();
-    updateWithdrawalBadge();
   }
 
   function pwScore(pw){return [{ok:pw.length>=8},{ok:/[A-Z]/.test(pw)},{ok:/[0-9]/.test(pw)},{ok:/[!@#$%^&*()\-_=+\[\]{};:,.<>?]/.test(pw)}].filter(r=>r.ok).length;}
@@ -485,7 +498,7 @@
     if(name==='security')renderSecurity();
     if(name==='logs')renderLogs();
     if(name==='settings')loadSettings();
-    if(name==='withdrawals')renderWithdrawals();
+    if(name==='withdrawals'){renderWithdrawals();}
     if(name==='messages')renderMessages();
   }
 
@@ -862,13 +875,6 @@
       </div>
       <div style="background:var(--parch);border-radius:6px;padding:10px;font-size:0.8rem;line-height:1.7;max-height:70px;overflow:hidden;color:var(--muted)">${(e.essay_text||'No text — file upload only').slice(0,280)}…</div>
     </div>`).join('');
-  }
-
-  async function updateWithdrawalBadge(){
-    const { data: pending } = await sb.from('withdrawals').select('id').eq('status','pending');
-    const count = pending?.length || 0;
-    const b = document.getElementById('wd-badge');
-    if (b) { b.textContent = count; b.style.display = count>0?'inline-flex':'none'; }
   }
 
   async function updateEssayBadge(){
@@ -1294,83 +1300,6 @@
     document.getElementById('cp-conf').value='';
   }
 
-  async function exportWithdrawalsCSV() {
-    const { data: ws } = await sb.from('withdrawals')
-      .select('*, profiles(full_name, email)')
-      .order('created_at', { ascending: false });
-    if (!ws || !ws.length) { showGlobalToast('No withdrawal records found.', 'error'); return; }
-    let csv = 'Reference,Writer Name,Email,Amount ($),Method,Account Details,Status,Admin Note,Requested,Processed\n';
-    ws.forEach((w, i) => {
-      const ref = 'WD-' + String(w.id).padStart(6,'0');
-      const name = (w.profiles?.full_name || '').replace(/,/g,'');
-      const email = w.profiles?.email || '';
-      const note = (w.admin_note || '').replace(/,/g,'');
-      const acct = (w.account_details || '').replace(/,/g,'');
-      const req = w.created_at ? new Date(w.created_at).toLocaleDateString() : '';
-      const proc = w.processed_at ? new Date(w.processed_at).toLocaleDateString() : '';
-      csv += `"${ref}","${name}","${email}",${w.amount},"${w.method}","${acct}","${w.status}","${note}","${req}","${proc}"\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url;
-    a.download = 'scholarconnect_withdrawals_' + new Date().toISOString().slice(0,10) + '.csv';
-    a.click(); URL.revokeObjectURL(url);
-    showGlobalToast('Withdrawal report downloaded!', 'success');
-  }
-
-  async function renderWithdrawals() {
-    const { data: ws } = await sb.from('withdrawals')
-      .select('*, profiles(full_name, email)')
-      .order('created_at', { ascending: false });
-    const list = document.getElementById('withdrawals-list');
-    if (!list) return;
-    // Summary stats
-    const pending = ws?.filter(w=>w.status==='pending') || [];
-    const paid    = ws?.filter(w=>w.status==='paid') || [];
-    const totalPending = pending.reduce((a,w)=>a+parseFloat(w.amount||0),0);
-    const totalPaid    = paid.reduce((a,w)=>a+parseFloat(w.amount||0),0);
-    document.getElementById('wd-pending-count').textContent = pending.length + ' pending';
-    document.getElementById('wd-pending-amt').textContent = '$' + totalPending.toFixed(2);
-    document.getElementById('wd-paid-amt').textContent = '$' + totalPaid.toFixed(2);
-    if (!ws || !ws.length) { list.innerHTML = '<p class="text-muted text-sm">No withdrawal requests yet.</p>'; return; }
-    list.innerHTML = ws.map(w => {
-      const ref = 'WD-' + String(w.id).padStart(6,'0');
-      const isPending = w.status === 'pending';
-      const isPaid = w.status === 'paid';
-      return '<div class="flex-between" style="padding:12px;border:0.5px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--surface)">'
-        + '<div style="flex:1">'
-        + '<div class="flex-gap" style="margin-bottom:4px">'
-        + '<strong style="font-size:0.875rem">' + (w.profiles?.full_name||'Writer') + '</strong>'
-        + '<span class="badge badge-' + (isPaid?'success':isPending?'warning':'danger') + '">' + w.status + '</span>'
-        + '<span class="text-xs text-muted">' + ref + '</span>'
-        + '</div>'
-        + '<div style="font-size:0.82rem;color:var(--muted)">'
-        + w.method + ' · ' + w.account_details + ' · Requested: ' + new Date(w.created_at).toLocaleDateString()
-        + (w.processed_at ? ' · Paid: ' + new Date(w.processed_at).toLocaleDateString() : '')
-        + '</div>'
-        + (w.admin_note ? '<div style="font-size:0.8rem;color:var(--muted);margin-top:3px">Note: ' + w.admin_note + '</div>' : '')
-        + '</div>'
-        + '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;margin-left:16px">'
-        + '<strong style="font-size:1.1rem;color:var(--gold)">$' + w.amount + '</strong>'
-        + (isPending
-          ? '<div style="display:flex;gap:6px">'
-            + '<button class="btn btn-sm btn-success" onclick="processWithdrawal(' + w.id + ',\'paid\')">✓ Mark Paid</button>'
-            + '<button class="btn btn-sm btn-danger-outline" onclick="processWithdrawal(' + w.id + ',\'rejected\')">✗ Reject</button>'
-            + '</div>'
-          : '')
-        + '</div></div>';
-    }).join('');
-  }
-
-  async function processWithdrawal(id, status) {
-    const note = status === 'rejected' ? prompt('Reason for rejection:') : '';
-    if (status === 'rejected' && note === null) return;
-    const res = await SC.withdrawals.updateStatus(id, status, note || '');
-    if (res.error) { showGlobalToast(res.error, 'error'); return; }
-    showGlobalToast(status === 'paid' ? '✅ Payment confirmed! Invoice sent.' : 'Withdrawal rejected.', status==='paid'?'success':'warning');
-    renderWithdrawals();
-  }
-
   async function exportCSV(){
     const{data:orders}=await SC.orders.getAll('completed');
     const s=await SC.settings.get();const pw=parseFloat(s.writer_payout||4);
@@ -1419,6 +1348,48 @@
     openM('m-instructions');
   }
 
+  async function renderWithdrawals(){
+    const{data:ws}=await sb.from('withdrawals').select('*, profiles(full_name, email)').order('created_at',{ascending:false});
+    const list=document.getElementById('withdrawals-list');if(!list)return;
+    const pend=(ws||[]).filter(w=>w.status==='pending'),paid=(ws||[]).filter(w=>w.status==='paid');
+    const s=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+    s('wd-pending-count',pend.length);
+    s('wd-pending-amt','$'+pend.reduce((a,w)=>a+parseFloat(w.amount||0),0).toFixed(2));
+    s('wd-paid-amt','$'+paid.reduce((a,w)=>a+parseFloat(w.amount||0),0).toFixed(2));
+    const b=document.getElementById('wd-badge');if(b){b.textContent=pend.length;b.style.display=pend.length>0?'inline':'none';}
+    if(!ws||!ws.length){list.innerHTML='<p class="text-muted" style="padding:16px">No withdrawal requests yet.</p>';return;}
+    list.innerHTML=ws.map(w=>{
+      const ref='WD-'+String(w.id).padStart(6,'0'),ip=w.status==='pending',ipd=w.status==='paid';
+      const bc=ipd?'badge-success':ip?'badge-warning':'badge-danger';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px"><div style="flex:1"><div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><strong>'+(w.profiles?.full_name||'Writer')+'</strong><span class="badge '+bc+'">'+w.status+'</span><span style="font-size:0.78rem;color:var(--muted)">'+ref+'</span></div><div style="font-size:0.82rem;color:var(--muted)">'+(w.method||'')+' · '+(w.account_details||'')+' · '+new Date(w.created_at).toLocaleDateString()+(w.processed_at?' · Paid:'+new Date(w.processed_at).toLocaleDateString():'')+' | '+(w.profiles?.email||'')+'</div>'+(w.admin_note?'<div style="font-size:0.8rem;color:var(--muted)">Note: '+w.admin_note+'</div>':'')+'</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin-left:16px"><strong style="font-size:1.2rem;color:var(--gold)">$'+w.amount+'</strong>'+(ip?'<div style="display:flex;gap:6px"><button class="btn btn-sm btn-success" onclick="processWithdrawal('+w.id+','paid')">Mark Paid</button><button class="btn btn-sm" style="border:1px solid var(--danger);color:var(--danger);background:none" onclick="processWithdrawal('+w.id+','rejected')">Reject</button></div>':'')+'</div></div>';
+    }).join('');
+  }
+  async function processWithdrawal(id,status){
+    let note='';
+    if(status==='rejected'){note=prompt('Rejection reason:')||'';if(note===null)return;}
+    await sb.from('withdrawals').update({status,admin_note:note,processed_at:new Date().toISOString()}).eq('id',id);
+    if(status==='paid'){
+      const{data:w}=await sb.from('withdrawals').select('*, profiles(full_name, email)').eq('id',id).single();
+      if(w){
+        const ref='WD-'+String(id).padStart(6,'0');
+        const html='<h2>Withdrawal Paid — '+ref+'</h2><p>Writer: '+(w.profiles?.full_name||'')+' | Amount: $'+w.amount+' | Method: '+(w.method||'')+' | Account: '+(w.account_details||'')+' | Date: '+new Date().toLocaleDateString()+'</p>';
+        await sendEmail('solutionscenter29@gmail.com','Withdrawal Paid: '+(w.profiles?.full_name||'')+' $'+w.amount,html);
+        if(w.profiles?.email)await sendEmail(w.profiles.email,'Your $'+w.amount+' withdrawal has been sent',html);
+      }
+      showGlobalToast('Paid! Invoice emailed.','success');
+    }else{showGlobalToast('Rejected.','warning');}
+    renderWithdrawals();
+  }
+  async function exportWithdrawalsCSV(){
+    const{data:ws}=await sb.from('withdrawals').select('*, profiles(full_name, email)').order('created_at',{ascending:false});
+    if(!ws||!ws.length){showGlobalToast('No records.','error');return;}
+    let csv='Ref,Writer,Email,Amount,Method,Account,Status,Note,Date
+';
+    ws.forEach(w=>{const ref='WD-'+String(w.id).padStart(6,'0');csv+='"'+ref+'","'+(w.profiles?.full_name||'')+'","'+(w.profiles?.email||'')+'",'+w.amount+',"'+(w.method||'')+'","'+(w.account_details||'').replace(/"/g,'')+'","'+w.status+'","'+(w.admin_note||'')+'","'+new Date(w.created_at).toLocaleDateString()+'"
+';});
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='withdrawals_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    showGlobalToast('Downloaded!','success');
+  }
   function openM(id){document.getElementById(id).classList.add('open');}
   function closeM(id){document.getElementById(id).classList.remove('open');}
 </script>
