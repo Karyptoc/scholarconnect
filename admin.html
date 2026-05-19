@@ -388,7 +388,7 @@
 <div class="toast-container" id="toasts"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="supabase-client.js" onerror="scLoadFailed()"></script>
+<script src="supabase-client.js"></script>
 <script>
   async function do2FA() {
     const code = document.getElementById('tfa-code').value.trim();
@@ -416,13 +416,8 @@
     if (existingProfile && existingProfile.user_type === 'admin') { adminProfile = existingProfile; showDashboard(); }
     else { showLoginPage(); }
   } catch(e) {
-    console.error('SC not ready:', e);
-    // Show error and fallback to login
-    document.getElementById('page-login').style.display = 'flex';
-    document.getElementById('page-dashboard').style.display = 'none';
-    document.getElementById('page-setup').style.display = 'none';
-    const errEl = document.getElementById('admin-err');
-    if (errEl) { errEl.textContent = 'Platform failed to load. Hard refresh (Ctrl+Shift+R) and try again.'; errEl.style.display = 'flex'; }
+    console.error('Init error:', e);
+    try { showLoginPage(); } catch(e2) {}
   }
 
   function showLoginPage() {
@@ -620,21 +615,21 @@
     await confirmAssignFromModal(orderId, writerId, writerName);
   }
 
-  async function adminConfirmPayment(orderId, orderNum, amount, method) {
-    if (!confirm('Confirm ' + method + ' payment of $' + amount + ' for order ' + orderNum + '?')) return;
-    const res = await SC.orders.payDeposit(orderId, method);
-    if (res.error) { showGlobalToast('Error: ' + res.error, 'error'); return; }
-    closeM('m-ord');
-    showGlobalToast('✅ Payment confirmed! Order ' + orderNum + ' is now active.', 'success');
-    renderOrders();
-  }
-
   async function confirmAssignFromModal(orderId, writerId, writerName) {
     if (!confirm('Assign ' + writerName + ' to this order?')) return;
     const res = await SC.orders.assign(orderId, writerId);
     if (res.error) { showGlobalToast(res.error, 'error'); return; }
     closeM('m-ord');
     showGlobalToast(writerName + ' assigned successfully!', 'success');
+    renderOrders();
+  }
+
+  async function adminConfirmPayment(orderId, orderNum, amount, method) {
+    if (!confirm('Confirm ' + method + ' payment of $' + amount + ' for order ' + orderNum + '?')) return;
+    const res = await SC.orders.payDeposit(orderId, method);
+    if (res.error) { showGlobalToast('Error: ' + res.error, 'error'); return; }
+    closeM('m-ord');
+    showGlobalToast('Payment confirmed! Order ' + orderNum + ' is now active.', 'success');
     renderOrders();
   }
 
@@ -711,12 +706,7 @@
         return o.brief_url ? `<div style="margin-top:10px"><a href="${o.brief_url}" target="_blank" class="btn btn-outline btn-sm">📎 Download Client Brief</a></div>` : '';
       })()}
       ${o.dispute_reason?`<div class="alert alert-danger" style="margin-top:12px">⚠️ <strong>Dispute:</strong> ${o.dispute_reason}</div>`:''}
-      <div id="modal-requests-${o.id}" style="margin-top:14px"></div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
-        ${!o.deposit_paid ? '<button class=\"btn btn-success btn-sm\" onclick=\"adminConfirmPayment('+o.id+',\''+o.order_number+'\','+o.deposit_amount+',\'bank\')\">✅ Confirm Bank Payment</button><button class=\"btn btn-sm btn-outline\" onclick=\"adminConfirmPayment('+o.id+',\''+o.order_number+'\','+o.deposit_amount+',\'paypal\')\">🅿️ Confirm PayPal</button>' : ''}
-        ${(o.status==='pending_writer'||o.status==='pending_payment') ? '<button class=\"btn btn-gold btn-sm\" onclick=\"closeM(\'m-ord\');openAssign('+o.id+',\''+o.order_number+'\',\''+o.subject+'\','+o.page_count+')\">✍️ Assign Writer</button>' : ''}
-        ${(o.deposit_paid&&!['completed','refunded','cancelled'].includes(o.status)) ? '<button class=\"btn btn-sm btn-ghost\" style=\"color:var(--danger)\" onclick=\"openRefund('+o.id+',\''+o.order_number+'\','+o.deposit_amount+')\">💸 Refund</button>' : ''}
-      </div>\`;
+      <div id="modal-requests-${o.id}" style="margin-top:14px"></div>`;
     // Load writer requests for this order
     sb.from('order_requests').select('*, profiles(full_name, email, is_writer_approved)').eq('order_id', o.id).then(({data:reqs}) => {
       const el = document.getElementById('modal-requests-'+o.id);
@@ -1359,16 +1349,6 @@
 
   function openM(id){document.getElementById(id).classList.add('open');}
   function closeM(id){document.getElementById(id).classList.remove('open');}
-</script>
-<script>
-function scLoadFailed() {
-  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;font-family:sans-serif;text-align:center;padding:24px">'
-    + '<h2 style="color:#c62828">Failed to Load Platform</h2>'
-    + '<p>supabase-client.js could not be loaded from GitHub.</p>'
-    + '<p>Please <strong>hard refresh</strong> (Ctrl+Shift+R) and try again.</p>'
-    + '<a href="auth.html" style="color:#1a237e;margin-top:8px">Back to Login</a>'
-    + '</div>';
-}
 </script>
 </body>
 </html>
