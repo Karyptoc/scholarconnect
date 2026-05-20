@@ -472,6 +472,7 @@
   const SUBJECTS = {'Business & Management':['General','Strategy','Marketing','Finance','Accounting','HR Management','Entrepreneurship'],'Nursing & Medicine':['General','Clinical','Pharmacology','Pediatrics','Mental Health Nursing','Community Health'],'Computer Science & IT':['General','Programming','Algorithms','AI & Machine Learning','Cybersecurity','Web Development'],'Psychology':['General','Clinical Psychology','Developmental Psychology','Social Psychology','Cognitive Psychology'],'Education':['General','Curriculum Design','Special Education','Educational Psychology','Early Childhood'],'Law':['General','Criminal Law','Constitutional Law','Corporate Law','International Law','Human Rights'],'History':['General','World History','African History','American History','European History','Ancient History'],'English Literature':['General','British Literature','American Literature','African Literature','Poetry','Drama'],'Mathematics':['General','Calculus','Statistics','Linear Algebra','Discrete Mathematics'],'Biology & Life Sciences':['General','Molecular Biology','Ecology','Genetics','Microbiology','Anatomy'],'Chemistry':['General','Organic','Inorganic','Physical Chemistry','Analytical Chemistry'],'Political Science':['General','International Relations','Comparative Politics','Public Policy'],'Sociology':['General','Urban Sociology','Cultural Studies','Gender Studies'],'Economics':['General','Microeconomics','Macroeconomics','Econometrics','Development Economics'],'Engineering':['General','Civil','Mechanical','Electrical','Chemical Engineering']};
 
   let currentOrdId = null, currentOrd = null, currentRat = 5;
+  let pendingBalanceOrdId = null, pendingBalanceRating = 5, pendingBalanceReview = '', balanceAmount = 0, balanceOrderNum = '', pendingDownloadUrl = null;
   let payMethod = 'stripe', payingOrdId = null;
   let allOrdersCache = []; // Cache for orders
   let chatSub = null, settings = {};
@@ -954,7 +955,7 @@
       actions = `<div class="card card-sm">
         <h4 style="margin-bottom:10px">📬 Work Submitted — Ready to Review</h4>
         <div class="alert alert-info" style="margin-bottom:12px">⬇️ Download and review the work first, then use the buttons below.</div>
-        ${hasDelFile ? `<a href="${delivery.file_url}" target="_blank" class="btn btn-primary btn-full" style="margin-bottom:8px">📄 Download & Review Work</a>` : '<p class="text-sm text-muted" style="margin-bottom:8px">File not yet available.</p>'}
+        ${hasDelFile ? `<button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="tryDownload('${delivery.file_url}', ${o.id}, '${o.order_number}', ${parseFloat(o.total_price||0)}, ${parseFloat(o.deposit_amount||0)}, ${o.balance_paid?1:0})">📄 Download & Review Work</button>` : '<p class="text-sm text-muted" style="margin-bottom:8px">File not yet available.</p>'}
         ${hasDraft ? `<a href="${delivery.draft_url}" target="_blank" class="btn btn-outline btn-full btn-sm" style="margin-bottom:12px">📝 View Draft</a>` : ''}
         <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-success btn-full" onclick="openM('m-review')">✓ Approve & Release Payment</button>
@@ -992,7 +993,7 @@
           <button class="btn btn-gold btn-sm" style="margin-top:8px;width:100%" onclick="openBalancePayModal(${o.id}, ${(parseFloat(o.total_price)-parseFloat(o.deposit_amount)).toFixed(2)}, '${o.order_number}', 5, '')" >Pay Remaining Balance →</button>
         </div>` : '<div class="alert alert-success" style="margin-bottom:12px">✅ All payments complete.</div>'}
         ${hasFile
-          ? `<a href="${delivery.file_url}" target="_blank" class="btn btn-primary btn-full" style="margin-bottom:8px">📄 Download Final Work</a>`
+          ? `<button class="btn btn-primary btn-full" style="margin-bottom:8px" onclick="tryDownload('${delivery.file_url}', ${o.id}, '${o.order_number}', ${parseFloat(o.total_price||0)}, ${parseFloat(o.deposit_amount||0)}, ${o.balance_paid?1:0})">📄 Download Final Work</button>`
           : '<p class="text-sm text-muted" style="margin-bottom:8px">No file submitted yet.</p>'}
         ${hasDraft ? `<a href="${delivery.draft_url}" target="_blank" class="btn btn-outline btn-full btn-sm" style="margin-bottom:12px">📝 View Draft</a>` : ''}
         ${inGrace ? `<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;display:flex;flex-direction:column;gap:8px">
@@ -1076,6 +1077,18 @@
     }
   }
 
+  function tryDownload(fileUrl, ordId, orderNum, totalPrice, depositAmount, balancePaid) {
+    const balance = Math.max(0, totalPrice - depositAmount);
+    if (balancePaid || balance <= 0) {
+      // No balance owed — open file directly
+      window.open(fileUrl, '_blank');
+    } else {
+      // Balance owed — show payment modal first, then open file after payment
+      pendingDownloadUrl = fileUrl;
+      openBalancePayModal(ordId, balance, orderNum, pendingBalanceRating, pendingBalanceReview);
+    }
+  }
+
   function openBalancePayModal(ordId, balance, orderNum, rating, reviewText) {
     pendingBalanceOrdId    = ordId;
     pendingBalanceRating   = rating;
@@ -1121,11 +1134,23 @@
     await sb.from('orders').update({
       balance_paid: true, balance_payment_method: method, balance_paid_at: new Date().toISOString()
     }).eq('id', pendingBalanceOrdId);
-    // Now approve the order
+    // If this was triggered by download (not approve), just record payment and open file
+    if (pendingDownloadUrl && !pendingBalanceReview && pendingBalanceRating === 5) {
+      closeM('m-balance-pay');
+      showGlobalToast('Balance paid! Your file is downloading.', 'success');
+      setTimeout(() => { window.open(pendingDownloadUrl, '_blank'); pendingDownloadUrl = null; }, 400);
+      setTimeout(() => openDetail(pendingBalanceOrdId), 600);
+      return;
+    }
+    // Otherwise approve the order as well
     const res = await SC.orders.approve(pendingBalanceOrdId, profile.id, pendingBalanceRating, pendingBalanceReview);
     if (res.error) { showGlobalToast(res.error, 'error'); return; }
     closeM('m-balance-pay');
     showGlobalToast('Balance paid & work approved! Thank you.', 'success');
+    // Open pending download if the client was trying to download
+    if (pendingDownloadUrl) {
+      setTimeout(() => { window.open(pendingDownloadUrl, '_blank'); pendingDownloadUrl = null; }, 600);
+    }
     setTimeout(() => openDetail(pendingBalanceOrdId), 500);
   }
 
