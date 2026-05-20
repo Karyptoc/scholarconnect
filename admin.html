@@ -448,6 +448,7 @@
     initOverview();
     updateEssayBadge();
     updateAppBadge();
+    updateWithdrawalBadge();
   }
 
   function pwScore(pw){return [{ok:pw.length>=8},{ok:/[A-Z]/.test(pw)},{ok:/[0-9]/.test(pw)},{ok:/[!@#$%^&*()\-_=+\[\]{};:,.<>?]/.test(pw)}].filter(r=>r.ok).length;}
@@ -534,6 +535,7 @@
     document.getElementById('ov-escrow').innerHTML=esc.length?esc.map(e=>`<div class="flex-between" style="padding:10px 0;border-bottom:1px solid var(--border);font-size:0.82rem"><div><strong>${e.orders?.order_number||e.order_id}</strong><div class="text-xs text-muted">${e.payment_method||'—'}</div></div><span class="badge badge-gold">$${e.amount}</span></div>`).join('')+'<div style="text-align:center;padding:8px 0;font-size:0.8rem;color:var(--muted)">Showing up to 6 latest</div>':'<p class="text-muted text-sm">No active escrow holdings.</p>';
     const logs=await SC.security.getLogs();
     document.getElementById('ov-activity').innerHTML=logs.slice(0,8).map(l=>`<div style="display:grid;grid-template-columns:130px 1fr 100px;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.78rem"><span class="fw-700" style="color:var(--navy2)">${l.action}</span><span class="text-muted">${l.detail||'—'}</span><span class="text-muted">${l.ip_address||'—'}</span></div>`).join('');
+  renderWithdrawals();
   }
 
   // ── Orders ─────────────────────────────────────────────────
@@ -879,6 +881,12 @@
     </div>`).join('');
   }
 
+  async function updateWithdrawalBadge(){
+    const{data:p}=await sb.from('withdrawals').select('id').eq('status','pending');
+    const n=p?.length||0;
+    const b=document.getElementById('wd-badge');
+    if(b){b.textContent=n;b.style.display=n>0?'inline':'none';}
+  }
   async function updateEssayBadge(){
     const { data: pending } = await sb.from('writer_test_results')
       .select('id', { count: 'exact' })
@@ -917,16 +925,15 @@
 
   // ── Writer Applications Window ─────────────────────────────
   async function renderApplications() {
-    // Fetch directly from DB to get latest value
-    const { data: appSetting } = await sb.from('platform_settings')
-      .select('value').eq('key', 'applications_open').single();
-    const rawVal = appSetting?.value;
+    // Always fetch fresh from DB - no cache
+    const { data: allSettings } = await sb.from('platform_settings').select('key, value');
+    const s = {};
+    if (allSettings) allSettings.forEach(r => { s[r.key] = r.value; });
+    const rawVal = s['applications_open'];
     const isOpen = rawVal === true || rawVal === 'true' || rawVal === 1 || rawVal === '1';
-    const s = await SC.settings.get();
-    s.applications_open = isOpen;
-    const openDate = s.applications_open_date || '';
-    const closeDate = s.applications_close_date || '';
-    const appMessage = s.applications_message || '';
+    const openDate = s['applications_open_date'] || '';
+    const closeDate = s['applications_close_date'] || '';
+    const appMessage = s['applications_message'] || '';
 
     document.getElementById('app-open-date').value = openDate;
     document.getElementById('app-close-date').value = closeDate;
@@ -985,14 +992,18 @@
   }
 
   async function openApplicationWindow() {
-    await sb.from('platform_settings').upsert({ key: 'applications_open', value: 'true' }, { onConflict: 'key' });
+    const {error:e1} = await sb.from('platform_settings').upsert({ key: 'applications_open', value: 'true' }, { onConflict: 'key' });
+    if(e1){showGlobalToast('Error: '+e1.message,'error');return;}
     showGlobalToast('Writer applications are now OPEN!', 'success');
+    await new Promise(r=>setTimeout(r,500));
     renderApplications();
   }
 
   async function closeApplicationWindow() {
-    await sb.from('platform_settings').upsert({ key: 'applications_open', value: 'false' }, { onConflict: 'key' });
+    const {error:e2} = await sb.from('platform_settings').upsert({ key: 'applications_open', value: 'false' }, { onConflict: 'key' });
+    if(e2){showGlobalToast('Error: '+e2.message,'error');return;}
     showGlobalToast('Writer applications are now CLOSED.', 'warning');
+    await new Promise(r=>setTimeout(r,500));
     renderApplications();
   }
 
