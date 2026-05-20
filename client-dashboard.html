@@ -1514,5 +1514,59 @@
     msgs.scrollTop = msgs.scrollHeight;
   }
 </script>
+
+<!-- ── BALANCE PAYMENT MODAL ─────────────────────────────── -->
+<div class="modal-overlay" id="m-balance-pay">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <div class="modal-title">💳 Pay Remaining Balance</div>
+      <button class="modal-close" onclick="closeM('m-balance-pay')">×</button>
+    </div>
+    <div style="padding:20px 24px 24px">
+      <div class="alert alert-info" style="margin-bottom:16px">
+        <span>ℹ️</span><span>Please pay the remaining balance to access your completed work.</span>
+      </div>
+      <div style="background:var(--parch);border-radius:10px;padding:14px 16px;margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span class="text-sm text-muted">Order</span>
+          <strong id="bal-order-num">—</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="text-sm text-muted">Balance due</span>
+          <strong id="bal-amount" style="color:var(--gold);font-size:1.15rem">—</strong>
+        </div>
+      </div>
+
+      <!-- PayPal -->
+      <div style="margin-bottom:10px">
+        <div class="form-label" style="margin-bottom:8px">Pay with PayPal</div>
+        <div id="bal-paypal-container" style="min-height:50px"></div>
+      </div>
+
+      <div style="text-align:center;color:var(--muted);font-size:0.8rem;margin:12px 0;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span>or</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+
+      <!-- Bank Transfer -->
+      <div>
+        <div class="form-label" style="margin-bottom:8px">Bank Transfer</div>
+        <div class="alert alert-warning" style="margin-bottom:12px;font-size:0.82rem">
+          <span>🏦</span>
+          <span>Transfer the exact balance amount to our bank account using your <strong>order number as reference</strong>, then click the button below. Admin will confirm and your file will unlock.</span>
+        </div>
+        <button class="btn btn-navy btn-full" onclick="payBalanceByBank()">
+          ✓ I've Sent the Bank Transfer
+        </button>
+      </div>
+
+      <p style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:14px">
+        Your file unlocks immediately after PayPal payment, or after admin confirms bank transfer.
+      </p>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
