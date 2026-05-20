@@ -268,7 +268,7 @@
     </div>
     <div class="card" style="margin-bottom:20px"><div class="flex-between" style="margin-bottom:14px"><h3 style="font-family:var(--font-display)">🛡️ Blocked Contact Attempts</h3><span class="badge badge-danger" id="bl-count">0</span></div><div id="blocked-list"></div></div>
     <div class="card" style="margin-bottom:20px"><h3 style="font-family:var(--font-display);margin-bottom:14px">⚖️ Active Disputes</h3><div id="disputes-list"></div></div>
-    <div class="card"><h3 style="font-family:var(--font-display);margin-bottom:14px">💸 Withdrawal Requests</h3><div id="withdrawals-list"></div></div>
+    <div class="card"><h3 style="font-family:var(--font-display);margin-bottom:14px">💸 Withdrawal Requests</h3><div id="withdrawals-list-2"></div></div>
   </div>
 
   <!-- LOGS -->
@@ -1363,15 +1363,22 @@
 
   async function renderWithdrawals(){
     const{data:ws}=await sb.from('withdrawals').select('*, profiles(full_name, email)').order('created_at',{ascending:false});
-    const list=document.getElementById('withdrawals-list');if(!list)return;
+    const list=document.getElementById('withdrawals-list');
+    const list2=document.getElementById('withdrawals-list-2');
+    if(!list && !list2)return;
     const pend=(ws||[]).filter(w=>w.status==='pending'),paid=(ws||[]).filter(w=>w.status==='paid');
     const setEl=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
     setEl('wd-pending-count',pend.length+' pending');
     setEl('wd-pending-amt','$'+pend.reduce((a,w)=>a+parseFloat(w.amount||0),0).toFixed(2));
     setEl('wd-paid-amt','$'+paid.reduce((a,w)=>a+parseFloat(w.amount||0),0).toFixed(2));
     const b=document.getElementById('wd-badge');if(b){b.textContent=pend.length;b.style.display=pend.length>0?'inline':'none';}
-    if(!ws||!ws.length){list.innerHTML='<p class="text-muted" style="padding:16px">No withdrawal requests yet.</p>';return;}
-    list.innerHTML=ws.map((w,i)=>{
+    const emptyMsg='<p class="text-muted" style="padding:16px">No withdrawal requests yet.</p>';
+    if(!ws||!ws.length){
+      if(list)list.innerHTML=emptyMsg;
+      if(list2)list2.innerHTML=emptyMsg;
+      return;
+    }
+    const html=ws.map((w,i)=>{
       const ref='WD-'+String(w.id).padStart(6,'0');
       const ip=w.status==='pending', ipd=w.status==='paid';
       const bc=ipd?'badge-success':ip?'badge-warning':'badge-danger';
@@ -1401,6 +1408,8 @@
         </div>
       </div>`;
     }).join('');
+    if(list)list.innerHTML=html;
+    if(list2)list2.innerHTML=html;
   }
     async function processWithdrawal(id,status){
     let note='';
