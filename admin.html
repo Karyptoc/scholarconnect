@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>ScholarConnect – Admin Panel</title>
+  <!-- v2.1 -->
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
@@ -404,6 +405,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase-client.js"></script>
 <script>
+  // ScholarConnect Admin v2.1
   async function do2FA() {
     const code = document.getElementById('tfa-code').value.trim();
     const err = document.getElementById('tfa-err');
@@ -1406,16 +1408,33 @@
     renderWithdrawals();
   }
   async function exportWithdrawalsCSV(){
-    const{data:ws}=await sb.from('withdrawals').select('*, profiles(full_name, email)').order('created_at',{ascending:false});
+    const {data:ws} = await sb.from('withdrawals').select('*, profiles(full_name, email)').order('created_at',{ascending:false});
     if(!ws||!ws.length){showGlobalToast('No records.','error');return;}
-    let csv='Ref,Writer,Email,Amount,Method,Account,Status,Note,Date
-';
-    ws.forEach(w=>{const ref='WD-'+String(w.id).padStart(6,'0');csv+='"'+ref+'","'+(w.profiles?.full_name||'')+'","'+(w.profiles?.email||'')+'",'+w.amount+',"'+(w.method||'')+'","'+(w.account_details||'').replace(/"/g,'')+'","'+w.status+'","'+(w.admin_note||'')+'","'+new Date(w.created_at).toLocaleDateString()+'"
-';});
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='withdrawals_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    const header = 'Reference,Writer,Email,Amount,Method,Account,Status,Note,Date Requested,Date Processed';
+    const rows = ws.map(w => {
+      const ref = 'WD-'+String(w.id).padStart(6,'0');
+      const clean = v => (v||'').toString().replace(/"/g,'');
+      return [
+        ref,
+        clean(w.profiles?.full_name),
+        clean(w.profiles?.email),
+        w.amount,
+        clean(w.method),
+        clean(w.account_details),
+        w.status,
+        clean(w.admin_note),
+        new Date(w.created_at).toLocaleDateString(),
+        w.processed_at ? new Date(w.processed_at).toLocaleDateString() : ''
+      ].map(v => '"'+v+'"').join(',');
+    });
+    const csv = [header, ...rows].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    a.download = 'withdrawals_'+new Date().toISOString().slice(0,10)+'.csv';
+    a.click();
     showGlobalToast('Downloaded!','success');
   }
-  function openM(id){document.getElementById(id).classList.add('open');}
+    function openM(id){document.getElementById(id).classList.add('open');}
   function closeM(id){document.getElementById(id).classList.remove('open');}
 </script>
 </body>
