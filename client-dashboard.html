@@ -8,10 +8,7 @@
 <body>
 <div class="app-layout">
   <aside class="sidebar">
-    <a href="index.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;padding:4px 0">
-          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%230f2040'/%3E%3Cpath d='M24 8L10 16v10c0 8 6 15 14 17 8-2 14-9 14-17V16L24 8z' fill='%232c6fad' opacity='0.4'/%3E%3Cpath d='M24 11L12 18v9c0 7 5 13 12 15 7-2 12-8 12-15v-9L24 11z' fill='none' stroke='%23f0c060' stroke-width='1.5'/%3E%3Cpath d='M18 26h12M18 30h8' stroke='white' stroke-width='1.5' stroke-linecap='round'/%3E%3Cpath d='M21 22h6l-3-4-3 4z' fill='%23f0c060'/%3E%3C/svg%3E" alt="ScholarConnect" style="height:38px;width:38px;object-fit:contain;border-radius:6px">
-          <span style="font-family:var(--font-display);font-size:1.15rem;font-weight:900;color:white;letter-spacing:-0.3px">Scholar<span style="color:var(--gold2)">Connect</span></span>
-        </a>
+    <div class="sidebar-brand"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><path d="M14 3L3 9v10l11 6 11-6V9L14 3z" fill="var(--navy2)"/><path d="M14 8l6 3.5v7L14 22l-6-3.5v-7L14 8z" fill="var(--gold)"/></svg>Scholar<span>Connect</span></div>
     <nav class="sidebar-nav">
       <div class="sidebar-section">Main</div>
       <button class="sidebar-link active" id="nav-overview" onclick="showPage('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</button>
@@ -952,11 +949,20 @@
         <button class="btn btn-danger btn-sm btn-full" style="margin-top:8px" onclick="cancelOrder('${o.id}','${o.order_number}')">Cancel Order</button>
       </div>`;
     } else if (o.status === 'under_review') {
-      actions = `<div class="card card-sm"><h4 style="margin-bottom:10px">Review Submitted Work</h4>
-        <div class="alert alert-warning" style="margin-bottom:10px">⚠️ <strong>Please review before accessing the file.</strong> Approving releases payment to the writer.</div>
-        <button class="btn btn-success btn-full" style="margin-bottom:8px" onclick="openM('m-review')">✓ Approve Work</button>
-        ${o.revisions_used<2?`<button class="btn btn-outline btn-full" style="margin-bottom:8px" onclick="openM('m-revision')">Request Revision (${2-o.revisions_used} left)</button>`:''}
-        <button class="btn btn-danger btn-full btn-sm" onclick="openM('m-dispute')">Open Dispute</button></div>`;
+      const hasDelFile = delivery?.file_url;
+      const hasDraft   = delivery?.draft_url;
+      actions = `<div class="card card-sm">
+        <h4 style="margin-bottom:10px">📬 Work Submitted — Ready to Review</h4>
+        <div class="alert alert-info" style="margin-bottom:12px">⬇️ Download and review the work first, then use the buttons below.</div>
+        ${hasDelFile ? `<a href="${delivery.file_url}" target="_blank" class="btn btn-primary btn-full" style="margin-bottom:8px">📄 Download & Review Work</a>` : '<p class="text-sm text-muted" style="margin-bottom:8px">File not yet available.</p>'}
+        ${hasDraft ? `<a href="${delivery.draft_url}" target="_blank" class="btn btn-outline btn-full btn-sm" style="margin-bottom:12px">📝 View Draft</a>` : ''}
+        <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-success btn-full" onclick="openM('m-review')">✓ Approve & Release Payment</button>
+          ${o.revisions_used<2?`<button class="btn btn-outline btn-full btn-sm" onclick="openM('m-revision')">🔄 Request Revision (${2-o.revisions_used} left)</button>`:'<p class="text-xs text-muted text-center">Revision limit reached</p>'}
+          <button class="btn btn-sm" style="border:1px solid var(--danger);color:var(--danger);background:none" onclick="openM('m-dispute')">⚠️ Open Dispute</button>
+        </div>
+        ${autoInfo}
+      </div>`;
     } else if (o.status === 'in_progress') {
       actions = `<div class="card card-sm"><h4>In Progress</h4><p class="text-sm text-muted" style="margin-top:6px">Your writer is working on the assignment. You'll be notified when submitted.</p></div>`;
     } else if (o.status === 'pending_writer') {
@@ -971,22 +977,35 @@
         <button class="btn btn-danger btn-sm btn-full" style="margin-top:10px" onclick="cancelOrder('${o.id}','${o.order_number}')">Cancel Order</button>
       </div>`;
     } else if (o.status === 'completed') {
-      const hasFile = delivery?.file_url;
+      const hasFile    = delivery?.file_url;
+      const hasDraft   = delivery?.draft_url;
       const alreadyRated = o.rating > 0;
+      const balancePaid  = o.balance_paid;
+      // 72h grace window for revision/dispute after completion
+      const completedAt  = o.completed_at ? new Date(o.completed_at) : null;
+      const graceHours   = completedAt ? Math.max(0, 72 - (Date.now()-completedAt)/3600000) : 72;
+      const inGrace      = graceHours > 0;
       actions = `<div class="card card-sm">
-        <h4>✅ Order Complete</h4>
-        <div class="alert alert-success" style="margin-top:8px;margin-bottom:12px">Payment released to writer.</div>
-        ${hasFile ? `<a href="${delivery.file_url}" target="_blank" class="btn btn-primary btn-full" style="margin-bottom:10px">📄 Download Final Work</a>` : '<p class="text-sm text-muted">No file submitted yet.</p>'}
-        ${delivery?.draft_url ? `<a href="${delivery.draft_url}" target="_blank" class="btn btn-outline btn-full btn-sm" style="margin-bottom:10px">📝 View Draft</a>` : ''}
-        ${alreadyRated ?
-          `<div style="margin-top:8px;text-align:center"><div style="font-size:1.3rem">${'⭐'.repeat(o.rating)}</div><div class="text-sm text-muted">${o.review_text||'Your rating has been submitted'}</div></div>` :
-          `<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
-            <p class="text-sm text-muted" style="margin-bottom:8px">Please download and review the work, then rate your experience:</p>
-            <button class="btn btn-gold btn-full" style="margin-bottom:6px" onclick="openM('m-review')">⭐ Rate This Order</button>
-            <button class="btn btn-outline btn-full btn-sm" style="margin-bottom:6px" onclick="openM('m-revision')">Request Revision</button>
-            <button class="btn btn-danger btn-full btn-sm" onclick="openM('m-dispute')">Open Dispute</button>
-          </div>`
-        }
+        <h4 style="margin-bottom:10px">✅ Order Complete</h4>
+        ${!balancePaid ? `<div class="alert alert-warning" style="margin-bottom:12px">
+          💳 <strong>Balance payment pending.</strong> Pay the remaining balance to fully release funds to your writer.
+          <button class="btn btn-gold btn-sm" style="margin-top:8px;width:100%" onclick="openBalancePayModal(${o.id}, ${(parseFloat(o.total_price)-parseFloat(o.deposit_amount)).toFixed(2)}, '${o.order_number}', 5, '')" >Pay Remaining Balance →</button>
+        </div>` : '<div class="alert alert-success" style="margin-bottom:12px">✅ All payments complete.</div>'}
+        ${hasFile
+          ? `<a href="${delivery.file_url}" target="_blank" class="btn btn-primary btn-full" style="margin-bottom:8px">📄 Download Final Work</a>`
+          : '<p class="text-sm text-muted" style="margin-bottom:8px">No file submitted yet.</p>'}
+        ${hasDraft ? `<a href="${delivery.draft_url}" target="_blank" class="btn btn-outline btn-full btn-sm" style="margin-bottom:12px">📝 View Draft</a>` : ''}
+        ${inGrace ? `<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;display:flex;flex-direction:column;gap:8px">
+          <p class="text-xs text-muted" style="text-align:center">⏱ Revision & dispute available for ${Math.ceil(graceHours)}h more</p>
+          ${o.revisions_used<2?`<button class="btn btn-outline btn-full btn-sm" onclick="openM('m-revision')">🔄 Request Revision (${2-o.revisions_used} left)</button>`:''}
+          <button class="btn btn-sm" style="border:1px solid var(--danger);color:var(--danger);background:none" onclick="openM('m-dispute')">⚠️ Open Dispute</button>
+        </div>` : ''}
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px">
+          ${alreadyRated
+            ? `<div style="text-align:center"><div style="font-size:1.3rem">${'⭐'.repeat(o.rating)}</div><div class="text-sm text-muted" style="margin-top:4px">${o.review_text||'Rating submitted — thank you!'}</div></div>`
+            : `<p class="text-sm text-muted" style="margin-bottom:8px">How was the work? (optional)</p>
+               <button class="btn btn-outline btn-full btn-sm" onclick="openM('m-review')">⭐ Rate This Order</button>`}
+        </div>
       </div>`;
     } else if (o.status === 'disputed') {
       actions = `<div class="card card-sm"><h4 style="color:var(--danger)">⚖️ Dispute Open</h4><p class="text-sm text-muted" style="margin-top:6px">Admin is reviewing your dispute. Response within 24–48h.</p></div>`;
@@ -1035,10 +1054,79 @@
   function setRating(r) { currentRat=r; document.querySelectorAll('#star-rating span').forEach((s,i)=>s.textContent=i<r?'⭐':'☆'); }
 
   async function submitReview() {
-    const res = await SC.orders.approve(currentOrdId, profile.id, currentRat, document.getElementById('review-text').value.trim());
-    if (res.error) { showGlobalToast(res.error,'error'); return; }
-    closeM('m-review'); showGlobalToast('Work approved! Payment released.','success');
-    setTimeout(() => openDetail(currentOrdId), 500);
+    const rating     = currentRat;
+    const reviewText = document.getElementById('review-text').value.trim();
+    // Fetch balance amount
+    const { data: ord } = await sb.from('orders')
+      .select('total_price, deposit_amount, order_number, balance_paid')
+      .eq('id', currentOrdId).single();
+    const balance = ord ? Math.max(0, parseFloat(ord.total_price) - parseFloat(ord.deposit_amount)) : 0;
+    closeM('m-review');
+    if (balance > 0 && !ord?.balance_paid) {
+      // Must pay balance first — store rating for after payment
+      pendingBalanceRating = rating;
+      pendingBalanceReview = reviewText;
+      openBalancePayModal(currentOrdId, balance, ord.order_number, rating, reviewText);
+    } else {
+      // Balance already paid or zero — approve directly
+      const res = await SC.orders.approve(currentOrdId, profile.id, rating, reviewText);
+      if (res.error) { showGlobalToast(res.error, 'error'); return; }
+      showGlobalToast('Work approved! Payment released.', 'success');
+      setTimeout(() => openDetail(currentOrdId), 500);
+    }
+  }
+
+  function openBalancePayModal(ordId, balance, orderNum, rating, reviewText) {
+    pendingBalanceOrdId    = ordId;
+    pendingBalanceRating   = rating;
+    pendingBalanceReview   = reviewText;
+    balanceAmount          = balance;
+    balanceOrderNum        = orderNum;
+    const setTxt = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+    setTxt('bal-order-num',  orderNum);
+    setTxt('bal-amount',     '$' + parseFloat(balance).toFixed(2));
+    setTxt('bal-pay-btn-text','Pay $' + parseFloat(balance).toFixed(2) + ' Balance');
+    openM('m-balance-pay');
+    setTimeout(() => initBalancePayPal(balance, orderNum), 400);
+  }
+
+  async function initBalancePayPal(amount, orderNum) {
+    const container = document.getElementById('bal-paypal-container');
+    if (!container) return;
+    container.innerHTML = '';
+    if (typeof paypal === 'undefined') return;
+    try {
+      paypal.Buttons({
+        createOrder: (data, actions) => actions.order.create({
+          purchase_units: [{ amount: { value: parseFloat(amount).toFixed(2) }, description: 'ScholarConnect Balance - ' + orderNum,
+            payee: { email_address: 'jameskinyua1997@gmail.com' },
+            application_context: { brand_name: 'ScholarConnect', shipping_preference: 'NO_SHIPPING' } }]
+        }),
+        onApprove: async (data, actions) => {
+          await actions.order.capture();
+          await completeOrderAfterBalance('paypal');
+        },
+        onError: (err) => showGlobalToast('PayPal error. Try bank transfer below.', 'error'),
+        style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' }
+      }).render('#bal-paypal-container');
+    } catch(e) { console.warn('PayPal balance init:', e); }
+  }
+
+  async function payBalanceByBank() {
+    await completeOrderAfterBalance('bank');
+  }
+
+  async function completeOrderAfterBalance(method) {
+    // Record balance payment
+    await sb.from('orders').update({
+      balance_paid: true, balance_payment_method: method, balance_paid_at: new Date().toISOString()
+    }).eq('id', pendingBalanceOrdId);
+    // Now approve the order
+    const res = await SC.orders.approve(pendingBalanceOrdId, profile.id, pendingBalanceRating, pendingBalanceReview);
+    if (res.error) { showGlobalToast(res.error, 'error'); return; }
+    closeM('m-balance-pay');
+    showGlobalToast('Balance paid & work approved! Thank you.', 'success');
+    setTimeout(() => openDetail(pendingBalanceOrdId), 500);
   }
 
   async function submitRevision() {
