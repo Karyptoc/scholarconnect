@@ -4,69 +4,32 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>ScholarConnect – Sign In / Register</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://js.hcaptcha.com/1/api.js"></script>
 </head>
 <body>
 <div class="auth-split">
   <div class="auth-left">
-    <a href="index.html" class="auth-logo">
-      Scholar<span>Connect</span>
-    </a>
-    <div style="position:relative;z-index:1;margin-bottom:44px">
-      <h2 style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:white;line-height:1.2;margin-bottom:12px">Academic writing, professionally delivered.</h2>
-      <p style="color:rgba(255,255,255,0.55);font-size:0.9rem;line-height:1.7">Join thousands of students and writers on ScholarConnect — the secure, anonymous academic writing marketplace.</p>
-    </div>
-    <div style="position:relative;z-index:1;display:flex;flex-direction:column;gap:0">
-      <div class="auth-feature">
-        <div class="auth-feature-icon">🛡️</div>
-        <div>
-          <div class="auth-feature-title">100% Anonymous</div>
-          <div class="auth-feature-desc">Writers never see your identity. Only your order number is used in all communication.</div>
-        </div>
+    <div style="position:relative;z-index:1">
+      <a href="index.html" style="font-family:var(--font-display);font-size:1.4rem;font-weight:900;color:white;display:block;margin-bottom:40px">Scholar<span style="color:var(--gold2)">Connect</span></a>
+      <div class="auth-tagline">Academic Excellence,<br>Professionally Delivered</div>
+      <div class="auth-sub" style="margin-top:12px">Secure, anonymous academic writing delivered on time — backed by Supabase.</div>
+      <div class="auth-features">
+        <div class="auth-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Your identity is always protected</div>
+        <div class="auth-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>Email verification + 2FA on every login</div>
+        <div class="auth-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>Writers pass 25-Q English test + essay review</div>
+        <div class="auth-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>Secure escrow · Session expires in 1h</div>
       </div>
-      <div class="auth-feature">
-        <div class="auth-feature-icon">🔐</div>
-        <div>
-          <div class="auth-feature-title">2FA Security</div>
-          <div class="auth-feature-desc">Email OTP on every login. Sessions auto-expire. Powered by Supabase Auth.</div>
-        </div>
-      </div>
-      <div class="auth-feature">
-        <div class="auth-feature-icon">💰</div>
-        <div>
-          <div class="auth-feature-title">Secure Escrow</div>
-          <div class="auth-feature-desc">50% deposit protected until you approve. Pay the balance only on satisfaction.</div>
-        </div>
-      </div>
-      <div class="auth-feature">
-        <div class="auth-feature-icon">✅</div>
-        <div>
-          <div class="auth-feature-title">Vetted Writers</div>
-          <div class="auth-feature-desc">25-Q English test + subject essay review. Only top-tier writers pass.</div>
-        </div>
+      <div style="margin-top:36px;padding:16px 20px;background:rgba(255,255,255,0.07);border-radius:12px;border:1px solid rgba(255,255,255,0.12)">
+        <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px">📞 Support</div>
+        <a href="mailto:writerhub97@gmail.com" style="color:var(--gold2);font-size:0.85rem;font-weight:600;display:block;margin-bottom:4px">📧 writerhub97@gmail.com</a>
+        <a href="https://wa.me/254716603371" target="_blank" style="color:#25D366;font-size:0.85rem;font-weight:600;display:block">💬 WhatsApp: +254 716 603 371</a>
       </div>
     </div>
-    <div style="position:relative;z-index:1;margin-top:32px;padding:16px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:12px">
-      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-        <div style="text-align:center"><div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:white">12K+</div><div style="font-size:0.72rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.5px">Orders</div></div>
-        <div style="width:1px;height:36px;background:rgba(255,255,255,0.1)"></div>
-        <div style="text-align:center"><div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:white">98%</div><div style="font-size:0.72rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.5px">On-Time</div></div>
-        <div style="width:1px;height:36px;background:rgba(255,255,255,0.1)"></div>
-        <div style="text-align:center"><div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:white">4.9★</div><div style="font-size:0.72rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.5px">Rating</div></div>
-      </div>
-    </div>
+  </div>
 
   <div class="auth-right">
     <div class="auth-form-wrap">
-      <a href="index.html" style="font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:900;color:var(--navy);text-decoration:none;display:inline-flex;align-items:center;gap:8px;margin-bottom:28px">
-        <div style="width:30px;height:30px;background:linear-gradient(135deg,var(--navy2),var(--slate));border-radius:8px;display:flex;align-items:center;justify-content:center">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3L4 7v5c0 4.5 3.4 8.7 8 9.9 4.6-1.2 8-5.4 8-9.9V7l-8-4z" fill="rgba(255,255,255,0.9)"/><path d="M9 12l2 2 4-4" stroke="#FF9F1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        Scholar<span style="color:var(--steel)">Connect</span>
-      </a>
+      <a href="index.html" class="auth-logo">Scholar<span>Connect</span></a>
 
       <!-- EMAIL VERIFIED -->
       <div id="step-verified" style="display:none;text-align:center">
@@ -206,13 +169,22 @@
 <script>
   if (localStorage.getItem('sc_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
 
-  const existing = SC.auth.getProfile();
-  if (existing) redirectByRole(existing.user_type);
+  try {
+    const existing = SC.auth.getProfile();
+    if (existing) redirectByRole(existing.user_type);
+  } catch(e) { console.warn('SC not ready:', e); }
 
   const params = new URLSearchParams(location.search);
-  if (params.get('verified') === '1') showStep('verified');
-  else if (params.get('mode') === 'register') { showStep('register'); if (params.get('role')) selRole(params.get('role')); }
-  else showStep('login');
+  try {
+    if (params.get('verified') === '1') showStep('verified');
+    else if (params.get('mode') === 'register') { showStep('register'); if (params.get('role')) selRole(params.get('role')); }
+    else showStep('login');
+  } catch(e) {
+    console.error('showStep failed:', e);
+    document.querySelectorAll('[id^="step-"]').forEach(el => el.style.display = 'none');
+    const loginEl = document.getElementById('step-login');
+    if (loginEl) loginEl.style.display = 'block';
+  }
 
   let selectedRole = null, pendingRegEmail = null, tfaTimerInt = null;
   let writerAppOpen = true; // default open until checked
@@ -318,7 +290,15 @@
     if (!email || !pass) { err.textContent = 'Please fill in all fields.'; err.style.display = 'flex'; return; }
     const btn = document.getElementById('login-btn');
     btn.disabled = true; btn.textContent = 'Verifying…';
-    const res = await SC.auth.login(email, pass);
+    const loginTimeout = setTimeout(() => {
+      btn.disabled = false; btn.textContent = 'Continue →';
+      err.textContent = 'Login timed out. Please try again.';
+      err.style.display = 'flex';
+    }, 20000);
+    let res;
+    try { res = await SC.auth.login(email, pass); }
+    catch(e) { res = { error: e.message || 'Login failed. Please try again.' }; }
+    clearTimeout(loginTimeout);
     btn.disabled = false; btn.textContent = 'Continue →';
     if (res.error) { err.textContent = res.error; err.style.display = 'flex'; return; }
     document.getElementById('tfa-email').textContent = email;
