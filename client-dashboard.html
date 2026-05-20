@@ -1116,10 +1116,23 @@
             application_context: { brand_name: 'ScholarConnect', shipping_preference: 'NO_SHIPPING' } }]
         }),
         onApprove: async (data, actions) => {
-          await actions.order.capture();
-          await completeOrderAfterBalance('paypal');
+          // Show processing state
+          const cont = document.getElementById('bal-paypal-container');
+          if (cont) cont.innerHTML = '<div style="text-align:center;padding:14px;color:var(--muted);font-size:0.875rem">⏳ Processing payment...</div>';
+          try {
+            const details = await actions.order.capture();
+            // Payment confirmed by PayPal - auto-unlock file
+            await completeOrderAfterBalance('paypal');
+          } catch(e) {
+            showGlobalToast('Payment capture failed. Please try again.', 'error');
+            // Re-render PayPal button
+            initBalancePayPal(balanceAmount, balanceOrderNum);
+          }
         },
-        onError: (err) => showGlobalToast('PayPal error. Try bank transfer below.', 'error'),
+        onError: (err) => {
+          console.error('PayPal error:', err);
+          showGlobalToast('PayPal error. Please try again or use bank transfer.', 'error');
+        },
         style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' }
       }).render('#bal-paypal-container');
     } catch(e) { console.warn('PayPal balance init:', e); }
@@ -1130,27 +1143,34 @@
   }
 
   async function completeOrderAfterBalance(method) {
-    // Record balance payment
-    await sb.from('orders').update({
-      balance_paid: true, balance_payment_method: method, balance_paid_at: new Date().toISOString()
-    }).eq('id', pendingBalanceOrdId);
-    // If this was triggered by download (not approve), just record payment and open file
-    if (pendingDownloadUrl && !pendingBalanceReview && pendingBalanceRating === 5) {
+    const isPayPal = method === 'paypal';
+    // For bank transfer, just record as pending admin confirmation
+    if (!isPayPal) {
+      await sb.from('orders').update({
+        balance_payment_method: 'bank_pending', balance_paid_at: new Date().toISOString()
+      }).eq('id', pendingBalanceOrdId);
       closeM('m-balance-pay');
-      showGlobalToast('Balance paid! Your file is downloading.', 'success');
+      showGlobalToast('Bank transfer noted. Admin will confirm and unlock your file within 1–2 hours.', 'warning');
+      setTimeout(() => openDetail(pendingBalanceOrdId), 500);
+      return;
+    }
+    // PayPal: payment already captured and confirmed — unlock immediately
+    await sb.from('orders').update({
+      balance_paid: true, balance_payment_method: 'paypal', balance_paid_at: new Date().toISOString()
+    }).eq('id', pendingBalanceOrdId);
+    // If triggered by download click — open the file right away
+    if (pendingDownloadUrl) {
+      closeM('m-balance-pay');
+      showGlobalToast('✅ Payment confirmed! Your file is downloading.', 'success');
       setTimeout(() => { window.open(pendingDownloadUrl, '_blank'); pendingDownloadUrl = null; }, 400);
       setTimeout(() => openDetail(pendingBalanceOrdId), 600);
       return;
     }
-    // Otherwise approve the order as well
+    // If triggered by Approve button — also complete the order
     const res = await SC.orders.approve(pendingBalanceOrdId, profile.id, pendingBalanceRating, pendingBalanceReview);
     if (res.error) { showGlobalToast(res.error, 'error'); return; }
     closeM('m-balance-pay');
     showGlobalToast('Balance paid & work approved! Thank you.', 'success');
-    // Open pending download if the client was trying to download
-    if (pendingDownloadUrl) {
-      setTimeout(() => { window.open(pendingDownloadUrl, '_blank'); pendingDownloadUrl = null; }, 600);
-    }
     setTimeout(() => openDetail(pendingBalanceOrdId), 500);
   }
 
@@ -1519,12 +1539,12 @@
 <div class="modal-overlay" id="m-balance-pay">
   <div class="modal" style="max-width:460px">
     <div class="modal-header">
-      <div class="modal-title">💳 Pay Remaining Balance</div>
+      <div class="modal-title">💳 Pay Remaining Balance — Instant Unlock</div>
       <button class="modal-close" onclick="closeM('m-balance-pay')">×</button>
     </div>
     <div style="padding:20px 24px 24px">
       <div class="alert alert-info" style="margin-bottom:16px">
-        <span>ℹ️</span><span>Please pay the remaining balance to access your completed work.</span>
+        <span>ℹ️</span><span>Pay below to instantly unlock your file. Card &amp; PayPal payments are confirmed automatically.</span>
       </div>
       <div style="background:var(--parch);border-radius:10px;padding:14px 16px;margin-bottom:18px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -1562,7 +1582,7 @@
       </div>
 
       <p style="font-size:0.75rem;color:var(--muted);text-align:center;margin-top:14px">
-        Your file unlocks immediately after PayPal payment, or after admin confirms bank transfer.
+        💳 Card &amp; PayPal payments unlock your file instantly. Bank transfer requires admin confirmation (usually within 1–2 hours).
       </p>
     </div>
   </div>
