@@ -16,17 +16,27 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
   }
 });
 
-// Restore admin session if exists
-(async () => {
-  const savedSession = sessionStorage.getItem('sc_sb_session');
+// Restore Supabase session from saved auth data
+// This runs on every page load to ensure API calls work
+window._sessionRestored = false;
+window._sessionRestorePromise = (async () => {
+  const savedSession = sessionStorage.getItem('sc_supabase_auth');
   if (savedSession) {
     try {
-      const { access_token, refresh_token } = JSON.parse(savedSession);
-      await sb.auth.setSession({ access_token, refresh_token });
+      const parsed = JSON.parse(savedSession);
+      const token = parsed?.currentSession || parsed;
+      if (token?.access_token) {
+        await sb.auth.setSession({ 
+          access_token: token.access_token, 
+          refresh_token: token.refresh_token 
+        });
+        console.log('[SC] Session restored');
+      }
     } catch(e) {
-      console.warn('Session restore failed:', e);
+      console.warn('[SC] Session restore failed:', e);
     }
   }
+  window._sessionRestored = true;
 })();
 
 // ── Constants ─────────────────────────────────────────────
@@ -185,7 +195,7 @@ const SC = {
       return { success: true, userId: data.user?.id };
     },
 
-    async login(email, password) {
+    async login(email, password) {  // password kept for post-2FA session restore
       const { data, error } = await sb.auth.signInWithPassword({ email, password });
       if (error) return { error: error.message };
 
@@ -199,7 +209,7 @@ const SC = {
       sessionStorage.setItem('sc_2fa', JSON.stringify({
         userId: data.user.id, code,
         expires: Date.now() + 10 * 60 * 1000,
-        email, profile,
+        email, password, profile,
       }));
 
       await sb.from('two_fa_codes').insert({
@@ -227,6 +237,22 @@ const SC = {
         ...stored.profile, _verified: true,
         _expires: Date.now() + SESSION_TIMEOUT_MS,
       }));
+      // Re-authenticate with Supabase to get a fresh session for API calls
+      if (stored.email && stored.password) {
+        try {
+          const { data: authData } = await sb.auth.signInWithPassword({ 
+            email: stored.email, password: stored.password 
+          });
+          if (authData?.session) {
+            const sessionData = {
+              access_token: authData.session.access_token,
+              refresh_token: authData.session.refresh_token,
+              expires_at: authData.session.expires_at,
+            };
+            sessionStorage.setItem('sc_supabase_auth', JSON.stringify({ currentSession: sessionData }));
+          }
+        } catch(e) { console.warn('[SC] Post-2FA session error:', e); }
+      }
       _resetIdleTimer();
       return { success: true, profile: stored.profile };
     },
@@ -245,11 +271,14 @@ const SC = {
         ...profile, _verified: true, _expires: Date.now() + SESSION_TIMEOUT_MS,
       }));
       // Persist the Supabase JWT session so API calls work after page load
-      sessionStorage.setItem('sc_sb_session', JSON.stringify({
+      // Store in both keys for compatibility
+      const sessionData = {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
         expires_at: data.session.expires_at,
-      }));
+      };
+      sessionStorage.setItem('sc_sb_session', JSON.stringify(sessionData));
+      sessionStorage.setItem('sc_supabase_auth', JSON.stringify({ currentSession: sessionData }));
       _resetIdleTimer();
       return { success: true, profile };
     },
