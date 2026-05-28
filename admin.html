@@ -172,7 +172,7 @@
       <div class="flex-gap">
         <button class="tab active" id="ut-client" onclick="renderUsers('client')" style="border:none;background:none;cursor:pointer;padding:8px 14px;font-weight:600;border-bottom:2px solid var(--navy2)">Clients</button>
         <button class="tab" id="ut-writer" onclick="renderUsers('writer')" style="border:none;background:none;cursor:pointer;padding:8px 14px;font-weight:600;border-bottom:2px solid transparent">Writers</button>
-        <input type="text" class="form-input" id="user-search" placeholder="Search name / email…" style="width:200px" autocomplete="off" oninput="renderUsers(curUserTab)">
+        <input type="text" class="form-input" id="user-search" placeholder="Search name / email…" style="width:200px" autocomplete="new-password" oninput="renderUsers(curUserTab)">
       </div>
     </div>
     <div class="table-wrap"><table>
@@ -513,7 +513,7 @@
     const btns=document.querySelectorAll('.anav-btn');
     const i=tabs.indexOf(name);if(btns[i])btns[i].classList.add('active');
     if(name==='orders')renderOrders();
-    if(name==='users')renderUsers('client');
+    if(name==='users'){const s=document.getElementById('user-search');if(s)s.value='';renderUsers('client');}
     if(name==='essays')renderEssays('pending');
     if(name==='applications')renderApplications();
     if(name==='security')renderSecurity();
