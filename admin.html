@@ -794,6 +794,8 @@
     const search=(searchEl?.value||'').toLowerCase();
     const utbody=document.getElementById('user-tbody');
     utbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto"></div></td></tr>';
+    // Ensure session is restored before querying
+    if (window._sessionRestorePromise) await window._sessionRestorePromise;
     let { data: users, error } = await sb.from('profiles').select('*').eq('user_type', role).order('created_at', { ascending: false });
     if(error){console.error('Users error:',error);utbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--danger)">Error: '+error.message+'</td></tr>';return;}
     users = users || [];
@@ -1406,23 +1408,28 @@
             <button class="btn btn-sm" style="border:1px solid var(--danger);color:var(--danger);background:none" onclick="processWithdrawal(${w.id},'rejected')">Reject</button>
            </div>`
         : '';
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px">
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-            <strong>${w.profiles?.full_name||'Writer'}</strong>
-            <span class="badge ${bc}">${w.status}</span>
-            <span style="font-size:0.78rem;color:var(--muted)">${ref}</span>
+      return `<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--surface)">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+              <strong style="font-size:1rem">${w.profiles?.full_name||'Writer'}</strong>
+              <span class="badge ${bc}">${w.status}</span>
+              <span style="font-size:0.78rem;color:var(--muted);font-family:monospace">${ref}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:0.82rem">
+              <div><span style="color:var(--muted)">Payment Method:</span><br><strong>${w.method||'—'}</strong></div>
+              <div><span style="color:var(--muted)">Account Details:</span><br><strong style="color:var(--navy2)">${w.account_details||'—'}</strong></div>
+              <div><span style="color:var(--muted)">Email:</span><br><strong>${w.profiles?.email||'—'}</strong></div>
+              <div><span style="color:var(--muted)">Date Requested:</span><br><strong>${new Date(w.created_at).toLocaleDateString()}</strong></div>
+              <div><span style="color:var(--muted)">Date Processed:</span><br><strong>${w.processed_at?new Date(w.processed_at).toLocaleDateString():'Pending'}</strong></div>
+              ${w.admin_note?`<div><span style="color:var(--muted)">Admin Note:</span><br><strong>${w.admin_note}</strong></div>`:'<div></div>'}
+            </div>
           </div>
-          <div style="font-size:0.82rem;color:var(--muted)">
-            ${w.method||''} · ${w.account_details||''} · ${new Date(w.created_at).toLocaleDateString()}
-            ${w.processed_at?' · Paid: '+new Date(w.processed_at).toLocaleDateString():''}
-            ${w.profiles?.email?' | '+w.profiles.email:''}
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin-left:20px;min-width:120px">
+            <strong style="font-size:1.5rem;color:var(--gold)">$${w.amount}</strong>
+            <button class="btn btn-outline btn-sm" onclick="exportWriterOrdersCSV('${w.writer_id||w.profiles?.id||''}','${(w.profiles?.full_name||'Writer').replace(/'/g,'')}','${ref}')">📊 Orders CSV</button>
+            ${btns}
           </div>
-          ${w.admin_note?`<div style="font-size:0.8rem;color:var(--muted);margin-top:2px">Note: ${w.admin_note}</div>`:''}
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin-left:16px">
-          <strong style="font-size:1.2rem;color:var(--gold)">$${w.amount}</strong>
-          ${btns}
         </div>
       </div>`;
     }).join('');
@@ -1471,6 +1478,64 @@
     a.download = 'withdrawals_'+new Date().toISOString().slice(0,10)+'.csv';
     a.click();
     showGlobalToast('Downloaded!','success');
+  }
+
+  async function exportWriterOrdersCSV(writerId, writerName, withdrawalRef) {
+    // Get all completed orders for this writer
+    const { data: orders } = await sb.from('orders')
+      .select('order_number, subject, academic_level, page_count, word_count, total_price, deposit_amount, price_per_page, is_urgent, status, created_at, delivered_at, updated_at, citation_style')
+      .eq('assigned_writer_id', writerId)
+      .eq('status', 'completed')
+      .order('updated_at', { ascending: false });
+
+    if (!orders || !orders.length) { showGlobalToast('No completed orders found for this writer.', 'error'); return; }
+
+    const settings = await SC.settings.get();
+    const payout = parseFloat(settings.writer_payout || 4);
+
+    const header = 'Order Number,Subject,Academic Level,Pages,Words,Citation Style,Type,Date Ordered,Date Completed,Client Price (Total),Client Price (Deposit),Rate Per Page,Writer Payout,Status';
+    const rows = orders.map(o => {
+      const writerPayout = (payout * o.page_count).toFixed(2);
+      const clean = v => (v||'').toString().replace(/"/g,'');
+      return [
+        o.order_number,
+        clean(o.subject),
+        clean(o.academic_level),
+        o.page_count,
+        o.word_count || (o.page_count * 275),
+        clean(o.citation_style || 'APA'),
+        o.is_urgent ? 'Urgent' : 'Standard',
+        o.created_at ? new Date(o.created_at).toLocaleDateString() : '',
+        o.delivered_at ? new Date(o.delivered_at).toLocaleDateString() : (o.updated_at ? new Date(o.updated_at).toLocaleDateString() : ''),
+        '$'+parseFloat(o.total_price||0).toFixed(2),
+        '$'+parseFloat(o.deposit_amount||0).toFixed(2),
+        '$'+payout+'/page',
+        '$'+writerPayout,
+        o.status
+      ].map(v => '"'+v+'"').join(',');
+    });
+
+    // Add summary row
+    const totalPayout = orders.reduce((a,o) => a + payout * o.page_count, 0);
+    rows.push(['"---"','"TOTAL"','""',''+orders.reduce((a,o)=>a+o.page_count,0),'""','""','""','""','""',
+      '"$'+orders.reduce((a,o)=>a+parseFloat(o.total_price||0),0).toFixed(2)+'"',
+      '"$'+orders.reduce((a,o)=>a+parseFloat(o.deposit_amount||0),0).toFixed(2)+'"',
+      '""','"$'+totalPayout.toFixed(2)+'"','""'].join(','));
+
+    const csv = [
+      '"Writer: '+writerName+'"',
+      '"Withdrawal Ref: '+withdrawalRef+'"',
+      '"Generated: '+new Date().toLocaleString()+'"',
+      '""',
+      header,
+      ...rows
+    ].join('\n');
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+    a.download = 'orders_'+writerName.replace(/\s+/g,'_')+'_'+withdrawalRef+'.csv';
+    a.click();
+    showGlobalToast('Order details CSV downloaded!', 'success');
   }
     function openM(id){document.getElementById(id).classList.add('open');}
   function closeM(id){document.getElementById(id).classList.remove('open');}
