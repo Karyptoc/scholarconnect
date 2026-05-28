@@ -427,9 +427,28 @@
   document.getElementById('tfa-code')?.addEventListener('keydown',e=>{if(e.key==='Enter')do2FA();});
 
   let adminProfile = null;
-  const existingProfile = SC.auth.getProfile();
-  if (existingProfile && existingProfile.user_type === 'admin') { adminProfile = existingProfile; showDashboard(); }
-  else { showLoginPage(); }
+
+  // Wait for session restoration then check auth
+  async function initAdminPage() {
+    // Give session restoration a moment to complete
+    await new Promise(r => setTimeout(r, 300));
+    const existingProfile = SC.auth.getProfile();
+    if (existingProfile && existingProfile.user_type === 'admin') {
+      adminProfile = existingProfile;
+      // Restore Supabase session if available
+      const savedSession = sessionStorage.getItem('sc_supabase_auth');
+      if (savedSession) {
+        try {
+          const s = JSON.parse(savedSession);
+          await sb.auth.setSession({ access_token: s.access_token, refresh_token: s.refresh_token });
+        } catch(e) { console.warn('Session restore:', e); }
+      }
+      showDashboard();
+    } else {
+      showLoginPage();
+    }
+  }
+  initAdminPage();
 
   function showLoginPage() {
     document.getElementById('page-setup').style.display = 'none';
@@ -466,12 +485,11 @@
     if (!email || !pass) { err.textContent = 'Please fill in all fields.'; err.style.display = 'flex'; return; }
     const btn = document.getElementById('login-btn');
     btn.disabled = true; btn.textContent = 'Verifying…';
-    const res = await SC.auth.login(email, pass);
+    const res = await SC.auth.adminLogin(pass);
     btn.disabled = false; btn.textContent = 'Access Admin Panel →';
     if (res.error) { err.textContent = res.error; err.style.display = 'flex'; return; }
-    document.getElementById('page-login').style.display = 'none';
-    document.getElementById('page-2fa').style.display = 'flex';
-    document.getElementById('tfa-email-display').textContent = email;
+    adminProfile = res.profile;
+    showDashboard();
   }
 
   async function doSetup() {
