@@ -8,7 +8,26 @@ const SUPABASE_KEY  = window.ENV_SUPABASE_KEY  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6I
 const FUNCTIONS_URL = 'https://wgypsnemgtsvpqrgbrpg.supabase.co/functions/v1';
 
 const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    storageKey: 'sc_supabase_auth',
+    storage: window.sessionStorage,
+  }
+});
+
+// Restore admin session if exists
+(async () => {
+  const savedSession = sessionStorage.getItem('sc_sb_session');
+  if (savedSession) {
+    try {
+      const { access_token, refresh_token } = JSON.parse(savedSession);
+      await sb.auth.setSession({ access_token, refresh_token });
+    } catch(e) {
+      console.warn('Session restore failed:', e);
+    }
+  }
+})();
 
 // ── Constants ─────────────────────────────────────────────
 const ADMIN_EMAIL        = 'solutionscenter29@gmail.com';
@@ -221,8 +240,15 @@ const SC = {
         await sb.auth.signOut();
         return { error: 'Access denied. Admin account not configured.' };
       }
+      // Store both the profile AND the Supabase session token
       sessionStorage.setItem('sc_profile', JSON.stringify({
         ...profile, _verified: true, _expires: Date.now() + SESSION_TIMEOUT_MS,
+      }));
+      // Persist the Supabase JWT session so API calls work after page load
+      sessionStorage.setItem('sc_sb_session', JSON.stringify({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at,
       }));
       _resetIdleTimer();
       return { success: true, profile };
