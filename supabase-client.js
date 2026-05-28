@@ -16,8 +16,6 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
   }
 });
 
-// Restore Supabase session from saved auth data
-// This runs on every page load to ensure API calls work
 window._sessionRestored = false;
 window._sessionRestorePromise = (async () => {
   const savedSession = sessionStorage.getItem('sc_supabase_auth');
@@ -195,7 +193,7 @@ const SC = {
       return { success: true, userId: data.user?.id };
     },
 
-    async login(email, password) {  // password kept for post-2FA session restore
+    async login(email, password) {
       const { data, error } = await sb.auth.signInWithPassword({ email, password });
       if (error) return { error: error.message };
 
@@ -209,7 +207,7 @@ const SC = {
       sessionStorage.setItem('sc_2fa', JSON.stringify({
         userId: data.user.id, code,
         expires: Date.now() + 10 * 60 * 1000,
-        email, password, profile,
+        email, profile,
       }));
 
       await sb.from('two_fa_codes').insert({
@@ -237,22 +235,19 @@ const SC = {
         ...stored.profile, _verified: true,
         _expires: Date.now() + SESSION_TIMEOUT_MS,
       }));
-      // Re-authenticate with Supabase to get a fresh session for API calls
-      if (stored.email && stored.password) {
-        try {
-          const { data: authData } = await sb.auth.signInWithPassword({ 
-            email: stored.email, password: stored.password 
-          });
-          if (authData?.session) {
-            const sessionData = {
-              access_token: authData.session.access_token,
-              refresh_token: authData.session.refresh_token,
-              expires_at: authData.session.expires_at,
-            };
-            sessionStorage.setItem('sc_supabase_auth', JSON.stringify({ currentSession: sessionData }));
-          }
-        } catch(e) { console.warn('[SC] Post-2FA session error:', e); }
-      }
+      // Save the current Supabase session for API calls after page load
+      try {
+        const { data: sessionData } = await sb.auth.getSession();
+        if (sessionData?.session) {
+          sessionStorage.setItem('sc_supabase_auth', JSON.stringify({ 
+            currentSession: {
+              access_token: sessionData.session.access_token,
+              refresh_token: sessionData.session.refresh_token,
+              expires_at: sessionData.session.expires_at,
+            }
+          }));
+        }
+      } catch(e) { console.warn('[SC] Session save failed:', e); }
       _resetIdleTimer();
       return { success: true, profile: stored.profile };
     },
@@ -266,18 +261,14 @@ const SC = {
         await sb.auth.signOut();
         return { error: 'Access denied. Admin account not configured.' };
       }
-      // Store both the profile AND the Supabase session token
       sessionStorage.setItem('sc_profile', JSON.stringify({
         ...profile, _verified: true, _expires: Date.now() + SESSION_TIMEOUT_MS,
       }));
-      // Persist the Supabase JWT session so API calls work after page load
-      // Store in both keys for compatibility
       const sessionData = {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
         expires_at: data.session.expires_at,
       };
-      sessionStorage.setItem('sc_sb_session', JSON.stringify(sessionData));
       sessionStorage.setItem('sc_supabase_auth', JSON.stringify({ currentSession: sessionData }));
       _resetIdleTimer();
       return { success: true, profile };
@@ -624,8 +615,10 @@ const SC = {
       return { success: true, score, pct, passed, total: questions.length };
     },
     async submitEssay(writerId, subject, subLevel, essayText, fileUrl) {
-      const wc = essayText.trim().split(/\s+/).filter(Boolean).length;
-      if (wc < 100 && (!fileUrl || fileUrl.length === 0)) return { error: 'Please type your essay or upload a file.' };
+      const wc = (essayText||'').trim().split(/\s+/).filter(Boolean).length;
+      // Allow submission if file is uploaded OR essay text has enough words
+      if (!fileUrl && wc < 100) return { error: 'Please type your essay (minimum 100 words) or upload a file.' };
+      if (!fileUrl && !essayText.trim()) return { error: 'Please type your essay or upload a file.' };
       const { error } = await sb.from('writer_test_results').insert({
         writer_id: writerId, test_type: 'essay',
         subject, sub_level: subLevel, essay_text: essayText,
