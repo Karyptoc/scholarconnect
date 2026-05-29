@@ -292,6 +292,8 @@
   const badge = document.getElementById('status-badge');
 
   async function init() {
+    // Wait for Supabase session to be fully restored before any DB queries
+    await window._sessionRestorePromise;
     // Always fetch fresh settings from DB (bypasses cache)
     const { data: rawSettings } = await sb.from('platform_settings').select('key, value');
     settings = {};
