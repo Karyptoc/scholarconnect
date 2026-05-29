@@ -18,22 +18,11 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 window._sessionRestored = false;
 window._sessionRestorePromise = (async () => {
-  const savedSession = sessionStorage.getItem('sc_supabase_auth');
-  if (savedSession) {
-    try {
-      const parsed = JSON.parse(savedSession);
-      const token = parsed?.currentSession || parsed;
-      if (token?.access_token) {
-        await sb.auth.setSession({ 
-          access_token: token.access_token, 
-          refresh_token: token.refresh_token 
-        });
-        console.log('[SC] Session restored');
-      }
-    } catch(e) {
-      console.warn('[SC] Session restore failed:', e);
-    }
-  }
+  // Supabase client auto-restores from sessionStorage (persistSession:true, storageKey:'sc_supabase_auth')
+  // We just wait briefly for that to complete, then signal ready
+  await new Promise(r => setTimeout(r, 100));
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) console.log('[SC] Session active:', session.user.email);
   window._sessionRestored = true;
 })();
 
@@ -204,21 +193,13 @@ const SC = {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-      // Keep Supabase session ACTIVE — do NOT sign out.
-      // Route protection uses _verified flag, not the Supabase session alone.
+      // Keep Supabase session ACTIVE — Supabase client auto-saves to sc_supabase_auth.
+      // DO NOT manually write to sc_supabase_auth — it corrupts the client's own storage.
+      // Route protection uses _verified flag in sc_profile, not the Supabase session alone.
       sessionStorage.setItem('sc_2fa', JSON.stringify({
         userId: data.user.id, code,
         expires: Date.now() + 10 * 60 * 1000,
         email, profile,
-      }));
-
-      // Persist the live session so queries work after 2FA
-      sessionStorage.setItem('sc_supabase_auth', JSON.stringify({
-        currentSession: {
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-          expires_at: data.session.expires_at,
-        }
       }));
 
       await sb.from('two_fa_codes').insert({
@@ -246,8 +227,9 @@ const SC = {
         ...stored.profile, _verified: true,
         _expires: Date.now() + SESSION_TIMEOUT_MS,
       }));
-      // Session already live in browser from login() — no restore needed
-      console.log('[SC] 2FA verified, session active');
+      // Supabase session is already live (set by signInWithPassword in login/adminLogin)
+      // The client auto-manages sc_supabase_auth — we must never overwrite it
+      console.log('[SC] 2FA verified, Supabase session active');
       _resetIdleTimer();
       return { success: true, profile: stored.profile };
     },
@@ -266,21 +248,13 @@ const SC = {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-      // Keep Supabase session ACTIVE — do NOT sign out.
+      // Keep Supabase session ACTIVE — Supabase client auto-saves to sc_supabase_auth.
+      // DO NOT manually write to sc_supabase_auth — it corrupts the client's own storage.
       sessionStorage.setItem('sc_2fa', JSON.stringify({
         userId: data.user.id, code,
         expires: Date.now() + 10 * 60 * 1000,
         email: ADMIN_EMAIL, profile,
         isAdmin: true,
-      }));
-
-      // Persist the live session so queries work after 2FA
-      sessionStorage.setItem('sc_supabase_auth', JSON.stringify({
-        currentSession: {
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-          expires_at: data.session.expires_at,
-        }
       }));
 
       await sb.from('two_fa_codes').insert({
