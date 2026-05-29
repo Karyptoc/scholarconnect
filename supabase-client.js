@@ -198,24 +198,27 @@ const SC = {
       if (error) return { error: error.message };
 
       const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
-      if (!profile)          return { error: 'Profile not found. Contact support.' };
+      if (!profile)           return { error: 'Profile not found. Contact support.' };
       if (!profile.is_active) return { error: 'Your account has been suspended. Contact ' + SUPPORT_EMAIL };
 
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-      // Save session tokens BEFORE signing out, so they can be restored after 2FA
-      const savedSession = {
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-        expires_at: data.session.expires_at,
-      };
-
+      // Keep Supabase session ACTIVE — do NOT sign out.
+      // Route protection uses _verified flag, not the Supabase session alone.
       sessionStorage.setItem('sc_2fa', JSON.stringify({
         userId: data.user.id, code,
         expires: Date.now() + 10 * 60 * 1000,
         email, profile,
-        session: savedSession,
+      }));
+
+      // Persist the live session so queries work after 2FA
+      sessionStorage.setItem('sc_supabase_auth', JSON.stringify({
+        currentSession: {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_at: data.session.expires_at,
+        }
       }));
 
       await sb.from('two_fa_codes').insert({
@@ -223,11 +226,6 @@ const SC = {
       });
 
       await sendEmail(email, 'Your ScholarConnect Login Code', EmailTemplates.otp(code));
-
-      // Clear browser session without invalidating server tokens
-      // (signOut would revoke refresh token, breaking session restore after 2FA)
-      sessionStorage.removeItem('sc_supabase_auth');
-      await sb.auth.setSession({ access_token: '', refresh_token: '' }).catch(() => {});
 
       return { success: true, requires2FA: true, email };
     },
@@ -243,23 +241,13 @@ const SC = {
         return { error: 'Invalid 2FA code. Check your email.' };
       }
       sessionStorage.removeItem('sc_2fa');
+      // Mark profile as app-level verified — this is the 2FA gate
       sessionStorage.setItem('sc_profile', JSON.stringify({
         ...stored.profile, _verified: true,
         _expires: Date.now() + SESSION_TIMEOUT_MS,
       }));
-      // Restore the Supabase session that was saved before signOut in login()
-      try {
-        if (stored.session?.access_token) {
-          await sb.auth.setSession({
-            access_token: stored.session.access_token,
-            refresh_token: stored.session.refresh_token,
-          });
-          sessionStorage.setItem('sc_supabase_auth', JSON.stringify({ 
-            currentSession: stored.session
-          }));
-          console.log('[SC] Session restored after 2FA');
-        }
-      } catch(e) { console.warn('[SC] Session save failed:', e); }
+      // Session already live in browser from login() — no restore needed
+      console.log('[SC] 2FA verified, session active');
       _resetIdleTimer();
       return { success: true, profile: stored.profile };
     },
@@ -278,19 +266,21 @@ const SC = {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-      // Save session tokens before signOut so they can be restored after 2FA
-      const savedSession = {
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-        expires_at: data.session.expires_at,
-      };
-
+      // Keep Supabase session ACTIVE — do NOT sign out.
       sessionStorage.setItem('sc_2fa', JSON.stringify({
         userId: data.user.id, code,
         expires: Date.now() + 10 * 60 * 1000,
         email: ADMIN_EMAIL, profile,
-        session: savedSession,
         isAdmin: true,
+      }));
+
+      // Persist the live session so queries work after 2FA
+      sessionStorage.setItem('sc_supabase_auth', JSON.stringify({
+        currentSession: {
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_at: data.session.expires_at,
+        }
       }));
 
       await sb.from('two_fa_codes').insert({
@@ -298,11 +288,6 @@ const SC = {
       });
 
       await sendEmail(ADMIN_EMAIL, 'ScholarConnect Admin Login Code', EmailTemplates.otp(code));
-
-      // Clear browser session without invalidating server tokens
-      // (signOut would revoke refresh token, breaking session restore after 2FA)
-      sessionStorage.removeItem('sc_supabase_auth');
-      await sb.auth.setSession({ access_token: '', refresh_token: '' }).catch(() => {});
 
       _resetIdleTimer();
       return { success: true, profile, requires2FA: true };
