@@ -416,6 +416,8 @@
     if (res.profile.user_type !== 'admin') { err.textContent = 'Access denied. Admin only.'; err.style.display = 'flex'; return; }
     document.getElementById('page-2fa').style.display = 'none';
     adminProfile = res.profile;
+    // Wait for session to be fully restored before loading dashboard data
+    await window._sessionRestorePromise;
     showDashboard();
   }
 
@@ -430,19 +432,11 @@
 
   // Wait for session restoration then check auth
   async function initAdminPage() {
-    // Give session restoration a moment to complete
-    await new Promise(r => setTimeout(r, 300));
+    // Wait for session restoration to fully complete before checking auth
+    await window._sessionRestorePromise;
     const existingProfile = SC.auth.getProfile();
     if (existingProfile && existingProfile.user_type === 'admin') {
       adminProfile = existingProfile;
-      // Restore Supabase session if available
-      const savedSession = sessionStorage.getItem('sc_supabase_auth');
-      if (savedSession) {
-        try {
-          const s = JSON.parse(savedSession);
-          await sb.auth.setSession({ access_token: s.access_token, refresh_token: s.refresh_token });
-        } catch(e) { console.warn('Session restore:', e); }
-      }
       showDashboard();
     } else {
       showLoginPage();
@@ -488,8 +482,11 @@
     const res = await SC.auth.adminLogin(pass);
     btn.disabled = false; btn.textContent = 'Access Admin Panel →';
     if (res.error) { err.textContent = res.error; err.style.display = 'flex'; return; }
+    // Show 2FA step
     adminProfile = res.profile;
-    showDashboard();
+    document.getElementById('tfa-email-display').textContent = email || 'solutionscenter29@gmail.com';
+    document.getElementById('page-login').style.display = 'none';
+    document.getElementById('page-2fa').style.display = 'flex';
   }
 
   async function doSetup() {
