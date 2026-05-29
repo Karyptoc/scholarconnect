@@ -224,7 +224,11 @@ const SC = {
 
       await sendEmail(email, 'Your ScholarConnect Login Code', EmailTemplates.otp(code));
 
-      await sb.auth.signOut();
+      // Clear browser session without invalidating server tokens
+      // (signOut would revoke refresh token, breaking session restore after 2FA)
+      sessionStorage.removeItem('sc_supabase_auth');
+      await sb.auth.setSession({ access_token: '', refresh_token: '' }).catch(() => {});
+
       return { success: true, requires2FA: true, email };
     },
 
@@ -295,7 +299,10 @@ const SC = {
 
       await sendEmail(ADMIN_EMAIL, 'ScholarConnect Admin Login Code', EmailTemplates.otp(code));
 
-      await sb.auth.signOut();
+      // Clear browser session without invalidating server tokens
+      // (signOut would revoke refresh token, breaking session restore after 2FA)
+      sessionStorage.removeItem('sc_supabase_auth');
+      await sb.auth.setSession({ access_token: '', refresh_token: '' }).catch(() => {});
 
       _resetIdleTimer();
       return { success: true, profile, requires2FA: true };
