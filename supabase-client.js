@@ -204,10 +204,18 @@ const SC = {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
+      // Save session tokens BEFORE signing out, so they can be restored after 2FA
+      const savedSession = {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at,
+      };
+
       sessionStorage.setItem('sc_2fa', JSON.stringify({
         userId: data.user.id, code,
         expires: Date.now() + 10 * 60 * 1000,
         email, profile,
+        session: savedSession,
       }));
 
       await sb.from('two_fa_codes').insert({
@@ -235,17 +243,17 @@ const SC = {
         ...stored.profile, _verified: true,
         _expires: Date.now() + SESSION_TIMEOUT_MS,
       }));
-      // Save the current Supabase session for API calls after page load
+      // Restore the Supabase session that was saved before signOut in login()
       try {
-        const { data: sessionData } = await sb.auth.getSession();
-        if (sessionData?.session) {
+        if (stored.session?.access_token) {
+          await sb.auth.setSession({
+            access_token: stored.session.access_token,
+            refresh_token: stored.session.refresh_token,
+          });
           sessionStorage.setItem('sc_supabase_auth', JSON.stringify({ 
-            currentSession: {
-              access_token: sessionData.session.access_token,
-              refresh_token: sessionData.session.refresh_token,
-              expires_at: sessionData.session.expires_at,
-            }
+            currentSession: stored.session
           }));
+          console.log('[SC] Session restored after 2FA');
         }
       } catch(e) { console.warn('[SC] Session save failed:', e); }
       _resetIdleTimer();
@@ -261,17 +269,36 @@ const SC = {
         await sb.auth.signOut();
         return { error: 'Access denied. Admin account not configured.' };
       }
-      sessionStorage.setItem('sc_profile', JSON.stringify({
-        ...profile, _verified: true, _expires: Date.now() + SESSION_TIMEOUT_MS,
-      }));
-      const sessionData = {
+
+      // Generate 2FA code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+      // Save session tokens before signOut so they can be restored after 2FA
+      const savedSession = {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
         expires_at: data.session.expires_at,
       };
-      sessionStorage.setItem('sc_supabase_auth', JSON.stringify({ currentSession: sessionData }));
+
+      sessionStorage.setItem('sc_2fa', JSON.stringify({
+        userId: data.user.id, code,
+        expires: Date.now() + 10 * 60 * 1000,
+        email: ADMIN_EMAIL, profile,
+        session: savedSession,
+        isAdmin: true,
+      }));
+
+      await sb.from('two_fa_codes').insert({
+        user_id: data.user.id, code, expires_at: expiresAt, used: false
+      });
+
+      await sendEmail(ADMIN_EMAIL, 'ScholarConnect Admin Login Code', EmailTemplates.otp(code));
+
+      await sb.auth.signOut();
+
       _resetIdleTimer();
-      return { success: true, profile };
+      return { success: true, profile, requires2FA: true };
     },
 
     getProfile() {
