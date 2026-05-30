@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /pricing.html
+Allow: /privacy.html
+Allow: /terms.html
+Allow: /refund.html
+
+# Block private pages from indexing
+Disallow: /admin.html
+Disallow: /auth.html
+Disallow: /client-dashboard.html
+Disallow: /freelancer-dashboard.html
+Disallow: /supabase-client.js
+Disallow: /supabase-schema.sql
+
+Sitemap: https://scholarconnecthub.com/sitemap.xml
