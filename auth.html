@@ -6,7 +6,16 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>ScholarConnect – Sign In / Register</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://js.hcaptcha.com/1/api.js"></script>
+  <script src="https://js.hcaptcha.com/1/api.js">
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  const isHidden = inp.type === 'password';
+  inp.type = isHidden ? 'text' : 'password';
+  btn.innerHTML = isHidden ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  btn.title = isHidden ? 'Hide password' : 'Show password';
+}
+
+</script>
 </head>
 <body>
 <div class="auth-split">
@@ -52,7 +61,10 @@
         </div>
         <div class="form-group">
           <label class="form-label">Password</label>
-          <input type="password" class="form-input" id="l-pass" placeholder="Your password" autocomplete="current-password">
+          <div class="pw-wrap">
+            <input type="password" class="form-input" id="l-pass" placeholder="Your password" autocomplete="current-password">
+            <button type="button" class="pw-toggle" onclick="togglePw('l-pass',this)" tabindex="-1" title="Show/hide password"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
         </div>
         <button class="btn btn-primary btn-full btn-lg" id="login-btn" onclick="doLogin()">Continue →</button>
         <div style="text-align:center;margin-top:14px;font-size:0.875rem;color:var(--muted)">No account? <a onclick="showStep('register')" style="cursor:pointer;color:var(--steel);font-weight:600">Create one</a></div>
@@ -108,7 +120,10 @@
         </div>
         <div class="form-group">
           <label class="form-label">Password * <span class="text-muted text-xs">(8+ chars, uppercase, number, special)</span></label>
-          <input type="password" class="form-input" id="r-pass" placeholder="Create a strong password" oninput="checkPwStrength()" autocomplete="new-password">
+          <div class="pw-wrap">
+            <input type="password" class="form-input" id="r-pass" placeholder="Create a strong password" oninput="checkPwStrength()" autocomplete="new-password">
+            <button type="button" class="pw-toggle" onclick="togglePw('r-pass',this)" tabindex="-1" title="Show/hide password"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
           <div class="strength-bar" id="pw-bar" style="background:var(--warm)"></div>
           <div class="pw-rules">
             <div class="pw-rule fail" id="pr-len">✗ At least 8 characters</div>
