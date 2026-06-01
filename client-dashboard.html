@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="canonical" href="https://scholarconnecthub.com/client-dashboard.html" />
+  <meta name="robots" content="noindex, nofollow" />
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>ScholarConnect – Client Dashboard</title>
   <link rel="stylesheet" href="style.css">
@@ -131,7 +133,7 @@
                 </div>
                 <span class="text-muted" style="text-align:center;font-size:0.82rem;margin-bottom:18px">or</span>
                 <div>
-                  <input type="number" class="form-input" id="o-words" min="275" placeholder="Words" oninput="syncPages()">
+                  <input type="number" class="form-input" id="o-words" min="1" placeholder="Words" oninput="syncPages()">
                   <div class="form-hint">Words (275/page)</div>
                 </div>
               </div>
@@ -754,7 +756,9 @@
     // Create order with standard fields only (what SC.orders.create expects)
     const res = await SC.orders.create(profile, {
       title, instructions: instr, subject: subj, subLevel: subl, level,
-      pages, deadline: dl, citationStyle: citation, briefFiles: briefUrls
+      pages: exactPages,   // Pass exact decimal pages (e.g. 0.36 for 100 words)
+      words: finalWords,   // Pass exact word count so pricing uses words not rounded pages
+      deadline: dl, citationStyle: citation, briefFiles: briefUrls
     });
     btn.disabled=false; btn.textContent='Proceed to Payment →';
     if (res.error) { err.textContent=res.error; err.style.display='flex'; return; }
